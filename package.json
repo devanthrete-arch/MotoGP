@@ -1,0 +1,14 @@
+{
+  "name": "autoflex",
+  "version": "0.1.0",
+  "description": "Autoflex — a full-ownership blog & discussion forum for car enthusiasts",
+  "type": "module",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "express": "^4.21.2"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(loop)",
+      "Skill(loop:*)",
+      "Bash(npm --version)"
+    ]
+  }
+}
