@@ -5,6 +5,60 @@ Team-BHP's depth of owner details, reviews, help articles, and hot discussions.
 The current build uses a Ktor API, a served webapp, shared Kotlin DTOs, SQLite
 persistence, and a native Android app kept as the next platform path.
 
+## Project brief
+
+Autoflex is being built as a new-age, ownership-first automotive community:
+less like a thin social feed, more like a living garage notebook where car
+owners share real reviews, known issues, fixes, costs, travelogues, and buying
+advice. The first launch target is a webapp MVP. Android follows after the web
+community loop proves useful.
+
+Service-center integration is intentionally kept separate under
+`/api/service-centers/*` because another team owns that workstream.
+
+## Current build status
+
+### Done so far
+
+- [x] Pulled project direction into a web-first Kotlin/Ktor implementation.
+- [x] Replaced the old Node prototype with a Kotlin backend and served webapp.
+- [x] Added shared Kotlin request/response models.
+- [x] Added native Android project scaffolding for the later Android app path.
+- [x] Added community feed with latest/popular sorting, search, brand/topic filters, and pagination.
+- [x] Added post detail pages with views, likes, comments, and discussion forms.
+- [x] Added create, edit, and delete post flows.
+- [x] Added lightweight recoverable profiles with recovery codes.
+- [x] Added saved posts tied to browser/profile tokens.
+- [x] Added structured ownership fields: brand, model, variant, city, and odometer.
+- [x] Added knowledge labels: owner note, review, known issue, fix, cost note, and travelogue.
+- [x] Added Models hub and model notebooks grouping ownership knowledge by car.
+- [x] Added verified-fix flow: "Worked for me" confirmations on Fix posts.
+- [x] Added Helpful and Stale info signals.
+- [x] Added moderator pin/unpin for important notes.
+- [x] Added reporting, admin moderation queue, report dismissal, abusive post deletion, and owner blocking.
+- [x] Added community rules and privacy/deletion notes.
+- [x] Added real web image upload with size/type checks and JPEG storage.
+- [x] Added product feedback capture and admin feedback inbox.
+- [x] Added browser/client error capture for staging QA.
+- [x] Added health endpoint with app version and service-center boundary status.
+- [x] Added share buttons plus `/share/*` metadata landing pages for posts and model notebooks.
+- [x] Added richer starter seed content for tester onboarding.
+- [x] Added Docker staging packaging and staging deployment docs.
+- [x] Kept service-center endpoints separate from the community product surface.
+
+### Yet to be done
+
+- [ ] Merge the current web MVP PR into `master`.
+- [ ] Deploy a staging environment with HTTPS, persistent database, upload storage, and backups.
+- [ ] Run real tester feedback through the product-owner → design → backend → frontend → QA → real-user loop.
+- [ ] Add followed models/topics and return-user nudges.
+- [ ] Add basic notification/subscription flows after follows exist.
+- [ ] Add richer garage profiles and ownership timelines.
+- [ ] Add Google sign-in only after the lightweight profile flow proves insufficient.
+- [ ] Harden production operations: backup restore drill, non-default admin token, logs, and monitoring vendor if needed.
+- [ ] Bring the native Android app up to feature parity after the web MVP is validated.
+- [ ] Keep service-center integration pending until the owning team provides its contract.
+
 ## Project layout
 
 - `server-kotlin/src/main/resources/web` — webapp MVP
