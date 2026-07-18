@@ -1,33 +1,64 @@
-# Autoflex 🏁
+# Autoflex
 
-A full-ownership blog & discussion forum for New Age car enthusiasts — inspired by TeamBHP.
-Write freely about how your car works, what to fix, what to buy, and what just launched.
+Autoflex is a web-first MVP for an ownership-focused auto community inspired by
+Team-BHP's depth of owner details, reviews, help articles, and hot discussions.
+The current build uses a Ktor API, a served webapp, shared Kotlin DTOs, SQLite
+persistence, and a native Android app kept as the next platform path.
 
-## Features
-- **Full ownership** — create, edit, and delete your own posts (pseudonymous, no passwords). Ownership is held via a per-post token stored in your browser.
-- **Rich posts** — title, markdown-lite body, author, brand tag, topic tag, optional cover image.
-- **Discussion** — threaded comments on every post.
-- **Likes, views, search, filters** — sort by latest/popular, filter by brand & topic, full-text search.
+## Project layout
 
-## Stack
-- Backend: Node + Express + better-sqlite3 (real persistence in `data/autoflex.db`)
-- Frontend: server-static vanilla JS SPA (no build step)
+- `server-kotlin/src/main/resources/web` — webapp MVP
+- `server-kotlin` — Ktor REST API and SQLite database
+- `shared` — request/response models shared by app and server
+- `android-app` — native Android app (Jetpack Compose)
+- `docs/PRODUCT_ROADMAP.md` — launch scope and product ideas
+- `docs/COMMUNITY_RULES.md` — posting and moderation standard
+- `docs/SERVICE_CENTER_INTEGRATION.md` — separate service-center integration boundary
+- `docs/RELEASE_CHECKLIST.md` — web MVP release checks
+- `docs/STAGING_DEPLOYMENT.md` — Docker staging runbook
+- `docs/PRIVACY_AND_DELETION.md` — current privacy and profile deletion notes
 
-## Run
+## Requirements
+
+- JDK 17
+- Android Studio with Android SDK 36 only when building the Android app
+
+## Run locally
+
+Run the web MVP and API:
+
 ```bash
-npm install
-node server/seed.js   # optional: seed 3 example posts
-npm start             # http://localhost:3000
+./gradlew :server-kotlin:run --args=--seed
 ```
 
-## API
-| Method | Route | Purpose |
-|--------|-------|---------|
-| GET | `/api/posts` | list (`?brand=&topic=&q=&sort=latest\|popular`) |
-| GET | `/api/posts/:id` | single post + comments (increments views) |
-| POST | `/api/posts` | create → returns `edit_token` |
-| PUT | `/api/posts/:id` | edit (requires `edit_token`) |
-| DELETE | `/api/posts/:id` | delete (requires `edit_token`) |
-| POST | `/api/posts/:id/like` | like |
-| POST | `/api/posts/:id/comments` | add comment |
-| GET | `/api/meta` `/api/stats` | brands/topics, counts |
+Open `http://localhost:8080`.
+
+Use the Models button to browse owner posts grouped by model/variant details.
+
+Moderation queue: open `http://localhost:8080/admin`. The local default admin
+token is `dev-admin`; set `ADMIN_TOKEN` for any shared environment.
+
+For Android, open this folder in Android Studio, run the backend, then run
+`android-app` on an emulator.
+
+The debug app connects to `http://10.0.2.2:8080`, which maps an Android
+emulator to the backend running on the development computer. Override
+`API_BASE_URL` for a physical device or hosted API.
+
+Seed useful starter posts with the server's `--seed` argument. The starter set
+covers reviews, known issues, fixes, costs, travelogues, comments, helpful
+signals, and a pinned fix so testers can see model notebooks immediately.
+
+Uploaded cover images are stored under `server-kotlin/data/uploads` by default.
+Set `UPLOAD_DIR` to move them in a shared environment.
+
+## Production checklist
+
+- Serve the app/API over HTTPS.
+- Set `ADMIN_TOKEN`, `DATABASE_PATH`, `UPLOAD_DIR`, and `APP_VERSION`.
+- Back up the database and upload directory.
+- Use [RELEASE_CHECKLIST.md](/Users/priyanshtyagi/Auto-Motive-Flex/docs/RELEASE_CHECKLIST.md:1).
+- Use [STAGING_DEPLOYMENT.md](/Users/priyanshtyagi/Auto-Motive-Flex/docs/STAGING_DEPLOYMENT.md:1) for the Docker staging path.
+- Use [PRIVACY_AND_DELETION.md](/Users/priyanshtyagi/Auto-Motive-Flex/docs/PRIVACY_AND_DELETION.md:1) as the MVP privacy baseline.
+- Keep service-center endpoints under `/api/service-centers/*`; another team owns
+  that integration.
