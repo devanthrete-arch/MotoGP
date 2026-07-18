@@ -1,0 +1,9 @@
+.git
+.gradle
+**/build
+data
+server-kotlin/data
+android-app
+.idea
+.DS_Store
+*.log
