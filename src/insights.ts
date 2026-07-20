@@ -20,6 +20,11 @@ export type ModerationSummary = {
   riskyPostIds: string[];
 };
 
+export type SharePayload = {
+  title: string;
+  text: string;
+};
+
 export const defaultSubscriptionPreference: SubscriptionPreference = {
   emailDigest: true,
   browserAlerts: false,
@@ -169,6 +174,60 @@ export function buildModerationSummary(reports: ReportRecord[]): ModerationSumma
     removedReports: reports.filter((report) => report.status === "Removed").length,
     riskyPostIds: [...reportCounts.entries()].filter(([, count]) => count >= 2).map(([postId]) => postId),
   };
+}
+
+export function buildPostSharePayload(post: OwnerPost): SharePayload {
+  return {
+    title: `${post.brand} ${post.model}: ${post.title}`,
+    text: [
+      `${post.title}`,
+      `${post.label} for ${post.brand} ${post.model}${post.variant ? ` ${post.variant}` : ""}`,
+      `${post.city || "City not shared"} · ${post.odometerKm.toLocaleString("en-IN")} km · ${post.helpful} helpful`,
+      post.body.slice(0, 180),
+    ].join("\n"),
+  };
+}
+
+export function buildModelSharePayload(notebook: ModelNotebook): SharePayload {
+  const labels = [...new Set(notebook.posts.map((post) => post.label))].join(", ");
+  return {
+    title: `${notebook.brand} ${notebook.model} owner notebook`,
+    text: `${notebook.brand} ${notebook.model} has ${notebook.posts.length} Autoflex owner note${
+      notebook.posts.length === 1 ? "" : "s"
+    }: ${labels || "owner notes"}.`,
+  };
+}
+
+export function buildGarageExportMarkdown(garage: GarageVehicle[], timeline: TimelineEntry[]): string {
+  if (!garage.length) return "# Autoflex garage\n\nNo vehicles saved yet.";
+
+  return [
+    "# Autoflex garage export",
+    "",
+    ...garage.flatMap((vehicle) => {
+      const entries = timeline.filter((entry) => entry.vehicleId === vehicle.id);
+      return [
+        `## ${vehicle.nickname || `${vehicle.brand} ${vehicle.model}`}`,
+        "",
+        `- Vehicle: ${vehicle.brand} ${vehicle.model}${vehicle.variant ? ` ${vehicle.variant}` : ""}`,
+        `- City: ${vehicle.city || "Not shared"}`,
+        `- Odometer: ${vehicle.odometerKm.toLocaleString("en-IN")} km`,
+        `- Purchase month: ${vehicle.purchaseMonth || "Not shared"}`,
+        "",
+        "### Timeline",
+        "",
+        ...(entries.length
+          ? entries.map(
+              (entry) =>
+                `- ${entry.happenedOn}: ${entry.kind} — ${entry.title} (${formatMoney(entry.amount)}, ${entry.odometerKm.toLocaleString(
+                  "en-IN",
+                )} km). ${entry.note}`,
+            )
+          : ["- No timeline notes yet."]),
+        "",
+      ];
+    }),
+  ].join("\n");
 }
 
 export function formatMoney(amount: number): string {

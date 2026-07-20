@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import { seedGarage, seedPosts, seedTimeline } from "./domain";
 import {
   buildGarageInsights,
+  buildGarageExportMarkdown,
+  buildModelSharePayload,
   buildModerationSummary,
   buildNotificationPreview,
+  buildPostSharePayload,
   buildReturnNudges,
   filterPostsByMode,
   groupByModel,
@@ -107,5 +110,22 @@ describe("Autoflex insights", () => {
       removedReports: 0,
       riskyPostIds: ["post-a"],
     });
+  });
+
+  it("builds share text for posts and model notebooks", () => {
+    const postShare = buildPostSharePayload(seedPosts[0]);
+    const notebookShare = buildModelSharePayload(groupByModel(seedPosts)[0]);
+
+    expect(postShare.title).toContain("Tata Nexon");
+    expect(postShare.text).toContain("42,000 km");
+    expect(notebookShare.text).toContain("owner note");
+  });
+
+  it("exports garage timeline as markdown", () => {
+    const exportText = buildGarageExportMarkdown(seedGarage, seedTimeline);
+
+    expect(exportText).toContain("# Autoflex garage export");
+    expect(exportText).toContain("Daily diesel");
+    expect(exportText).toContain("₹1,350");
   });
 });
