@@ -1,6 +1,7 @@
 import type {
   DraftPost,
   DraftReport,
+  DraftShortlistItem,
   DraftTimelineEntry,
   DraftVehicle,
   FeedbackNote,
@@ -9,6 +10,7 @@ import type {
   OwnerPost,
   Profile,
   ReportRecord,
+  ShortlistItem,
   SubscriptionSettings,
   TimelineEntry,
 } from "./domain";
@@ -23,6 +25,7 @@ const timelineKey = "autoflex.web.timeline.v1";
 const subscriptionKey = "autoflex.web.subscription.v1";
 const profileKey = "autoflex.web.profile.v1";
 const reportsKey = "autoflex.web.reports.v1";
+const shortlistKey = "autoflex.web.shortlist.v1";
 
 const safeJsonParse = <T,>(value: string | null, fallback: T): T => {
   if (!value) return fallback;
@@ -138,4 +141,15 @@ export const createReport = (draft: DraftReport): ReportRecord => ({
   id: `report-${draft.postId}-${Date.now()}`.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
   status: "Open",
   createdAt: new Date().toISOString(),
+});
+
+export const loadShortlist = (): ShortlistItem[] => safeJsonParse<ShortlistItem[]>(localStorage.getItem(shortlistKey), []);
+
+export const saveShortlist = (items: ShortlistItem[]): void => {
+  localStorage.setItem(shortlistKey, JSON.stringify(items));
+};
+
+export const createShortlistItem = (draft: DraftShortlistItem): ShortlistItem => ({
+  ...draft,
+  id: `shortlist-${draft.brand}-${draft.model}-${Date.now()}`.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
 });

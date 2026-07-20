@@ -2,8 +2,10 @@ import { FormEvent, useMemo, useState } from "react";
 import {
   buildLoop,
   knowledgeLabels,
+  shortlistStatuses,
   timelineKinds,
   type DraftPost,
+  type DraftShortlistItem,
   type DraftTimelineEntry,
   type DraftVehicle,
   type FeedbackNote,
@@ -13,6 +15,7 @@ import {
   type OwnerPost,
   type Profile,
   type ReportRecord,
+  type ShortlistItem,
   type SubscriptionSettings,
   type TimelineEntry,
   type TimelineEntryKind,
@@ -25,6 +28,7 @@ import {
   buildNotificationPreview,
   buildPostSharePayload,
   buildReturnNudges,
+  buildShortlistComparisons,
   filterPostsByMode,
   formatMoney,
   groupByModel,
@@ -34,6 +38,7 @@ import {
   addFeedback,
   createPost,
   createReport,
+  createShortlistItem,
   createTimelineEntry,
   createVehicle,
   loadFeedback,
@@ -43,6 +48,7 @@ import {
   loadPosts,
   loadReports,
   loadSaved,
+  loadShortlist,
   loadSubscriptionSettings,
   loadTimeline,
   saveFollows,
@@ -51,6 +57,7 @@ import {
   saveProfile,
   saveReports,
   saveSaved,
+  saveShortlist,
   saveSubscriptionSettings,
   saveTimeline,
 } from "./storage";
@@ -92,12 +99,21 @@ const initialTimelineDraft: DraftTimelineEntry = {
   note: "",
 };
 
+const initialShortlistDraft: DraftShortlistItem = {
+  brand: "Tata",
+  budget: 1200000,
+  model: "",
+  notes: "",
+  status: "Researching",
+};
+
 const garageRoles: Profile["garageRole"][] = ["Owner", "Buyer", "Enthusiast", "Mechanic"];
 
 export function App() {
   const [posts, setPosts] = useState<OwnerPost[]>(() => loadPosts());
   const [profile, setProfile] = useState<Profile>(() => loadProfile());
   const [reports, setReports] = useState<ReportRecord[]>(() => loadReports());
+  const [shortlist, setShortlist] = useState<ShortlistItem[]>(() => loadShortlist());
   const [saved, setSaved] = useState<Set<string>>(() => loadSaved());
   const [follows, setFollows] = useState<FollowState>(() => loadFollows());
   const [subscriptionSettings, setSubscriptionSettings] = useState<SubscriptionSettings>(() => loadSubscriptionSettings());
@@ -114,6 +130,7 @@ export function App() {
     ...initialTimelineDraft,
     vehicleId: loadGarage()[0]?.id ?? "",
   }));
+  const [shortlistDraft, setShortlistDraft] = useState<DraftShortlistItem>(initialShortlistDraft);
   const [commentDraft, setCommentDraft] = useState("");
   const [reportDraft, setReportDraft] = useState("");
   const [feedbackDraft, setFeedbackDraft] = useState("");
@@ -148,6 +165,7 @@ export function App() {
 
   const garageInsights = useMemo(() => buildGarageInsights(garage, timeline, posts), [garage, posts, timeline]);
   const moderationSummary = useMemo(() => buildModerationSummary(reports), [reports]);
+  const shortlistComparisons = useMemo(() => buildShortlistComparisons(shortlist, posts), [posts, shortlist]);
 
   const stats = useMemo(
     () => ({
@@ -158,8 +176,9 @@ export function App() {
       follows: follows.models.length + follows.topics.length,
       garage: garage.length,
       reports: moderationSummary.openReports,
+      shortlist: shortlist.length,
     }),
-    [follows.models.length, follows.topics.length, garage.length, moderationSummary.openReports, notebooks.length, posts],
+    [follows.models.length, follows.topics.length, garage.length, moderationSummary.openReports, notebooks.length, posts, shortlist.length],
   );
 
   const persistPosts = (nextPosts: OwnerPost[]) => {
@@ -185,6 +204,11 @@ export function App() {
   const persistReports = (nextReports: ReportRecord[]) => {
     setReports(nextReports);
     saveReports(nextReports);
+  };
+
+  const persistShortlist = (nextShortlist: ShortlistItem[]) => {
+    setShortlist(nextShortlist);
+    saveShortlist(nextShortlist);
   };
 
   const persistGarage = (nextGarage: GarageVehicle[]) => {
@@ -302,6 +326,43 @@ export function App() {
       title: "Autoflex garage export",
       text: buildGarageExportMarkdown(garage, timeline),
     });
+  };
+
+  const addShortlistItem = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!shortlistDraft.model.trim()) return;
+    persistShortlist([createShortlistItem(shortlistDraft), ...shortlist]);
+    setShortlistDraft(initialShortlistDraft);
+  };
+
+  const addSelectedToShortlist = () => {
+    if (!selectedPost) return;
+    const alreadyShortlisted = shortlist.some(
+      (item) => modelKeyFor(item.brand, item.model) === modelKeyFor(selectedPost.brand, selectedPost.model),
+    );
+    if (alreadyShortlisted) {
+      setActionMessage("That model is already in your shortlist.");
+      return;
+    }
+    persistShortlist([
+      createShortlistItem({
+        brand: selectedPost.brand,
+        budget: 0,
+        model: selectedPost.model,
+        notes: `Added from: ${selectedPost.title}`,
+        status: "Researching",
+      }),
+      ...shortlist,
+    ]);
+    setActionMessage(`${selectedPost.brand} ${selectedPost.model} added to shortlist.`);
+  };
+
+  const updateShortlistItem = (itemId: string, patch: Partial<ShortlistItem>) => {
+    persistShortlist(shortlist.map((item) => (item.id === itemId ? { ...item, ...patch } : item)));
+  };
+
+  const removeShortlistItem = (itemId: string) => {
+    persistShortlist(shortlist.filter((item) => item.id !== itemId));
   };
 
   const publishPost = (event: FormEvent<HTMLFormElement>) => {
@@ -604,6 +665,9 @@ export function App() {
                   <button type="button" onClick={shareSelectedPost}>
                     Share note
                   </button>
+                  <button type="button" onClick={addSelectedToShortlist}>
+                    Add model to shortlist
+                  </button>
                 </div>
                 <div className="comments">
                   <strong>Discussion</strong>
@@ -640,6 +704,102 @@ export function App() {
               <p>Select a post to inspect owner details.</p>
             )}
           </aside>
+        </div>
+      </section>
+
+      <section className="panel" id="shortlist">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Buyer shortlist</p>
+            <h2>Turn owner notes into a decision.</h2>
+          </div>
+        </div>
+        <div className="shortlist-grid">
+          <form className="composer" onSubmit={addShortlistItem}>
+            <h3>Add model to compare</h3>
+            <div className="form-row">
+              <select value={shortlistDraft.brand} onChange={(event) => setShortlistDraft({ ...shortlistDraft, brand: event.target.value })}>
+                {brands.map((brand) => (
+                  <option key={brand}>{brand}</option>
+                ))}
+              </select>
+              <input
+                required
+                value={shortlistDraft.model}
+                onChange={(event) => setShortlistDraft({ ...shortlistDraft, model: event.target.value })}
+                placeholder="Model"
+              />
+            </div>
+            <div className="form-row">
+              <input
+                min="0"
+                type="number"
+                value={shortlistDraft.budget || ""}
+                onChange={(event) => setShortlistDraft({ ...shortlistDraft, budget: Number(event.target.value) })}
+                placeholder="Budget"
+              />
+              <select
+                value={shortlistDraft.status}
+                onChange={(event) => setShortlistDraft({ ...shortlistDraft, status: event.target.value as ShortlistItem["status"] })}
+              >
+                {shortlistStatuses.map((status) => (
+                  <option key={status}>{status}</option>
+                ))}
+              </select>
+            </div>
+            <textarea
+              rows={4}
+              value={shortlistDraft.notes}
+              onChange={(event) => setShortlistDraft({ ...shortlistDraft, notes: event.target.value })}
+              placeholder="Why is it on the list? Dealer quote, family need, must-check concern..."
+            />
+            <button className="primary-action" type="submit">
+              Add to shortlist
+            </button>
+          </form>
+
+          <div className="comparison-grid">
+            {shortlistComparisons.length ? (
+              shortlistComparisons.map((comparison) => (
+                <article className="comparison-card" key={comparison.item.id}>
+                  <span className={`confidence ${comparison.confidence.toLowerCase()}`}>{comparison.confidence} confidence</span>
+                  <h3>
+                    {comparison.item.brand} {comparison.item.model}
+                  </h3>
+                  <p>{formatMoney(comparison.item.budget)} target budget</p>
+                  <div className="comparison-stats">
+                    <span>{comparison.relatedNotes} notes</span>
+                    <span>{comparison.ownerReviews} reviews</span>
+                    <span>{comparison.knownIssues} issues</span>
+                    <span>{comparison.fixes} fixes</span>
+                  </div>
+                  <div className="form-row">
+                    <select
+                      value={comparison.item.status}
+                      onChange={(event) =>
+                        updateShortlistItem(comparison.item.id, { status: event.target.value as ShortlistItem["status"] })
+                      }
+                    >
+                      {shortlistStatuses.map((status) => (
+                        <option key={status}>{status}</option>
+                      ))}
+                    </select>
+                    <button className="save-button" type="button" onClick={() => removeShortlistItem(comparison.item.id)}>
+                      Remove
+                    </button>
+                  </div>
+                  <textarea
+                    rows={3}
+                    value={comparison.item.notes}
+                    onChange={(event) => updateShortlistItem(comparison.item.id, { notes: event.target.value })}
+                    placeholder="Decision notes"
+                  />
+                </article>
+              ))
+            ) : (
+              <div className="empty-state">Add a model manually or from an owner note to begin comparison.</div>
+            )}
+          </div>
         </div>
       </section>
 

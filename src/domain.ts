@@ -81,6 +81,19 @@ export type ReportRecord = {
 
 export type DraftReport = Pick<ReportRecord, "postId" | "postTitle" | "reason" | "reporterName">;
 
+export type ShortlistStatus = "Researching" | "Test drive" | "Negotiating" | "Rejected" | "Bought";
+
+export type ShortlistItem = {
+  id: string;
+  brand: string;
+  model: string;
+  budget: number;
+  status: ShortlistStatus;
+  notes: string;
+};
+
+export type DraftShortlistItem = Omit<ShortlistItem, "id">;
+
 export type BuildLoopItem = {
   role: BuildRole;
   question: string;
@@ -99,6 +112,8 @@ export type DraftPost = Omit<OwnerPost, "id" | "createdAt" | "helpful" | "fixesC
 export type DraftVehicle = Omit<GarageVehicle, "id">;
 
 export type DraftTimelineEntry = Omit<TimelineEntry, "id">;
+
+export const shortlistStatuses: ShortlistStatus[] = ["Researching", "Test drive", "Negotiating", "Rejected", "Bought"];
 
 export const knowledgeLabels: KnowledgeLabel[] = [
   "Review",

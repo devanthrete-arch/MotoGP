@@ -328,6 +328,75 @@ h3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.shortlist-grid {
+  align-items: start;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(320px, 0.7fr) minmax(0, 1.3fr);
+}
+
+.comparison-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.comparison-card {
+  background: #fffaf2;
+  border: 1px solid rgba(95, 61, 40, 0.16);
+  border-radius: 26px;
+  display: grid;
+  gap: 12px;
+  padding: 22px;
+}
+
+.comparison-card p {
+  color: #725a48;
+  margin: 0;
+}
+
+.confidence {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 900;
+  justify-self: start;
+  letter-spacing: 0.12em;
+  padding: 7px 10px;
+  text-transform: uppercase;
+}
+
+.confidence.low {
+  background: #ffd8d4;
+  color: #8b281d;
+}
+
+.confidence.medium {
+  background: #ffe0b6;
+  color: #7e321d;
+}
+
+.confidence.high {
+  background: #dff3d4;
+  color: #386d27;
+}
+
+.comparison-stats {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.comparison-stats span {
+  background: #f8ead8;
+  border-radius: 14px;
+  color: #4f3c2f;
+  font-size: 0.84rem;
+  font-weight: 800;
+  padding: 9px;
+  text-align: center;
+}
+
 .section-head {
   align-items: end;
   display: flex;
@@ -707,6 +776,8 @@ a:focus-visible {
   .nudge-grid,
   .qa-grid,
   .garage-grid,
+  .shortlist-grid,
+  .comparison-grid,
   .timeline-board,
   .notification-grid,
   .insight-grid,

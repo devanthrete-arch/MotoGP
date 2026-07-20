@@ -1,4 +1,13 @@
-import type { FollowState, GarageVehicle, KnowledgeLabel, ModelNotebook, OwnerPost, ReportRecord, TimelineEntry } from "./domain";
+import type {
+  FollowState,
+  GarageVehicle,
+  KnowledgeLabel,
+  ModelNotebook,
+  OwnerPost,
+  ReportRecord,
+  ShortlistItem,
+  TimelineEntry,
+} from "./domain";
 
 export type SubscriptionPreference = {
   emailDigest: boolean;
@@ -23,6 +32,15 @@ export type ModerationSummary = {
 export type SharePayload = {
   title: string;
   text: string;
+};
+
+export type ShortlistComparison = {
+  item: ShortlistItem;
+  relatedNotes: number;
+  knownIssues: number;
+  fixes: number;
+  ownerReviews: number;
+  confidence: "Low" | "Medium" | "High";
 };
 
 export const defaultSubscriptionPreference: SubscriptionPreference = {
@@ -228,6 +246,25 @@ export function buildGarageExportMarkdown(garage: GarageVehicle[], timeline: Tim
       ];
     }),
   ].join("\n");
+}
+
+export function buildShortlistComparisons(shortlist: ShortlistItem[], posts: OwnerPost[]): ShortlistComparison[] {
+  return shortlist.map((item) => {
+    const relatedPosts = posts.filter((post) => modelKeyFor(post.brand, post.model) === modelKeyFor(item.brand, item.model));
+    const knownIssues = relatedPosts.filter((post) => post.label === "Known issue").length;
+    const fixes = relatedPosts.filter((post) => post.label === "Fix").length;
+    const ownerReviews = relatedPosts.filter((post) => post.label === "Review").length;
+    const confidence = relatedPosts.length >= 3 ? "High" : relatedPosts.length >= 1 ? "Medium" : "Low";
+
+    return {
+      item,
+      relatedNotes: relatedPosts.length,
+      knownIssues,
+      fixes,
+      ownerReviews,
+      confidence,
+    };
+  });
 }
 
 export function formatMoney(amount: number): string {
