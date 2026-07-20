@@ -21,6 +21,7 @@ import {
   type TimelineEntryKind,
 } from "./domain";
 import {
+  buildCityCircles,
   buildGarageInsights,
   buildGarageExportMarkdown,
   buildModelSharePayload,
@@ -164,6 +165,7 @@ export function App() {
   );
 
   const garageInsights = useMemo(() => buildGarageInsights(garage, timeline, posts), [garage, posts, timeline]);
+  const cityCircles = useMemo(() => buildCityCircles(posts, garage), [garage, posts]);
   const moderationSummary = useMemo(() => buildModerationSummary(reports), [reports]);
   const shortlistComparisons = useMemo(() => buildShortlistComparisons(shortlist, posts), [posts, shortlist]);
 
@@ -421,6 +423,7 @@ export function App() {
           </a>
           <div className="nav-actions">
             <a href="#feed">Feed</a>
+            <a href="#cities">Cities</a>
             <a href="#garage">Garage</a>
             <a href="#notebooks">Model notebooks</a>
             <a href="#loop">Build loop</a>
@@ -570,6 +573,42 @@ export function App() {
           {notificationPreview.map((preview) => (
             <p key={preview}>{preview}</p>
           ))}
+        </div>
+      </section>
+
+      <section className="panel" id="cities">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">City circles</p>
+            <h2>Local ownership signals matter.</h2>
+          </div>
+        </div>
+        <div className="city-grid">
+          {cityCircles.length ? (
+            cityCircles.map((circle) => (
+              <article className={`city-card ${circle.localSignal.toLowerCase()}`} key={circle.city}>
+                <span>{circle.localSignal}</span>
+                <h3>{circle.city}</h3>
+                <p>
+                  {circle.posts.length} owner notes · {circle.garageVehicles.length} garage vehicles
+                </p>
+                <div className="city-tags">
+                  {circle.topBrands.map((brand) => (
+                    <button key={brand} type="button" onClick={() => setQuery(brand)}>
+                      {brand}
+                    </button>
+                  ))}
+                  {circle.hotTopics.map((topic) => (
+                    <button key={topic} type="button" onClick={() => setSelectedLabel(topic)}>
+                      {topic}
+                    </button>
+                  ))}
+                </div>
+              </article>
+            ))
+          ) : (
+            <div className="empty-state">Add city details to posts or garage vehicles to start local circles.</div>
+          )}
         </div>
       </section>
 
@@ -1142,6 +1181,7 @@ export function App() {
           <p>Garage vehicles and timeline entries persist locally.</p>
           <p>Comments, reports, profiles, and moderator actions persist locally.</p>
           <p>Post, model notebook, and garage export sharing uses native share with clipboard fallback.</p>
+          <p>City circles group local owner notes and garage vehicles by market context.</p>
           <p>Subscription previews and garage insights are generated from typed pure functions.</p>
           <p>Service-center integration remains outside this MVP loop.</p>
         </div>

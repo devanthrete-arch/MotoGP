@@ -39,6 +39,7 @@ Service-center integration is intentionally kept separate under
 - [x] Added share/copy actions for posts and model notebooks.
 - [x] Added garage markdown export using native share with clipboard fallback.
 - [x] Added buyer shortlist with model comparison against available owner notes.
+- [x] Added local city circles grouping owner notes and garage vehicles by city.
 - [x] Added shared Kotlin request/response models.
 - [x] Added native Android project scaffolding for the later Android app path.
 - [x] Added community feed with latest/popular sorting, search, brand/topic filters, and pagination.
@@ -73,6 +74,7 @@ Service-center integration is intentionally kept separate under
 - [ ] Replace local profile/report/comment storage with hosted account and moderation APIs.
 - [ ] Replace share/copy fallbacks with hosted deep links and Open Graph metadata after deployment.
 - [ ] Replace local shortlist with hosted buyer workspace and cross-device sync.
+- [ ] Replace local city circles with hosted city pages and city follows.
 - [ ] Run real tester feedback through the product-owner → design → backend → frontend → QA → real-user loop.
 - [ ] Add hosted persistence/API for follows, garage, timeline, and feedback.
 - [ ] Add basic notification/subscription flows after hosted follows exist.

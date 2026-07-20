@@ -322,10 +322,64 @@ h3 {
 }
 
 .notification-grid,
-.insight-grid {
+.insight-grid,
+.city-grid {
   display: grid;
   gap: 14px;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.city-card {
+  background: #fffaf2;
+  border: 1px solid rgba(95, 61, 40, 0.16);
+  border-radius: 26px;
+  padding: 22px;
+}
+
+.city-card > span {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  padding: 7px 10px;
+  text-transform: uppercase;
+}
+
+.city-card.quiet > span {
+  background: #dce9ff;
+  color: #254c86;
+}
+
+.city-card.active > span {
+  background: #ffe0b6;
+  color: #7e321d;
+}
+
+.city-card.hot > span {
+  background: #ffd8d4;
+  color: #8b281d;
+}
+
+.city-card p {
+  color: #725a48;
+  line-height: 1.55;
+}
+
+.city-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.city-tags button {
+  background: transparent;
+  border: 1px solid rgba(95, 61, 40, 0.16);
+  border-radius: 999px;
+  color: #7e321d;
+  cursor: pointer;
+  font-weight: 800;
+  padding: 7px 10px;
 }
 
 .shortlist-grid {
@@ -780,6 +834,7 @@ a:focus-visible {
   .comparison-grid,
   .timeline-board,
   .notification-grid,
+  .city-grid,
   .insight-grid,
   .moderation-grid {
     grid-template-columns: 1fr;
