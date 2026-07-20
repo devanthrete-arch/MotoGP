@@ -4,10 +4,11 @@
 
 1. Run `npm run build`.
 2. Run `npm run dev` and open `http://localhost:8080`.
-3. Confirm the feed, filters, saved posts, following mode, write form, model notebooks, garage timeline, build loop, and feedback lane work.
-4. Confirm the service-center integration boundary is visible and still treated as a separate workstream.
-5. Deploy the TypeScript webapp through Vercel.
-6. Confirm return-user nudges appear after following a model/topic, saving a note, or adding a garage vehicle.
+3. Run `npm run test`.
+4. Confirm the feed, filters, saved posts, following mode, write form, subscriptions, model notebooks, garage timeline, garage insights, build loop, and feedback lane work.
+5. Confirm the service-center integration boundary is visible and still treated as a separate workstream.
+6. Deploy the TypeScript webapp through Vercel.
+7. Confirm return-user nudges appear after following a model/topic, saving a note, or adding a garage vehicle.
 
 ## Required environment
 
