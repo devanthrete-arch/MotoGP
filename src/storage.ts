@@ -6,6 +6,7 @@ import type {
   FollowState,
   GarageVehicle,
   OwnerPost,
+  SubscriptionSettings,
   TimelineEntry,
 } from "./domain";
 import { seedGarage, seedPosts, seedTimeline } from "./domain";
@@ -16,6 +17,7 @@ const feedbackKey = "autoflex.web.feedback.v1";
 const followKey = "autoflex.web.follows.v1";
 const garageKey = "autoflex.web.garage.v1";
 const timelineKey = "autoflex.web.timeline.v1";
+const subscriptionKey = "autoflex.web.subscription.v1";
 
 const safeJsonParse = <T,>(value: string | null, fallback: T): T => {
   if (!value) return fallback;
@@ -97,3 +99,14 @@ export const createTimelineEntry = (draft: DraftTimelineEntry): TimelineEntry =>
   ...draft,
   id: `${draft.vehicleId}-${draft.kind}-${Date.now()}`.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
 });
+
+export const loadSubscriptionSettings = (): SubscriptionSettings =>
+  safeJsonParse<SubscriptionSettings>(localStorage.getItem(subscriptionKey), {
+    emailDigest: true,
+    browserAlerts: false,
+    quietHours: true,
+  });
+
+export const saveSubscriptionSettings = (settings: SubscriptionSettings): void => {
+  localStorage.setItem(subscriptionKey, JSON.stringify(settings));
+};

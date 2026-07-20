@@ -169,8 +169,8 @@ Next web MVP slices, in order:
 1. Merge the TypeScript web MVP PR.
 2. Deploy the TypeScript webapp on Vercel.
 3. Add hosted persistence/API after the web flows are validated.
-4. Add notification/subscription behavior on top of hosted follows.
-5. Add richer garage profile analytics and ownership timeline summaries.
+4. Replace local subscription previews with real hosted notification jobs.
+5. Add richer garage profile analytics and ownership timeline summaries beyond the current MVP insight cards.
 6. Android/Kotlin catch-up after web MVP validation.
 
 Service-center integration stays outside this loop until the owning team hands

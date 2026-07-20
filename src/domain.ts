@@ -55,6 +55,12 @@ export type FollowState = {
   topics: string[];
 };
 
+export type SubscriptionSettings = {
+  emailDigest: boolean;
+  browserAlerts: boolean;
+  quietHours: boolean;
+};
+
 export type BuildLoopItem = {
   role: BuildRole;
   question: string;

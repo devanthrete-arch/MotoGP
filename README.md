@@ -30,6 +30,9 @@ Service-center integration is intentionally kept separate under
 - [x] Added return-user nudges based on follows, saved notes, and garage mileage.
 - [x] Added a local-first garage with vehicles and ownership timeline entries.
 - [x] Added a visible QA smoke-check panel for the current MVP slice.
+- [x] Added local subscription preferences and notification previews for followed models/topics.
+- [x] Added garage insights for service checkpoints, logged spend, and matching community context.
+- [x] Added automated Vitest coverage for feed filtering, follows, nudges, notifications, and garage insights.
 - [x] Added shared Kotlin request/response models.
 - [x] Added native Android project scaffolding for the later Android app path.
 - [x] Added community feed with latest/popular sorting, search, brand/topic filters, and pagination.
@@ -60,6 +63,7 @@ Service-center integration is intentionally kept separate under
 - [ ] Deploy the TypeScript webapp on Vercel.
 - [ ] Decide whether the first hosted backend is TypeScript/Fastify or the existing Ktor API.
 - [ ] Add durable hosted persistence after the TypeScript web surface is validated.
+- [ ] Replace local subscription previews with real hosted notification jobs after accounts/persistence exist.
 - [ ] Run real tester feedback through the product-owner → design → backend → frontend → QA → real-user loop.
 - [ ] Add hosted persistence/API for follows, garage, timeline, and feedback.
 - [ ] Add basic notification/subscription flows after hosted follows exist.
@@ -104,7 +108,8 @@ Open `http://localhost:8080`.
 The current TypeScript MVP is local-first so it can move quickly on Vercel while
 the hosted backend decision is finalized. It includes owner posts, saved notes,
 followed models/topics, a following feed, garage vehicles, timeline entries,
-model notebooks, feedback capture, and QA/user loop panels.
+model notebooks, subscription previews, garage insights, feedback capture, and
+QA/user loop panels.
 
 Run the preserved Kotlin web/API path:
 

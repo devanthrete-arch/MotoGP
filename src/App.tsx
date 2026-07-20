@@ -10,11 +10,20 @@ import {
   type FollowState,
   type GarageVehicle,
   type KnowledgeLabel,
-  type ModelNotebook,
   type OwnerPost,
+  type SubscriptionSettings,
   type TimelineEntry,
   type TimelineEntryKind,
 } from "./domain";
+import {
+  buildGarageInsights,
+  buildNotificationPreview,
+  buildReturnNudges,
+  filterPostsByMode,
+  formatMoney,
+  groupByModel,
+  modelKeyFor,
+} from "./insights";
 import {
   addFeedback,
   createPost,
@@ -25,11 +34,13 @@ import {
   loadGarage,
   loadPosts,
   loadSaved,
+  loadSubscriptionSettings,
   loadTimeline,
   saveFollows,
   saveGarage,
   savePosts,
   saveSaved,
+  saveSubscriptionSettings,
   saveTimeline,
 } from "./storage";
 
@@ -74,6 +85,7 @@ export function App() {
   const [posts, setPosts] = useState<OwnerPost[]>(() => loadPosts());
   const [saved, setSaved] = useState<Set<string>>(() => loadSaved());
   const [follows, setFollows] = useState<FollowState>(() => loadFollows());
+  const [subscriptionSettings, setSubscriptionSettings] = useState<SubscriptionSettings>(() => loadSubscriptionSettings());
   const [garage, setGarage] = useState<GarageVehicle[]>(() => loadGarage());
   const [timeline, setTimeline] = useState<TimelineEntry[]>(() => loadTimeline());
   const [feedback, setFeedback] = useState<FeedbackNote[]>(() => loadFeedback());
@@ -93,36 +105,30 @@ export function App() {
   const followedModelSet = useMemo(() => new Set(follows.models), [follows.models]);
   const followedTopicSet = useMemo(() => new Set(follows.topics), [follows.topics]);
 
-  const filteredPosts = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    const visible = posts.filter((post) => {
-      const modelKey = modelKeyFor(post.brand, post.model);
-      const matchesSaved = mode !== "saved" || saved.has(post.id);
-      const matchesFollowing = mode !== "following" || followedModelSet.has(modelKey) || followedTopicSet.has(post.label);
-      const matchesLabel = selectedLabel === "All" || post.label === selectedLabel;
-      const haystack = `${post.title} ${post.brand} ${post.model} ${post.variant} ${post.city} ${post.body}`.toLowerCase();
-      return matchesSaved && matchesFollowing && matchesLabel && (!normalizedQuery || haystack.includes(normalizedQuery));
-    });
+  const filteredPosts = useMemo(
+    () =>
+      filterPostsByMode(posts, {
+        followedModelSet,
+        followedTopicSet,
+        mode,
+        query,
+        saved,
+        selectedLabel,
+      }),
+    [followedModelSet, followedTopicSet, mode, posts, query, saved, selectedLabel],
+  );
 
-    return [...visible].sort((first, second) => {
-      if (mode === "helpful") return second.helpful - first.helpful;
-      return Date.parse(second.createdAt) - Date.parse(first.createdAt);
-    });
-  }, [followedModelSet, followedTopicSet, mode, posts, query, saved, selectedLabel]);
+  const returnNudges = useMemo(
+    () => buildReturnNudges({ followedModelSet, followedTopicSet, garage, posts, savedCount: saved.size }),
+    [followedModelSet, followedTopicSet, garage, posts, saved.size],
+  );
 
-  const returnNudges = useMemo(() => {
-    const followedPosts = posts.filter(
-      (post) => followedModelSet.has(modelKeyFor(post.brand, post.model)) || followedTopicSet.has(post.label),
-    );
-    const latestFollowed = followedPosts[0];
-    const serviceSoon = garage.find((vehicle) => vehicle.odometerKm > 0 && vehicle.odometerKm % 10000 >= 8500);
+  const notificationPreview = useMemo(
+    () => buildNotificationPreview({ follows, posts, preference: subscriptionSettings }),
+    [follows, posts, subscriptionSettings],
+  );
 
-    return [
-      latestFollowed ? `New ${latestFollowed.label.toLowerCase()} surfaced for ${latestFollowed.brand} ${latestFollowed.model}.` : null,
-      saved.size ? `${saved.size} saved note${saved.size === 1 ? "" : "s"} waiting in your garage shelf.` : null,
-      serviceSoon ? `${serviceSoon.nickname || serviceSoon.model} is close to the next 10k km service checkpoint.` : null,
-    ].filter((nudge): nudge is string => Boolean(nudge));
-  }, [followedModelSet, followedTopicSet, garage, posts, saved.size]);
+  const garageInsights = useMemo(() => buildGarageInsights(garage, timeline, posts), [garage, posts, timeline]);
 
   const stats = useMemo(
     () => ({
@@ -144,6 +150,11 @@ export function App() {
   const persistFollows = (nextFollows: FollowState) => {
     setFollows(nextFollows);
     saveFollows(nextFollows);
+  };
+
+  const persistSubscriptionSettings = (nextSettings: SubscriptionSettings) => {
+    setSubscriptionSettings(nextSettings);
+    saveSubscriptionSettings(nextSettings);
   };
 
   const persistGarage = (nextGarage: GarageVehicle[]) => {
@@ -310,6 +321,52 @@ export function App() {
           ) : (
             <p>Follow a model, save a note, or add a vehicle to unlock a more personal garage dashboard.</p>
           )}
+        </div>
+      </section>
+
+      <section className="panel notification-panel" id="notifications">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Subscriptions</p>
+            <h2>Useful alerts, not another noisy inbox.</h2>
+          </div>
+          <div className="preference-toggles" aria-label="Notification preferences">
+            <label>
+              <input
+                checked={subscriptionSettings.emailDigest}
+                onChange={(event) =>
+                  persistSubscriptionSettings({ ...subscriptionSettings, emailDigest: event.currentTarget.checked })
+                }
+                type="checkbox"
+              />
+              Weekly digest
+            </label>
+            <label>
+              <input
+                checked={subscriptionSettings.browserAlerts}
+                onChange={(event) =>
+                  persistSubscriptionSettings({ ...subscriptionSettings, browserAlerts: event.currentTarget.checked })
+                }
+                type="checkbox"
+              />
+              Browser alerts
+            </label>
+            <label>
+              <input
+                checked={subscriptionSettings.quietHours}
+                onChange={(event) =>
+                  persistSubscriptionSettings({ ...subscriptionSettings, quietHours: event.currentTarget.checked })
+                }
+                type="checkbox"
+              />
+              Quiet hours
+            </label>
+          </div>
+        </div>
+        <div className="notification-grid">
+          {notificationPreview.map((preview) => (
+            <p key={preview}>{preview}</p>
+          ))}
         </div>
       </section>
 
@@ -638,6 +695,16 @@ export function App() {
             </article>
           ))}
         </div>
+
+        <div className="insight-grid">
+          {garageInsights.map((insight) => (
+            <article className={`insight-card ${insight.tone}`} key={insight.id}>
+              <span>{insight.tone}</span>
+              <h3>{insight.title}</h3>
+              <p>{insight.detail}</p>
+            </article>
+          ))}
+        </div>
       </section>
 
       <section className="panel" id="notebooks">
@@ -700,6 +767,7 @@ export function App() {
           <p>Feed supports latest, helpful, saved, and following modes.</p>
           <p>Followed models/topics create return-user nudges.</p>
           <p>Garage vehicles and timeline entries persist locally.</p>
+          <p>Subscription previews and garage insights are generated from typed pure functions.</p>
           <p>Service-center integration remains outside this MVP loop.</p>
         </div>
       </section>
@@ -733,34 +801,4 @@ export function App() {
       </section>
     </main>
   );
-}
-
-function groupByModel(posts: OwnerPost[]): ModelNotebook[] {
-  const notebooks = posts.reduce<Map<string, ModelNotebook>>((accumulator, post) => {
-    const key = modelKeyFor(post.brand, post.model);
-    const existing = accumulator.get(key);
-    if (existing) {
-      existing.posts.push(post);
-      return accumulator;
-    }
-
-    accumulator.set(key, {
-      key,
-      brand: post.brand,
-      model: post.model,
-      posts: [post],
-    });
-    return accumulator;
-  }, new Map<string, ModelNotebook>());
-
-  return [...notebooks.values()].sort((first, second) => second.posts.length - first.posts.length);
-}
-
-function modelKeyFor(brand: string, model: string): string {
-  return `${brand}-${model}`.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-}
-
-function formatMoney(amount: number): string {
-  if (!amount) return "No cost logged";
-  return new Intl.NumberFormat("en-IN", { currency: "INR", maximumFractionDigits: 0, style: "currency" }).format(amount);
 }

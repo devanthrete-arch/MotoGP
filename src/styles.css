@@ -278,13 +278,43 @@ h3 {
 }
 
 .nudge-grid p,
-.qa-grid p {
+.qa-grid p,
+.notification-grid p {
   background: #211b16;
   border-radius: 22px;
   color: rgba(255, 248, 237, 0.82);
   line-height: 1.55;
   margin: 0;
   padding: 18px;
+}
+
+.preference-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.preference-toggles label {
+  align-items: center;
+  background: #fffaf2;
+  border: 1px solid rgba(95, 61, 40, 0.18);
+  border-radius: 999px;
+  color: #4f3c2f;
+  display: inline-flex;
+  gap: 8px;
+  padding: 10px 13px;
+}
+
+.preference-toggles input {
+  accent-color: #c95d32;
+}
+
+.notification-grid,
+.insight-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .section-head {
@@ -486,6 +516,49 @@ a:focus-visible {
   margin-top: 18px;
 }
 
+.insight-grid {
+  margin-top: 18px;
+}
+
+.insight-card {
+  background: #fffaf2;
+  border: 1px solid rgba(95, 61, 40, 0.16);
+  border-radius: 26px;
+  padding: 22px;
+}
+
+.insight-card span {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  margin-bottom: 16px;
+  padding: 7px 10px;
+  text-transform: uppercase;
+}
+
+.insight-card.service span {
+  background: #dff3d4;
+  color: #386d27;
+}
+
+.insight-card.cost span {
+  background: #ffe0b6;
+  color: #7e321d;
+}
+
+.insight-card.community span {
+  background: #dce9ff;
+  color: #254c86;
+}
+
+.insight-card p {
+  color: #725a48;
+  line-height: 1.6;
+  margin: 0;
+}
+
 .vehicle-card {
   padding: 24px;
 }
@@ -544,7 +617,9 @@ a:focus-visible {
   .nudge-grid,
   .qa-grid,
   .garage-grid,
-  .timeline-board {
+  .timeline-board,
+  .notification-grid,
+  .insight-grid {
     grid-template-columns: 1fr;
   }
 
