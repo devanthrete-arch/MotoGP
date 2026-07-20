@@ -166,11 +166,12 @@ Completed slices:
 
 Next web MVP slices, in order:
 
-1. Convert the active web surface fully to TypeScript and merge the first PR.
+1. Merge the TypeScript web MVP PR.
 2. Deploy the TypeScript webapp on Vercel.
 3. Add hosted persistence/API after the web flows are validated.
-4. Web beta polish: followed models/topics and return-user nudges.
-5. Android/Kotlin catch-up after web MVP validation.
+4. Add notification/subscription behavior on top of hosted follows.
+5. Add richer garage profile analytics and ownership timeline summaries.
+6. Android/Kotlin catch-up after web MVP validation.
 
 Service-center integration stays outside this loop until the owning team hands
 over its contract. Current placeholder: `GET /api/service-centers/status`.
