@@ -177,7 +177,8 @@ h3 {
 .post-card,
 .notebook-card,
 .loop-card,
-.composer {
+.composer,
+.vehicle-card {
   background: rgba(255, 252, 246, 0.82);
   border: 1px solid rgba(95, 61, 40, 0.16);
   border-radius: 30px;
@@ -259,6 +260,31 @@ h3 {
 
 .panel {
   padding: 76px clamp(18px, 4vw, 34px);
+}
+
+.dashboard-panel {
+  align-items: center;
+  display: grid;
+  gap: 28px;
+  grid-template-columns: minmax(0, 0.8fr) minmax(320px, 1fr);
+  padding-bottom: 34px;
+}
+
+.nudge-grid,
+.qa-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.nudge-grid p,
+.qa-grid p {
+  background: #211b16;
+  border-radius: 22px;
+  color: rgba(255, 248, 237, 0.82);
+  line-height: 1.55;
+  margin: 0;
+  padding: 18px;
 }
 
 .section-head {
@@ -434,14 +460,66 @@ a:focus-visible {
 }
 
 .notebook-tags span,
+.notebook-tags button,
 .loop-card span {
   border: 1px solid rgba(95, 61, 40, 0.16);
   border-radius: 999px;
+  background: transparent;
   color: #7e321d;
   display: inline-flex;
   font-size: 0.78rem;
   font-weight: 800;
   padding: 7px 10px;
+}
+
+.garage-grid {
+  align-items: start;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.timeline-board {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 18px;
+}
+
+.vehicle-card {
+  padding: 24px;
+}
+
+.vehicle-card > p {
+  color: #725a48;
+  line-height: 1.55;
+}
+
+.timeline-entry {
+  border-left: 4px solid #ffb36b;
+  margin-top: 16px;
+  padding-left: 14px;
+}
+
+.timeline-entry strong,
+.timeline-entry span {
+  display: block;
+}
+
+.timeline-entry span {
+  color: #7e321d;
+  font-size: 0.9rem;
+  margin: 6px 0;
+}
+
+.timeline-entry p {
+  color: #725a48;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.qa-panel {
+  padding-top: 24px;
 }
 
 .loop-card h3 {
@@ -461,7 +539,12 @@ a:focus-visible {
   .content-grid,
   .split-panel,
   .notebook-grid,
-  .loop-grid {
+  .loop-grid,
+  .dashboard-panel,
+  .nudge-grid,
+  .qa-grid,
+  .garage-grid,
+  .timeline-board {
     grid-template-columns: 1fr;
   }
 

@@ -1,9 +1,21 @@
-import type { DraftPost, FeedbackNote, OwnerPost } from "./domain";
-import { seedPosts } from "./domain";
+import type {
+  DraftPost,
+  DraftTimelineEntry,
+  DraftVehicle,
+  FeedbackNote,
+  FollowState,
+  GarageVehicle,
+  OwnerPost,
+  TimelineEntry,
+} from "./domain";
+import { seedGarage, seedPosts, seedTimeline } from "./domain";
 
 const postsKey = "autoflex.web.posts.v1";
 const savedKey = "autoflex.web.saved.v1";
 const feedbackKey = "autoflex.web.feedback.v1";
+const followKey = "autoflex.web.follows.v1";
+const garageKey = "autoflex.web.garage.v1";
+const timelineKey = "autoflex.web.timeline.v1";
 
 const safeJsonParse = <T,>(value: string | null, fallback: T): T => {
   if (!value) return fallback;
@@ -53,3 +65,35 @@ export const addFeedback = (message: string): FeedbackNote[] => {
   localStorage.setItem(feedbackKey, JSON.stringify(next));
   return next;
 };
+
+export const loadFollows = (): FollowState =>
+  safeJsonParse<FollowState>(localStorage.getItem(followKey), { models: [], topics: [] });
+
+export const saveFollows = (follows: FollowState): void => {
+  localStorage.setItem(followKey, JSON.stringify(follows));
+};
+
+export const loadGarage = (): GarageVehicle[] => safeJsonParse<GarageVehicle[]>(localStorage.getItem(garageKey), seedGarage);
+
+export const saveGarage = (garage: GarageVehicle[]): void => {
+  localStorage.setItem(garageKey, JSON.stringify(garage));
+};
+
+export const createVehicle = (draft: DraftVehicle): GarageVehicle => ({
+  ...draft,
+  id: `${draft.brand}-${draft.model}-${Date.now()}`.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+});
+
+export const loadTimeline = (): TimelineEntry[] =>
+  safeJsonParse<TimelineEntry[]>(localStorage.getItem(timelineKey), seedTimeline).sort(
+    (first, second) => Date.parse(second.happenedOn) - Date.parse(first.happenedOn),
+  );
+
+export const saveTimeline = (entries: TimelineEntry[]): void => {
+  localStorage.setItem(timelineKey, JSON.stringify(entries));
+};
+
+export const createTimelineEntry = (draft: DraftTimelineEntry): TimelineEntry => ({
+  ...draft,
+  id: `${draft.vehicleId}-${draft.kind}-${Date.now()}`.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+});
