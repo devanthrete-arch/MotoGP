@@ -8,6 +8,7 @@ import {
   buildNotificationPreview,
   buildPostSharePayload,
   buildReturnNudges,
+  buildShortlistComparisons,
   filterPostsByMode,
   groupByModel,
   modelKeyFor,
@@ -127,5 +128,39 @@ describe("Autoflex insights", () => {
     expect(exportText).toContain("# Autoflex garage export");
     expect(exportText).toContain("Daily diesel");
     expect(exportText).toContain("₹1,350");
+  });
+
+  it("compares buyer shortlist models against available ownership notes", () => {
+    const comparisons = buildShortlistComparisons(
+      [
+        {
+          brand: "Tata",
+          budget: 1200000,
+          id: "shortlist-nexon",
+          model: "Nexon",
+          notes: "Family compact SUV option",
+          status: "Researching",
+        },
+        {
+          brand: "Toyota",
+          budget: 2200000,
+          id: "shortlist-hyryder",
+          model: "Hyryder",
+          notes: "Needs owner data",
+          status: "Test drive",
+        },
+      ],
+      seedPosts,
+    );
+
+    expect(comparisons[0]).toMatchObject({
+      confidence: "Medium",
+      fixes: 1,
+      relatedNotes: 1,
+    });
+    expect(comparisons[1]).toMatchObject({
+      confidence: "Low",
+      relatedNotes: 0,
+    });
   });
 });

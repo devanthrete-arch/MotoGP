@@ -38,6 +38,7 @@ Service-center integration is intentionally kept separate under
 - [x] Added a local moderator queue with dismiss and remove-post actions.
 - [x] Added share/copy actions for posts and model notebooks.
 - [x] Added garage markdown export using native share with clipboard fallback.
+- [x] Added buyer shortlist with model comparison against available owner notes.
 - [x] Added shared Kotlin request/response models.
 - [x] Added native Android project scaffolding for the later Android app path.
 - [x] Added community feed with latest/popular sorting, search, brand/topic filters, and pagination.
@@ -71,6 +72,7 @@ Service-center integration is intentionally kept separate under
 - [ ] Replace local subscription previews with real hosted notification jobs after accounts/persistence exist.
 - [ ] Replace local profile/report/comment storage with hosted account and moderation APIs.
 - [ ] Replace share/copy fallbacks with hosted deep links and Open Graph metadata after deployment.
+- [ ] Replace local shortlist with hosted buyer workspace and cross-device sync.
 - [ ] Run real tester feedback through the product-owner → design → backend → frontend → QA → real-user loop.
 - [ ] Add hosted persistence/API for follows, garage, timeline, and feedback.
 - [ ] Add basic notification/subscription flows after hosted follows exist.
@@ -118,7 +120,8 @@ followed models/topics, a following feed, garage vehicles, timeline entries,
 model notebooks, subscription previews, garage insights, feedback capture, and
 QA/user loop panels. It also has lightweight local profiles, comments, reports,
 shareable notes/notebooks, garage export, and a moderator queue so
-trust-and-safety can be tested before backend wiring.
+trust-and-safety can be tested before backend wiring. Buyers can also keep a
+local shortlist and compare models against available ownership notes.
 
 Run the preserved Kotlin web/API path:
 
