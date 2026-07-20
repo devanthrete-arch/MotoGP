@@ -36,6 +36,8 @@ Service-center integration is intentionally kept separate under
 - [x] Added lightweight local profile for comments, reports, and future account mapping.
 - [x] Added post comments and report submission from the post detail view.
 - [x] Added a local moderator queue with dismiss and remove-post actions.
+- [x] Added share/copy actions for posts and model notebooks.
+- [x] Added garage markdown export using native share with clipboard fallback.
 - [x] Added shared Kotlin request/response models.
 - [x] Added native Android project scaffolding for the later Android app path.
 - [x] Added community feed with latest/popular sorting, search, brand/topic filters, and pagination.
@@ -68,6 +70,7 @@ Service-center integration is intentionally kept separate under
 - [ ] Add durable hosted persistence after the TypeScript web surface is validated.
 - [ ] Replace local subscription previews with real hosted notification jobs after accounts/persistence exist.
 - [ ] Replace local profile/report/comment storage with hosted account and moderation APIs.
+- [ ] Replace share/copy fallbacks with hosted deep links and Open Graph metadata after deployment.
 - [ ] Run real tester feedback through the product-owner → design → backend → frontend → QA → real-user loop.
 - [ ] Add hosted persistence/API for follows, garage, timeline, and feedback.
 - [ ] Add basic notification/subscription flows after hosted follows exist.
@@ -114,7 +117,8 @@ the hosted backend decision is finalized. It includes owner posts, saved notes,
 followed models/topics, a following feed, garage vehicles, timeline entries,
 model notebooks, subscription previews, garage insights, feedback capture, and
 QA/user loop panels. It also has lightweight local profiles, comments, reports,
-and a moderator queue so trust-and-safety can be tested before backend wiring.
+shareable notes/notebooks, garage export, and a moderator queue so
+trust-and-safety can be tested before backend wiring.
 
 Run the preserved Kotlin web/API path:
 

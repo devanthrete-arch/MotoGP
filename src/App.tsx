@@ -19,8 +19,11 @@ import {
 } from "./domain";
 import {
   buildGarageInsights,
+  buildGarageExportMarkdown,
+  buildModelSharePayload,
   buildModerationSummary,
   buildNotificationPreview,
+  buildPostSharePayload,
   buildReturnNudges,
   filterPostsByMode,
   formatMoney,
@@ -114,6 +117,7 @@ export function App() {
   const [commentDraft, setCommentDraft] = useState("");
   const [reportDraft, setReportDraft] = useState("");
   const [feedbackDraft, setFeedbackDraft] = useState("");
+  const [actionMessage, setActionMessage] = useState("");
 
   const notebooks = useMemo(() => groupByModel(posts), [posts]);
   const followedModelSet = useMemo(() => new Set(follows.models), [follows.models]);
@@ -267,6 +271,39 @@ export function App() {
     if (selectedPost?.id === report.postId) setSelectedPost(nextPosts[0] ?? null);
   };
 
+  const shareText = async (payload: { text: string; title: string }) => {
+    try {
+      if (navigator.share) {
+        await navigator.share(payload);
+        setActionMessage("Shared.");
+        return;
+      }
+
+      await navigator.clipboard.writeText(`${payload.title}\n\n${payload.text}`);
+      setActionMessage("Copied to clipboard.");
+    } catch {
+      setActionMessage("Sharing was cancelled or blocked by the browser.");
+    }
+  };
+
+  const shareSelectedPost = () => {
+    if (!selectedPost) return;
+    void shareText(buildPostSharePayload(selectedPost));
+  };
+
+  const shareModelNotebook = (brand: string, model: string) => {
+    const notebook = notebooks.find((item) => item.key === modelKeyFor(brand, model));
+    if (!notebook) return;
+    void shareText(buildModelSharePayload(notebook));
+  };
+
+  const exportGarage = () => {
+    void shareText({
+      title: "Autoflex garage export",
+      text: buildGarageExportMarkdown(garage, timeline),
+    });
+  };
+
   const publishPost = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const post = createPost({
@@ -371,6 +408,12 @@ export function App() {
           ownership knowledge, garage retention, moderation, and return-user loops.
         </span>
       </section>
+
+      {actionMessage ? (
+        <div className="action-message" role="status">
+          {actionMessage}
+        </div>
+      ) : null}
 
       <section className="panel dashboard-panel" aria-label="Return user dashboard">
         <div>
@@ -558,6 +601,9 @@ export function App() {
                   <button type="button" onClick={() => toggleFollowTopic(selectedPost.label)}>
                     {followedTopicSet.has(selectedPost.label) ? "Following topic" : "Follow topic"}
                   </button>
+                  <button type="button" onClick={shareSelectedPost}>
+                    Share note
+                  </button>
                 </div>
                 <div className="comments">
                   <strong>Discussion</strong>
@@ -676,6 +722,9 @@ export function App() {
             <p className="eyebrow">Garage timeline</p>
             <h2>Make ownership useful before something breaks.</h2>
           </div>
+          <button className="save-button" type="button" onClick={exportGarage}>
+            Export garage
+          </button>
         </div>
         <div className="garage-grid">
           <form className="composer" onSubmit={addVehicle}>
@@ -848,6 +897,9 @@ export function App() {
                 <button className="save-button" type="button" onClick={() => toggleFollowModel(notebook.brand, notebook.model)}>
                   {isFollowing ? "Following" : "Follow model"}
                 </button>
+                <button className="save-button" type="button" onClick={() => shareModelNotebook(notebook.brand, notebook.model)}>
+                  Share notebook
+                </button>
                 <div className="notebook-tags">
                   {knowledgeLabels
                     .filter((label) => notebook.posts.some((post) => post.label === label))
@@ -929,6 +981,7 @@ export function App() {
           <p>Followed models/topics create return-user nudges.</p>
           <p>Garage vehicles and timeline entries persist locally.</p>
           <p>Comments, reports, profiles, and moderator actions persist locally.</p>
+          <p>Post, model notebook, and garage export sharing uses native share with clipboard fallback.</p>
           <p>Subscription previews and garage insights are generated from typed pure functions.</p>
           <p>Service-center integration remains outside this MVP loop.</p>
         </div>

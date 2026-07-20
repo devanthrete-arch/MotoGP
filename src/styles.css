@@ -262,6 +262,17 @@ h3 {
   padding: 76px clamp(18px, 4vw, 34px);
 }
 
+.action-message {
+  background: #ffb36b;
+  border-radius: 999px;
+  color: #211b16;
+  font-weight: 900;
+  margin: 18px auto 0;
+  max-width: 1180px;
+  padding: 12px 18px;
+  width: calc(100% - clamp(36px, 8vw, 128px));
+}
+
 .dashboard-panel {
   align-items: center;
   display: grid;
@@ -498,6 +509,10 @@ a:focus-visible {
 .notebook-card,
 .loop-card {
   padding: 24px;
+}
+
+.notebook-card .save-button + .save-button {
+  margin-left: 8px;
 }
 
 .notebook-tags {
