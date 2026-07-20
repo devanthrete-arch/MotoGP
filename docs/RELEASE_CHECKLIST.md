@@ -1,4 +1,12 @@
-# Autoflex web MVP release checklist
+# Autoflex TypeScript web MVP release checklist
+
+## Active webapp checks
+
+1. Run `npm run build`.
+2. Run `npm run dev` and open `http://localhost:8080`.
+3. Confirm the feed, filters, saved posts, write form, model notebooks, build loop, and feedback lane work.
+4. Confirm the service-center integration boundary is visible and still treated as a separate workstream.
+5. Deploy the TypeScript webapp through Vercel.
 
 ## Required environment
 
