@@ -1,4 +1,4 @@
-import type { FollowState, GarageVehicle, KnowledgeLabel, ModelNotebook, OwnerPost, TimelineEntry } from "./domain";
+import type { FollowState, GarageVehicle, KnowledgeLabel, ModelNotebook, OwnerPost, ReportRecord, TimelineEntry } from "./domain";
 
 export type SubscriptionPreference = {
   emailDigest: boolean;
@@ -11,6 +11,13 @@ export type GarageInsight = {
   title: string;
   detail: string;
   tone: "service" | "cost" | "community";
+};
+
+export type ModerationSummary = {
+  openReports: number;
+  dismissedReports: number;
+  removedReports: number;
+  riskyPostIds: string[];
 };
 
 export const defaultSubscriptionPreference: SubscriptionPreference = {
@@ -147,6 +154,21 @@ export function buildGarageInsights(garage: GarageVehicle[], timeline: TimelineE
       },
     ];
   });
+}
+
+export function buildModerationSummary(reports: ReportRecord[]): ModerationSummary {
+  const openReports = reports.filter((report) => report.status === "Open");
+  const reportCounts = openReports.reduce<Map<string, number>>((counts, report) => {
+    counts.set(report.postId, (counts.get(report.postId) ?? 0) + 1);
+    return counts;
+  }, new Map<string, number>());
+
+  return {
+    openReports: openReports.length,
+    dismissedReports: reports.filter((report) => report.status === "Dismissed").length,
+    removedReports: reports.filter((report) => report.status === "Removed").length,
+    riskyPostIds: [...reportCounts.entries()].filter(([, count]) => count >= 2).map(([postId]) => postId),
+  };
 }
 
 export function formatMoney(amount: number): string {

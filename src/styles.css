@@ -445,6 +445,18 @@ a:focus-visible {
   padding: 12px 14px;
 }
 
+.inline-form {
+  border-top: 1px solid rgba(95, 61, 40, 0.14);
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+}
+
+.report-form textarea {
+  background: #fff4ee;
+}
+
 .split-panel {
   align-items: start;
   display: grid;
@@ -462,6 +474,12 @@ a:focus-visible {
   display: grid;
   gap: 12px;
   padding: 22px;
+}
+
+.form-note {
+  color: #725a48;
+  line-height: 1.55;
+  margin: 0;
 }
 
 .form-row {
@@ -595,6 +613,63 @@ a:focus-visible {
   padding-top: 24px;
 }
 
+.moderation-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.moderation-stats span {
+  background: #211b16;
+  border-radius: 999px;
+  color: rgba(255, 248, 237, 0.84);
+  font-size: 0.86rem;
+  font-weight: 800;
+  padding: 9px 12px;
+}
+
+.moderation-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.report-card {
+  background: #fffaf2;
+  border: 1px solid rgba(95, 61, 40, 0.16);
+  border-radius: 26px;
+  padding: 22px;
+}
+
+.report-card > span {
+  background: #ffe0b6;
+  border-radius: 999px;
+  color: #7e321d;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  padding: 7px 10px;
+  text-transform: uppercase;
+}
+
+.report-card.dismissed > span {
+  background: #dff3d4;
+  color: #386d27;
+}
+
+.report-card.removed > span {
+  background: #ffd8d4;
+  color: #8b281d;
+}
+
+.report-card p,
+.report-card small {
+  color: #725a48;
+  line-height: 1.55;
+}
+
 .loop-card h3 {
   margin-top: 18px;
 }
@@ -619,7 +694,8 @@ a:focus-visible {
   .garage-grid,
   .timeline-board,
   .notification-grid,
-  .insight-grid {
+  .insight-grid,
+  .moderation-grid {
     grid-template-columns: 1fr;
   }
 
