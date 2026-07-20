@@ -1,11 +1,14 @@
 import type {
   DraftPost,
+  DraftReport,
   DraftTimelineEntry,
   DraftVehicle,
   FeedbackNote,
   FollowState,
   GarageVehicle,
   OwnerPost,
+  Profile,
+  ReportRecord,
   SubscriptionSettings,
   TimelineEntry,
 } from "./domain";
@@ -18,6 +21,8 @@ const followKey = "autoflex.web.follows.v1";
 const garageKey = "autoflex.web.garage.v1";
 const timelineKey = "autoflex.web.timeline.v1";
 const subscriptionKey = "autoflex.web.subscription.v1";
+const profileKey = "autoflex.web.profile.v1";
+const reportsKey = "autoflex.web.reports.v1";
 
 const safeJsonParse = <T,>(value: string | null, fallback: T): T => {
   if (!value) return fallback;
@@ -110,3 +115,27 @@ export const loadSubscriptionSettings = (): SubscriptionSettings =>
 export const saveSubscriptionSettings = (settings: SubscriptionSettings): void => {
   localStorage.setItem(subscriptionKey, JSON.stringify(settings));
 };
+
+export const loadProfile = (): Profile =>
+  safeJsonParse<Profile>(localStorage.getItem(profileKey), {
+    city: "",
+    displayName: "",
+    garageRole: "Owner",
+  });
+
+export const saveProfile = (profile: Profile): void => {
+  localStorage.setItem(profileKey, JSON.stringify(profile));
+};
+
+export const loadReports = (): ReportRecord[] => safeJsonParse<ReportRecord[]>(localStorage.getItem(reportsKey), []);
+
+export const saveReports = (reports: ReportRecord[]): void => {
+  localStorage.setItem(reportsKey, JSON.stringify(reports));
+};
+
+export const createReport = (draft: DraftReport): ReportRecord => ({
+  ...draft,
+  id: `report-${draft.postId}-${Date.now()}`.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+  status: "Open",
+  createdAt: new Date().toISOString(),
+});

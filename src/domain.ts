@@ -61,6 +61,26 @@ export type SubscriptionSettings = {
   quietHours: boolean;
 };
 
+export type Profile = {
+  displayName: string;
+  city: string;
+  garageRole: "Owner" | "Buyer" | "Enthusiast" | "Mechanic";
+};
+
+export type ReportStatus = "Open" | "Dismissed" | "Removed";
+
+export type ReportRecord = {
+  id: string;
+  postId: string;
+  postTitle: string;
+  reason: string;
+  reporterName: string;
+  status: ReportStatus;
+  createdAt: string;
+};
+
+export type DraftReport = Pick<ReportRecord, "postId" | "postTitle" | "reason" | "reporterName">;
+
 export type BuildLoopItem = {
   role: BuildRole;
   question: string;

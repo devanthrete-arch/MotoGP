@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { seedGarage, seedPosts, seedTimeline } from "./domain";
 import {
   buildGarageInsights,
+  buildModerationSummary,
   buildNotificationPreview,
   buildReturnNudges,
   filterPostsByMode,
@@ -67,5 +68,44 @@ describe("Autoflex insights", () => {
     expect(insights[0].detail).toContain("km to the next 10k service marker");
     expect(insights[1].detail).toContain("₹9,550");
     expect(insights[2].detail).toContain("1 related ownership note");
+  });
+
+  it("summarizes moderation queue and flags repeatedly reported posts", () => {
+    const summary = buildModerationSummary([
+      {
+        createdAt: "2026-07-20T10:00:00.000Z",
+        id: "report-1",
+        postId: "post-a",
+        postTitle: "Post A",
+        reason: "Spam lead",
+        reporterName: "Owner",
+        status: "Open",
+      },
+      {
+        createdAt: "2026-07-20T11:00:00.000Z",
+        id: "report-2",
+        postId: "post-a",
+        postTitle: "Post A",
+        reason: "Duplicate spam",
+        reporterName: "Buyer",
+        status: "Open",
+      },
+      {
+        createdAt: "2026-07-20T12:00:00.000Z",
+        id: "report-3",
+        postId: "post-b",
+        postTitle: "Post B",
+        reason: "Resolved",
+        reporterName: "Mod",
+        status: "Dismissed",
+      },
+    ]);
+
+    expect(summary).toEqual({
+      dismissedReports: 1,
+      openReports: 2,
+      removedReports: 0,
+      riskyPostIds: ["post-a"],
+    });
   });
 });

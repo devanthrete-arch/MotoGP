@@ -11,12 +11,15 @@ import {
   type GarageVehicle,
   type KnowledgeLabel,
   type OwnerPost,
+  type Profile,
+  type ReportRecord,
   type SubscriptionSettings,
   type TimelineEntry,
   type TimelineEntryKind,
 } from "./domain";
 import {
   buildGarageInsights,
+  buildModerationSummary,
   buildNotificationPreview,
   buildReturnNudges,
   filterPostsByMode,
@@ -27,18 +30,23 @@ import {
 import {
   addFeedback,
   createPost,
+  createReport,
   createTimelineEntry,
   createVehicle,
   loadFeedback,
   loadFollows,
   loadGarage,
+  loadProfile,
   loadPosts,
+  loadReports,
   loadSaved,
   loadSubscriptionSettings,
   loadTimeline,
   saveFollows,
   saveGarage,
   savePosts,
+  saveProfile,
+  saveReports,
   saveSaved,
   saveSubscriptionSettings,
   saveTimeline,
@@ -81,8 +89,12 @@ const initialTimelineDraft: DraftTimelineEntry = {
   note: "",
 };
 
+const garageRoles: Profile["garageRole"][] = ["Owner", "Buyer", "Enthusiast", "Mechanic"];
+
 export function App() {
   const [posts, setPosts] = useState<OwnerPost[]>(() => loadPosts());
+  const [profile, setProfile] = useState<Profile>(() => loadProfile());
+  const [reports, setReports] = useState<ReportRecord[]>(() => loadReports());
   const [saved, setSaved] = useState<Set<string>>(() => loadSaved());
   const [follows, setFollows] = useState<FollowState>(() => loadFollows());
   const [subscriptionSettings, setSubscriptionSettings] = useState<SubscriptionSettings>(() => loadSubscriptionSettings());
@@ -99,6 +111,8 @@ export function App() {
     ...initialTimelineDraft,
     vehicleId: loadGarage()[0]?.id ?? "",
   }));
+  const [commentDraft, setCommentDraft] = useState("");
+  const [reportDraft, setReportDraft] = useState("");
   const [feedbackDraft, setFeedbackDraft] = useState("");
 
   const notebooks = useMemo(() => groupByModel(posts), [posts]);
@@ -129,6 +143,7 @@ export function App() {
   );
 
   const garageInsights = useMemo(() => buildGarageInsights(garage, timeline, posts), [garage, posts, timeline]);
+  const moderationSummary = useMemo(() => buildModerationSummary(reports), [reports]);
 
   const stats = useMemo(
     () => ({
@@ -138,8 +153,9 @@ export function App() {
       confirmations: posts.reduce((total, post) => total + post.fixesConfirmed, 0),
       follows: follows.models.length + follows.topics.length,
       garage: garage.length,
+      reports: moderationSummary.openReports,
     }),
-    [follows.models.length, follows.topics.length, garage.length, notebooks.length, posts],
+    [follows.models.length, follows.topics.length, garage.length, moderationSummary.openReports, notebooks.length, posts],
   );
 
   const persistPosts = (nextPosts: OwnerPost[]) => {
@@ -155,6 +171,16 @@ export function App() {
   const persistSubscriptionSettings = (nextSettings: SubscriptionSettings) => {
     setSubscriptionSettings(nextSettings);
     saveSubscriptionSettings(nextSettings);
+  };
+
+  const persistProfile = (nextProfile: Profile) => {
+    setProfile(nextProfile);
+    saveProfile(nextProfile);
+  };
+
+  const persistReports = (nextReports: ReportRecord[]) => {
+    setReports(nextReports);
+    saveReports(nextReports);
   };
 
   const persistGarage = (nextGarage: GarageVehicle[]) => {
@@ -203,6 +229,42 @@ export function App() {
     );
     persistPosts(next);
     setSelectedPost(next.find((post) => post.id === postId) ?? null);
+  };
+
+  const addComment = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedPost || !commentDraft.trim()) return;
+    const author = profile.displayName.trim() || "Anonymous garage member";
+    const next = posts.map((post) =>
+      post.id === selectedPost.id ? { ...post, comments: [`${author}: ${commentDraft.trim()}`, ...post.comments] } : post,
+    );
+    persistPosts(next);
+    setSelectedPost(next.find((post) => post.id === selectedPost.id) ?? null);
+    setCommentDraft("");
+  };
+
+  const reportSelectedPost = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedPost || !reportDraft.trim()) return;
+    const report = createReport({
+      postId: selectedPost.id,
+      postTitle: selectedPost.title,
+      reason: reportDraft.trim(),
+      reporterName: profile.displayName.trim() || "Anonymous reporter",
+    });
+    persistReports([report, ...reports]);
+    setReportDraft("");
+  };
+
+  const setReportStatus = (reportId: string, status: ReportRecord["status"]) => {
+    persistReports(reports.map((report) => (report.id === reportId ? { ...report, status } : report)));
+  };
+
+  const removeReportedPost = (report: ReportRecord) => {
+    const nextPosts = posts.filter((post) => post.id !== report.postId);
+    persistPosts(nextPosts);
+    persistReports(reports.map((item) => (item.id === report.id ? { ...item, status: "Removed" } : item)));
+    if (selectedPost?.id === report.postId) setSelectedPost(nextPosts[0] ?? null);
   };
 
   const publishPost = (event: FormEvent<HTMLFormElement>) => {
@@ -322,6 +384,43 @@ export function App() {
             <p>Follow a model, save a note, or add a vehicle to unlock a more personal garage dashboard.</p>
           )}
         </div>
+      </section>
+
+      <section className="panel split-panel profile-panel" id="profile">
+        <div>
+          <p className="eyebrow">Lightweight profile</p>
+          <h2>Join the discussion without account ceremony.</h2>
+          <p>
+            This local profile keeps comments, reports, and future recovery simple until the hosted account layer is
+            ready.
+          </p>
+        </div>
+        <form className="composer" onSubmit={(event) => event.preventDefault()}>
+          <input
+            value={profile.displayName}
+            onChange={(event) => persistProfile({ ...profile, displayName: event.target.value })}
+            placeholder="Display name"
+          />
+          <div className="form-row">
+            <input
+              value={profile.city}
+              onChange={(event) => persistProfile({ ...profile, city: event.target.value })}
+              placeholder="City"
+            />
+            <select
+              value={profile.garageRole}
+              onChange={(event) => persistProfile({ ...profile, garageRole: event.target.value as Profile["garageRole"] })}
+            >
+              {garageRoles.map((role) => (
+                <option key={role}>{role}</option>
+              ))}
+            </select>
+          </div>
+          <p className="form-note">
+            Posting as {profile.displayName.trim() || "Anonymous garage member"}
+            {profile.city.trim() ? ` from ${profile.city}` : ""}.
+          </p>
+        </form>
       </section>
 
       <section className="panel notification-panel" id="notifications">
@@ -461,11 +560,35 @@ export function App() {
                   </button>
                 </div>
                 <div className="comments">
-                  <strong>Discussion starters</strong>
+                  <strong>Discussion</strong>
                   {selectedPost.comments.map((comment) => (
                     <p key={comment}>{comment}</p>
                   ))}
                 </div>
+                <form className="inline-form" onSubmit={addComment}>
+                  <textarea
+                    required
+                    rows={3}
+                    value={commentDraft}
+                    onChange={(event) => setCommentDraft(event.target.value)}
+                    placeholder="Add a useful reply, correction, bill detail, or ownership question."
+                  />
+                  <button className="primary-action" type="submit">
+                    Add comment
+                  </button>
+                </form>
+                <form className="inline-form report-form" onSubmit={reportSelectedPost}>
+                  <textarea
+                    required
+                    rows={3}
+                    value={reportDraft}
+                    onChange={(event) => setReportDraft(event.target.value)}
+                    placeholder="Report spam, abuse, fake lead, or dangerous advice."
+                  />
+                  <button className="save-button" type="submit">
+                    Send to moderators
+                  </button>
+                </form>
               </>
             ) : (
               <p>Select a post to inspect owner details.</p>
@@ -758,6 +881,44 @@ export function App() {
         </div>
       </section>
 
+      <section className="panel moderation-panel" id="moderation">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Moderator bay</p>
+            <h2>Trust tools before scale tools.</h2>
+          </div>
+          <div className="moderation-stats">
+            <span>{moderationSummary.openReports} open</span>
+            <span>{moderationSummary.dismissedReports} dismissed</span>
+            <span>{moderationSummary.removedReports} removed</span>
+          </div>
+        </div>
+        <div className="moderation-grid">
+          {reports.length ? (
+            reports.map((report) => (
+              <article className={`report-card ${report.status.toLowerCase()}`} key={report.id}>
+                <span>{report.status}</span>
+                <h3>{report.postTitle}</h3>
+                <p>{report.reason}</p>
+                <small>
+                  Reported by {report.reporterName} · {new Date(report.createdAt).toLocaleDateString("en-IN")}
+                </small>
+                <div className="signal-row">
+                  <button type="button" onClick={() => setReportStatus(report.id, "Dismissed")}>
+                    Dismiss
+                  </button>
+                  <button type="button" onClick={() => removeReportedPost(report)}>
+                    Remove post
+                  </button>
+                </div>
+              </article>
+            ))
+          ) : (
+            <div className="empty-state">No reports yet. The queue is ready before the community needs it.</div>
+          )}
+        </div>
+      </section>
+
       <section className="panel qa-panel">
         <div>
           <p className="eyebrow">Tested / QA</p>
@@ -767,6 +928,7 @@ export function App() {
           <p>Feed supports latest, helpful, saved, and following modes.</p>
           <p>Followed models/topics create return-user nudges.</p>
           <p>Garage vehicles and timeline entries persist locally.</p>
+          <p>Comments, reports, profiles, and moderator actions persist locally.</p>
           <p>Subscription previews and garage insights are generated from typed pure functions.</p>
           <p>Service-center integration remains outside this MVP loop.</p>
         </div>
