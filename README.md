@@ -2,8 +2,9 @@
 
 Autoflex is a web-first MVP for an ownership-focused auto community inspired by
 Team-BHP's depth of owner details, reviews, help articles, and hot discussions.
-The current build uses a Ktor API, a served webapp, shared Kotlin DTOs, SQLite
-persistence, and a native Android app kept as the next platform path.
+The current active MVP path is a TypeScript webapp designed for Vercel-first
+iteration. The Kotlin/Ktor and Android work remains in the repo as the later
+backend/mobile conversion path.
 
 ## Project brief
 
@@ -20,8 +21,11 @@ Service-center integration is intentionally kept separate under
 
 ### Done so far
 
-- [x] Pulled project direction into a web-first Kotlin/Ktor implementation.
-- [x] Replaced the old Node prototype with a Kotlin backend and served webapp.
+- [x] Pivoted the active MVP back to a TypeScript webapp for fast Vercel/web launch.
+- [x] Preserved the Kotlin/Ktor backend and Android folders for the later conversion path.
+- [x] Added a Vite/React/TypeScript webapp at the repo root.
+- [x] Added local-first MVP data for owner posts, saved notes, model notebooks, and feedback.
+- [x] Added the build-loop surface: Product owner → Designer → Backend engineer → Frontend engineer → Tested / QA → Real user.
 - [x] Added shared Kotlin request/response models.
 - [x] Added native Android project scaffolding for the later Android app path.
 - [x] Added community feed with latest/popular sorting, search, brand/topic filters, and pagination.
@@ -48,8 +52,10 @@ Service-center integration is intentionally kept separate under
 
 ### Yet to be done
 
-- [ ] Merge the current web MVP PR into `master`.
-- [ ] Deploy a staging environment with HTTPS, persistent database, upload storage, and backups.
+- [ ] Merge the TypeScript web MVP PR into `master`.
+- [ ] Deploy the TypeScript webapp on Vercel.
+- [ ] Decide whether the first hosted backend is TypeScript/Fastify or the existing Ktor API.
+- [ ] Add durable hosted persistence after the TypeScript web surface is validated.
 - [ ] Run real tester feedback through the product-owner → design → backend → frontend → QA → real-user loop.
 - [ ] Add followed models/topics and return-user nudges.
 - [ ] Add basic notification/subscription flows after follows exist.
@@ -61,7 +67,9 @@ Service-center integration is intentionally kept separate under
 
 ## Project layout
 
-- `server-kotlin/src/main/resources/web` — webapp MVP
+- `src` — active TypeScript webapp MVP
+- `index.html`, `vite.config.ts`, `package.json` — Vercel-ready web build
+- `server-kotlin/src/main/resources/web` — previous Kotlin-served webapp retained for reference/conversion
 - `server-kotlin` — Ktor REST API and SQLite database
 - `shared` — request/response models shared by app and server
 - `android-app` — native Android app (Jetpack Compose)
@@ -74,18 +82,29 @@ Service-center integration is intentionally kept separate under
 
 ## Requirements
 
+- Node.js 20+ for the TypeScript webapp
 - JDK 17
 - Android Studio with Android SDK 36 only when building the Android app
 
 ## Run locally
 
-Run the web MVP and API:
+Run the active TypeScript web MVP:
+
+```bash
+npm install
+npm run dev
+```
+
+Open `http://localhost:8080`.
+
+The current TypeScript MVP is local-first so it can move quickly on Vercel while
+the hosted backend decision is finalized.
+
+Run the preserved Kotlin web/API path:
 
 ```bash
 ./gradlew :server-kotlin:run --args=--seed
 ```
-
-Open `http://localhost:8080`.
 
 Use the Models button to browse owner posts grouped by model/variant details.
 
@@ -108,7 +127,8 @@ Set `UPLOAD_DIR` to move them in a shared environment.
 
 ## Production checklist
 
-- Serve the app/API over HTTPS.
+- Deploy the active TypeScript webapp through Vercel.
+- Serve the future hosted API over HTTPS.
 - Set `ADMIN_TOKEN`, `DATABASE_PATH`, `UPLOAD_DIR`, and `APP_VERSION`.
 - Back up the database and upload directory.
 - Use [RELEASE_CHECKLIST.md](/Users/priyanshtyagi/Auto-Motive-Flex/docs/RELEASE_CHECKLIST.md:1).

@@ -8,8 +8,10 @@ detail, hot discussions, reviews, travelogues, and help articles; Autoflex
 should make that spirit feel new-age with faster publishing, recoverable
 profiles, saved knowledge, modern moderation, and later garage/model layers.
 The imported Expo/React Native, TypeScript/Fastify, iOS, and web plan is now
-treated as the long-form product direction, but the immediate MVP is the
-smallest shippable web surface on the existing API.
+treated as long-form product direction. The immediate MVP has pivoted back to a
+TypeScript webapp so the web product can ship quickly on Vercel. Kotlin/Ktor and
+Android remain available as later conversion paths rather than blockers for the
+first web launch.
 
 The product wedge is community first:
 
@@ -36,8 +38,10 @@ Target: 1-2 weeks.
 - Freeze the first launch promise: "real ownership posts and discussions for
   Indian car buyers and owners."
 - Ship the webapp MVP before mobile app work.
-- Keep the current Ktor API until product behavior is proven; migrate to
-  TypeScript/Fastify only when it clearly helps the web product.
+- Keep service-center endpoints separate while the webapp moves in TypeScript.
+- Decide the first hosted backend after the TypeScript web surface is validated:
+  either TypeScript/Fastify for stack consistency or the existing Ktor API for
+  reuse.
 - Prepare hosted API shape, environment config, backups, privacy policy,
   account deletion wording, and basic analytics events.
 - Do not build iOS, native modules, 3D garage, trip scoring, navigation,
@@ -115,12 +119,13 @@ Only after retention and trust are real:
 
 ## Execution status
 
-Phase 0 is now active for web-first execution:
+Phase 0 is now active for TypeScript web-first execution:
 
-- Webapp MVP is served by the Ktor backend.
-- Ktor API, shared Kotlin models, native Android app, and backend tests exist.
-- The repo does not yet follow the Expo/React Native/TypeScript/Fastify/iOS
-  stack literally.
+- Active webapp MVP lives at the repo root in Vite/React/TypeScript.
+- Ktor API, shared Kotlin models, native Android app, and backend tests remain
+  in the repo for later conversion/reuse.
+- The repo is intentionally not pursuing iOS or native modules before the web
+  community loop proves useful.
 
 Completed slices:
 
@@ -161,8 +166,11 @@ Completed slices:
 
 Next web MVP slices, in order:
 
-1. Web beta polish: followed models/topics and return-user nudges.
-2. Android app catch-up after web MVP validation.
+1. Convert the active web surface fully to TypeScript and merge the first PR.
+2. Deploy the TypeScript webapp on Vercel.
+3. Add hosted persistence/API after the web flows are validated.
+4. Web beta polish: followed models/topics and return-user nudges.
+5. Android/Kotlin catch-up after web MVP validation.
 
 Service-center integration stays outside this loop until the owning team hands
 over its contract. Current placeholder: `GET /api/service-centers/status`.
