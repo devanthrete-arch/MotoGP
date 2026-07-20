@@ -3,11 +3,5 @@ data/*.db
 data/*.db-shm
 data/*.db-wal
 data/*.log
-server-kotlin/data/
 .DS_Store
 *.log
-.gradle/
-.idea/
-local.properties
-**/build/
-.pnpm-store/
