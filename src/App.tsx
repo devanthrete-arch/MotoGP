@@ -27,6 +27,7 @@ import {
   buildModelSharePayload,
   buildModerationSummary,
   buildNotificationPreview,
+  buildOwnershipPlaybooks,
   buildPostSharePayload,
   buildReturnNudges,
   buildShortlistComparisons,
@@ -166,6 +167,7 @@ export function App() {
 
   const garageInsights = useMemo(() => buildGarageInsights(garage, timeline, posts), [garage, posts, timeline]);
   const cityCircles = useMemo(() => buildCityCircles(posts, garage), [garage, posts]);
+  const ownershipPlaybooks = useMemo(() => buildOwnershipPlaybooks(posts), [posts]);
   const moderationSummary = useMemo(() => buildModerationSummary(reports), [reports]);
   const shortlistComparisons = useMemo(() => buildShortlistComparisons(shortlist, posts), [posts, shortlist]);
 
@@ -424,6 +426,7 @@ export function App() {
           <div className="nav-actions">
             <a href="#feed">Feed</a>
             <a href="#cities">Cities</a>
+            <a href="#playbooks">Playbooks</a>
             <a href="#garage">Garage</a>
             <a href="#notebooks">Model notebooks</a>
             <a href="#loop">Build loop</a>
@@ -839,6 +842,53 @@ export function App() {
               <div className="empty-state">Add a model manually or from an owner note to begin comparison.</div>
             )}
           </div>
+        </div>
+      </section>
+
+      <section className="panel playbook-panel" id="playbooks">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Ownership playbooks</p>
+            <h2>Turn scattered owner notes into “what should I check?” guidance.</h2>
+          </div>
+        </div>
+        <div className="playbook-grid">
+          {ownershipPlaybooks.map((playbook) => (
+            <article className="playbook-card" key={playbook.key}>
+              <div className="playbook-topline">
+                <span>{playbook.confidence}</span>
+                <strong>{playbook.evidenceCount} notes</strong>
+              </div>
+              <h3>
+                {playbook.brand} {playbook.model}
+              </h3>
+              <p>{playbook.headline}</p>
+              <div className="playbook-columns">
+                <div>
+                  <h4>Owner signals</h4>
+                  {playbook.ownerSignals.map((signal) => (
+                    <p key={signal}>{signal}</p>
+                  ))}
+                </div>
+                <div>
+                  <h4>Buyer checks</h4>
+                  {playbook.buyerChecks.map((check) => (
+                    <p key={check}>{check}</p>
+                  ))}
+                </div>
+              </div>
+              <button
+                className="save-button"
+                type="button"
+                onClick={() => {
+                  setQuery(`${playbook.brand} ${playbook.model}`);
+                  setMode("latest");
+                }}
+              >
+                Open matching notes
+              </button>
+            </article>
+          ))}
         </div>
       </section>
 

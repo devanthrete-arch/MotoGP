@@ -5,7 +5,7 @@
 1. Run `npm run build`.
 2. Run `npm run dev` and open `http://localhost:8080`.
 3. Run `npm run test`.
-4. Confirm the feed, filters, saved posts, following mode, city circles, buyer shortlist, profile form, comments, reports, moderator queue, write form, subscriptions, model notebooks, post sharing, notebook sharing, garage export, garage timeline, garage insights, build loop, and feedback lane work.
+4. Confirm the feed, filters, saved posts, following mode, city circles, ownership playbooks, buyer shortlist, profile form, comments, reports, moderator queue, write form, subscriptions, model notebooks, post sharing, notebook sharing, garage export, garage timeline, garage insights, build loop, and feedback lane work.
 5. Confirm the service-center integration boundary is visible and still treated as a separate workstream.
 6. Deploy the TypeScript webapp through Vercel.
 7. Confirm return-user nudges appear after following a model/topic, saving a note, or adding a garage vehicle.
