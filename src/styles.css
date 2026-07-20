@@ -572,6 +572,56 @@ a:focus-visible {
   padding-top: 18px;
 }
 
+.quality-card {
+  background: #fffaf2;
+  border: 1px solid rgba(95, 61, 40, 0.16);
+  border-radius: 24px;
+  display: grid;
+  gap: 10px;
+  margin: 20px 0;
+  padding: 18px;
+}
+
+.quality-card.garage-grade {
+  border-color: rgba(56, 109, 39, 0.34);
+}
+
+.quality-card.useful-draft {
+  border-color: rgba(126, 50, 29, 0.28);
+}
+
+.quality-card.needs-context {
+  border-color: rgba(139, 40, 29, 0.24);
+}
+
+.quality-meter {
+  background: #f8ead8;
+  border-radius: 999px;
+  height: 12px;
+  overflow: hidden;
+}
+
+.quality-meter span {
+  background: linear-gradient(90deg, #c95d32, #ffb36b, #7aa85b);
+  display: block;
+  height: 100%;
+}
+
+.quality-card strong {
+  color: #211b16;
+}
+
+.quality-card p {
+  color: #725a48;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.quality-prompts {
+  display: grid;
+  gap: 8px;
+}
+
 .comments p,
 .feedback-list p {
   background: #f8ead8;

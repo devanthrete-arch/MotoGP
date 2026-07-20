@@ -41,6 +41,7 @@ Service-center integration is intentionally kept separate under
 - [x] Added buyer shortlist with model comparison against available owner notes.
 - [x] Added local city circles grouping owner notes and garage vehicles by city.
 - [x] Added ownership playbooks that convert model notes into owner signals and buyer checks.
+- [x] Added post detail quality meter to nudge variant, city, odometer, cost, and outcome context.
 - [x] Added shared Kotlin request/response models.
 - [x] Added native Android project scaffolding for the later Android app path.
 - [x] Added community feed with latest/popular sorting, search, brand/topic filters, and pagination.
@@ -77,6 +78,7 @@ Service-center integration is intentionally kept separate under
 - [ ] Replace local shortlist with hosted buyer workspace and cross-device sync.
 - [ ] Replace local city circles with hosted city pages and city follows.
 - [ ] Replace local ownership playbooks with hosted model playbook pages and richer evidence scoring.
+- [ ] Promote post quality scoring into hosted moderation/ranking once the backend path is selected.
 - [ ] Run real tester feedback through the product-owner → design → backend → frontend → QA → real-user loop.
 - [ ] Add hosted persistence/API for follows, garage, timeline, and feedback.
 - [ ] Add basic notification/subscription flows after hosted follows exist.
@@ -127,6 +129,8 @@ shareable notes/notebooks, garage export, and a moderator queue so
 trust-and-safety can be tested before backend wiring. Buyers can also keep a
 local shortlist and compare models against available ownership notes. Model
 playbooks summarize owner signals and buyer checks from the same typed post data.
+The write flow includes a detail quality meter so new posts become more useful
+before they reach the community feed.
 
 Run the preserved Kotlin web/API path:
 
