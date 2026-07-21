@@ -26,6 +26,19 @@ Service-center integration is intentionally kept separate under
 - [x] Added a Vite/React/TypeScript webapp at the repo root.
 - [x] Added local-first MVP data for owner posts, saved notes, model notebooks, and feedback.
 - [x] Added the build-loop surface: Product owner → Designer → Backend engineer → Frontend engineer → Tested / QA → Real user.
+- [x] Added followed models/topics and a following feed for return-user behavior.
+- [x] Added return-user nudges based on follows, saved notes, and garage mileage.
+- [x] Added a local-first garage with vehicles and ownership timeline entries.
+- [x] Added a visible QA smoke-check panel for the current MVP slice.
+- [x] Added local subscription preferences and notification previews for followed models/topics.
+- [x] Added garage insights for service checkpoints, logged spend, and matching community context.
+- [x] Added automated Vitest coverage for feed filtering, follows, nudges, notifications, and garage insights.
+- [x] Added lightweight local profile for comments, reports, and future account mapping.
+- [x] Added post comments and report submission from the post detail view.
+- [x] Added a local moderator queue with dismiss and remove-post actions.
+- [x] Added share/copy actions for posts and model notebooks.
+- [x] Added garage markdown export using native share with clipboard fallback.
+- [x] Added buyer shortlist with model comparison against available owner notes.
 - [x] Added shared Kotlin request/response models.
 - [x] Added native Android project scaffolding for the later Android app path.
 - [x] Added community feed with latest/popular sorting, search, brand/topic filters, and pagination.
@@ -56,10 +69,14 @@ Service-center integration is intentionally kept separate under
 - [ ] Deploy the TypeScript webapp on Vercel.
 - [ ] Decide whether the first hosted backend is TypeScript/Fastify or the existing Ktor API.
 - [ ] Add durable hosted persistence after the TypeScript web surface is validated.
+- [ ] Replace local subscription previews with real hosted notification jobs after accounts/persistence exist.
+- [ ] Replace local profile/report/comment storage with hosted account and moderation APIs.
+- [ ] Replace share/copy fallbacks with hosted deep links and Open Graph metadata after deployment.
+- [ ] Replace local shortlist with hosted buyer workspace and cross-device sync.
 - [ ] Run real tester feedback through the product-owner → design → backend → frontend → QA → real-user loop.
-- [ ] Add followed models/topics and return-user nudges.
-- [ ] Add basic notification/subscription flows after follows exist.
-- [ ] Add richer garage profiles and ownership timelines.
+- [ ] Add hosted persistence/API for follows, garage, timeline, and feedback.
+- [ ] Add basic notification/subscription flows after hosted follows exist.
+- [ ] Add richer garage profile fields and timeline analytics.
 - [ ] Add Google sign-in only after the lightweight profile flow proves insufficient.
 - [ ] Harden production operations: backup restore drill, non-default admin token, logs, and monitoring vendor if needed.
 - [ ] Bring the native Android app up to feature parity after the web MVP is validated.
@@ -98,7 +115,13 @@ npm run dev
 Open `http://localhost:8080`.
 
 The current TypeScript MVP is local-first so it can move quickly on Vercel while
-the hosted backend decision is finalized.
+the hosted backend decision is finalized. It includes owner posts, saved notes,
+followed models/topics, a following feed, garage vehicles, timeline entries,
+model notebooks, subscription previews, garage insights, feedback capture, and
+QA/user loop panels. It also has lightweight local profiles, comments, reports,
+shareable notes/notebooks, garage export, and a moderator queue so
+trust-and-safety can be tested before backend wiring. Buyers can also keep a
+local shortlist and compare models against available ownership notes.
 
 Run the preserved Kotlin web/API path:
 

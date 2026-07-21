@@ -177,7 +177,8 @@ h3 {
 .post-card,
 .notebook-card,
 .loop-card,
-.composer {
+.composer,
+.vehicle-card {
   background: rgba(255, 252, 246, 0.82);
   border: 1px solid rgba(95, 61, 40, 0.16);
   border-radius: 30px;
@@ -259,6 +260,141 @@ h3 {
 
 .panel {
   padding: 76px clamp(18px, 4vw, 34px);
+}
+
+.action-message {
+  background: #ffb36b;
+  border-radius: 999px;
+  color: #211b16;
+  font-weight: 900;
+  margin: 18px auto 0;
+  max-width: 1180px;
+  padding: 12px 18px;
+  width: calc(100% - clamp(36px, 8vw, 128px));
+}
+
+.dashboard-panel {
+  align-items: center;
+  display: grid;
+  gap: 28px;
+  grid-template-columns: minmax(0, 0.8fr) minmax(320px, 1fr);
+  padding-bottom: 34px;
+}
+
+.nudge-grid,
+.qa-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.nudge-grid p,
+.qa-grid p,
+.notification-grid p {
+  background: #211b16;
+  border-radius: 22px;
+  color: rgba(255, 248, 237, 0.82);
+  line-height: 1.55;
+  margin: 0;
+  padding: 18px;
+}
+
+.preference-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.preference-toggles label {
+  align-items: center;
+  background: #fffaf2;
+  border: 1px solid rgba(95, 61, 40, 0.18);
+  border-radius: 999px;
+  color: #4f3c2f;
+  display: inline-flex;
+  gap: 8px;
+  padding: 10px 13px;
+}
+
+.preference-toggles input {
+  accent-color: #c95d32;
+}
+
+.notification-grid,
+.insight-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.shortlist-grid {
+  align-items: start;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(320px, 0.7fr) minmax(0, 1.3fr);
+}
+
+.comparison-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.comparison-card {
+  background: #fffaf2;
+  border: 1px solid rgba(95, 61, 40, 0.16);
+  border-radius: 26px;
+  display: grid;
+  gap: 12px;
+  padding: 22px;
+}
+
+.comparison-card p {
+  color: #725a48;
+  margin: 0;
+}
+
+.confidence {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 900;
+  justify-self: start;
+  letter-spacing: 0.12em;
+  padding: 7px 10px;
+  text-transform: uppercase;
+}
+
+.confidence.low {
+  background: #ffd8d4;
+  color: #8b281d;
+}
+
+.confidence.medium {
+  background: #ffe0b6;
+  color: #7e321d;
+}
+
+.confidence.high {
+  background: #dff3d4;
+  color: #386d27;
+}
+
+.comparison-stats {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.comparison-stats span {
+  background: #f8ead8;
+  border-radius: 14px;
+  color: #4f3c2f;
+  font-size: 0.84rem;
+  font-weight: 800;
+  padding: 9px;
+  text-align: center;
 }
 
 .section-head {
@@ -389,6 +525,18 @@ a:focus-visible {
   padding: 12px 14px;
 }
 
+.inline-form {
+  border-top: 1px solid rgba(95, 61, 40, 0.14);
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 16px;
+}
+
+.report-form textarea {
+  background: #fff4ee;
+}
+
 .split-panel {
   align-items: start;
   display: grid;
@@ -406,6 +554,12 @@ a:focus-visible {
   display: grid;
   gap: 12px;
   padding: 22px;
+}
+
+.form-note {
+  color: #725a48;
+  line-height: 1.55;
+  margin: 0;
 }
 
 .form-row {
@@ -426,6 +580,10 @@ a:focus-visible {
   padding: 24px;
 }
 
+.notebook-card .save-button + .save-button {
+  margin-left: 8px;
+}
+
 .notebook-tags {
   display: flex;
   flex-wrap: wrap;
@@ -434,14 +592,166 @@ a:focus-visible {
 }
 
 .notebook-tags span,
+.notebook-tags button,
 .loop-card span {
   border: 1px solid rgba(95, 61, 40, 0.16);
   border-radius: 999px;
+  background: transparent;
   color: #7e321d;
   display: inline-flex;
   font-size: 0.78rem;
   font-weight: 800;
   padding: 7px 10px;
+}
+
+.garage-grid {
+  align-items: start;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.timeline-board {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 18px;
+}
+
+.insight-grid {
+  margin-top: 18px;
+}
+
+.insight-card {
+  background: #fffaf2;
+  border: 1px solid rgba(95, 61, 40, 0.16);
+  border-radius: 26px;
+  padding: 22px;
+}
+
+.insight-card span {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  margin-bottom: 16px;
+  padding: 7px 10px;
+  text-transform: uppercase;
+}
+
+.insight-card.service span {
+  background: #dff3d4;
+  color: #386d27;
+}
+
+.insight-card.cost span {
+  background: #ffe0b6;
+  color: #7e321d;
+}
+
+.insight-card.community span {
+  background: #dce9ff;
+  color: #254c86;
+}
+
+.insight-card p {
+  color: #725a48;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.vehicle-card {
+  padding: 24px;
+}
+
+.vehicle-card > p {
+  color: #725a48;
+  line-height: 1.55;
+}
+
+.timeline-entry {
+  border-left: 4px solid #ffb36b;
+  margin-top: 16px;
+  padding-left: 14px;
+}
+
+.timeline-entry strong,
+.timeline-entry span {
+  display: block;
+}
+
+.timeline-entry span {
+  color: #7e321d;
+  font-size: 0.9rem;
+  margin: 6px 0;
+}
+
+.timeline-entry p {
+  color: #725a48;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.qa-panel {
+  padding-top: 24px;
+}
+
+.moderation-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.moderation-stats span {
+  background: #211b16;
+  border-radius: 999px;
+  color: rgba(255, 248, 237, 0.84);
+  font-size: 0.86rem;
+  font-weight: 800;
+  padding: 9px 12px;
+}
+
+.moderation-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.report-card {
+  background: #fffaf2;
+  border: 1px solid rgba(95, 61, 40, 0.16);
+  border-radius: 26px;
+  padding: 22px;
+}
+
+.report-card > span {
+  background: #ffe0b6;
+  border-radius: 999px;
+  color: #7e321d;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  padding: 7px 10px;
+  text-transform: uppercase;
+}
+
+.report-card.dismissed > span {
+  background: #dff3d4;
+  color: #386d27;
+}
+
+.report-card.removed > span {
+  background: #ffd8d4;
+  color: #8b281d;
+}
+
+.report-card p,
+.report-card small {
+  color: #725a48;
+  line-height: 1.55;
 }
 
 .loop-card h3 {
@@ -461,7 +771,17 @@ a:focus-visible {
   .content-grid,
   .split-panel,
   .notebook-grid,
-  .loop-grid {
+  .loop-grid,
+  .dashboard-panel,
+  .nudge-grid,
+  .qa-grid,
+  .garage-grid,
+  .shortlist-grid,
+  .comparison-grid,
+  .timeline-board,
+  .notification-grid,
+  .insight-grid,
+  .moderation-grid {
     grid-template-columns: 1fr;
   }
 

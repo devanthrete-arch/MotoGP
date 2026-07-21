@@ -26,6 +26,74 @@ export type FeedbackNote = {
   createdAt: string;
 };
 
+export type GarageVehicle = {
+  id: string;
+  nickname: string;
+  brand: string;
+  model: string;
+  variant: string;
+  city: string;
+  odometerKm: number;
+  purchaseMonth: string;
+};
+
+export type TimelineEntryKind = "Service" | "Repair" | "Tyres" | "Insurance" | "Fuel" | "Trip" | "Note";
+
+export type TimelineEntry = {
+  id: string;
+  vehicleId: string;
+  kind: TimelineEntryKind;
+  title: string;
+  amount: number;
+  odometerKm: number;
+  happenedOn: string;
+  note: string;
+};
+
+export type FollowState = {
+  models: string[];
+  topics: string[];
+};
+
+export type SubscriptionSettings = {
+  emailDigest: boolean;
+  browserAlerts: boolean;
+  quietHours: boolean;
+};
+
+export type Profile = {
+  displayName: string;
+  city: string;
+  garageRole: "Owner" | "Buyer" | "Enthusiast" | "Mechanic";
+};
+
+export type ReportStatus = "Open" | "Dismissed" | "Removed";
+
+export type ReportRecord = {
+  id: string;
+  postId: string;
+  postTitle: string;
+  reason: string;
+  reporterName: string;
+  status: ReportStatus;
+  createdAt: string;
+};
+
+export type DraftReport = Pick<ReportRecord, "postId" | "postTitle" | "reason" | "reporterName">;
+
+export type ShortlistStatus = "Researching" | "Test drive" | "Negotiating" | "Rejected" | "Bought";
+
+export type ShortlistItem = {
+  id: string;
+  brand: string;
+  model: string;
+  budget: number;
+  status: ShortlistStatus;
+  notes: string;
+};
+
+export type DraftShortlistItem = Omit<ShortlistItem, "id">;
+
 export type BuildLoopItem = {
   role: BuildRole;
   question: string;
@@ -41,6 +109,12 @@ export type ModelNotebook = {
 
 export type DraftPost = Omit<OwnerPost, "id" | "createdAt" | "helpful" | "fixesConfirmed" | "comments">;
 
+export type DraftVehicle = Omit<GarageVehicle, "id">;
+
+export type DraftTimelineEntry = Omit<TimelineEntry, "id">;
+
+export const shortlistStatuses: ShortlistStatus[] = ["Researching", "Test drive", "Negotiating", "Rejected", "Bought"];
+
 export const knowledgeLabels: KnowledgeLabel[] = [
   "Review",
   "Known issue",
@@ -48,6 +122,44 @@ export const knowledgeLabels: KnowledgeLabel[] = [
   "Cost note",
   "Travelogue",
   "Owner note",
+];
+
+export const timelineKinds: TimelineEntryKind[] = ["Service", "Repair", "Tyres", "Insurance", "Fuel", "Trip", "Note"];
+
+export const seedGarage: GarageVehicle[] = [
+  {
+    id: "garage-nexon",
+    nickname: "Daily diesel",
+    brand: "Tata",
+    model: "Nexon",
+    variant: "XZ+ Diesel MT",
+    city: "Pune",
+    odometerKm: 42000,
+    purchaseMonth: "2021-08",
+  },
+];
+
+export const seedTimeline: TimelineEntry[] = [
+  {
+    id: "timeline-nexon-clutch",
+    vehicleId: "garage-nexon",
+    kind: "Repair",
+    title: "Clutch linkage cleaned and adjusted",
+    amount: 1350,
+    odometerKm: 38000,
+    happenedOn: "2026-04-18",
+    note: "Avoided unnecessary full clutch replacement after a second technician inspected the linkage.",
+  },
+  {
+    id: "timeline-nexon-service",
+    vehicleId: "garage-nexon",
+    kind: "Service",
+    title: "40k km scheduled service",
+    amount: 8200,
+    odometerKm: 40200,
+    happenedOn: "2026-06-12",
+    note: "Oil, filters, alignment, and brake cleaning. Good reference bill for other Nexon diesel owners.",
+  },
 ];
 
 export const seedPosts: OwnerPost[] = [

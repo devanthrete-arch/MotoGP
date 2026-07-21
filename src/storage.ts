@@ -1,9 +1,31 @@
-import type { DraftPost, FeedbackNote, OwnerPost } from "./domain";
-import { seedPosts } from "./domain";
+import type {
+  DraftPost,
+  DraftReport,
+  DraftShortlistItem,
+  DraftTimelineEntry,
+  DraftVehicle,
+  FeedbackNote,
+  FollowState,
+  GarageVehicle,
+  OwnerPost,
+  Profile,
+  ReportRecord,
+  ShortlistItem,
+  SubscriptionSettings,
+  TimelineEntry,
+} from "./domain";
+import { seedGarage, seedPosts, seedTimeline } from "./domain";
 
 const postsKey = "autoflex.web.posts.v1";
 const savedKey = "autoflex.web.saved.v1";
 const feedbackKey = "autoflex.web.feedback.v1";
+const followKey = "autoflex.web.follows.v1";
+const garageKey = "autoflex.web.garage.v1";
+const timelineKey = "autoflex.web.timeline.v1";
+const subscriptionKey = "autoflex.web.subscription.v1";
+const profileKey = "autoflex.web.profile.v1";
+const reportsKey = "autoflex.web.reports.v1";
+const shortlistKey = "autoflex.web.shortlist.v1";
 
 const safeJsonParse = <T,>(value: string | null, fallback: T): T => {
   if (!value) return fallback;
@@ -53,3 +75,81 @@ export const addFeedback = (message: string): FeedbackNote[] => {
   localStorage.setItem(feedbackKey, JSON.stringify(next));
   return next;
 };
+
+export const loadFollows = (): FollowState =>
+  safeJsonParse<FollowState>(localStorage.getItem(followKey), { models: [], topics: [] });
+
+export const saveFollows = (follows: FollowState): void => {
+  localStorage.setItem(followKey, JSON.stringify(follows));
+};
+
+export const loadGarage = (): GarageVehicle[] => safeJsonParse<GarageVehicle[]>(localStorage.getItem(garageKey), seedGarage);
+
+export const saveGarage = (garage: GarageVehicle[]): void => {
+  localStorage.setItem(garageKey, JSON.stringify(garage));
+};
+
+export const createVehicle = (draft: DraftVehicle): GarageVehicle => ({
+  ...draft,
+  id: `${draft.brand}-${draft.model}-${Date.now()}`.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+});
+
+export const loadTimeline = (): TimelineEntry[] =>
+  safeJsonParse<TimelineEntry[]>(localStorage.getItem(timelineKey), seedTimeline).sort(
+    (first, second) => Date.parse(second.happenedOn) - Date.parse(first.happenedOn),
+  );
+
+export const saveTimeline = (entries: TimelineEntry[]): void => {
+  localStorage.setItem(timelineKey, JSON.stringify(entries));
+};
+
+export const createTimelineEntry = (draft: DraftTimelineEntry): TimelineEntry => ({
+  ...draft,
+  id: `${draft.vehicleId}-${draft.kind}-${Date.now()}`.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+});
+
+export const loadSubscriptionSettings = (): SubscriptionSettings =>
+  safeJsonParse<SubscriptionSettings>(localStorage.getItem(subscriptionKey), {
+    emailDigest: true,
+    browserAlerts: false,
+    quietHours: true,
+  });
+
+export const saveSubscriptionSettings = (settings: SubscriptionSettings): void => {
+  localStorage.setItem(subscriptionKey, JSON.stringify(settings));
+};
+
+export const loadProfile = (): Profile =>
+  safeJsonParse<Profile>(localStorage.getItem(profileKey), {
+    city: "",
+    displayName: "",
+    garageRole: "Owner",
+  });
+
+export const saveProfile = (profile: Profile): void => {
+  localStorage.setItem(profileKey, JSON.stringify(profile));
+};
+
+export const loadReports = (): ReportRecord[] => safeJsonParse<ReportRecord[]>(localStorage.getItem(reportsKey), []);
+
+export const saveReports = (reports: ReportRecord[]): void => {
+  localStorage.setItem(reportsKey, JSON.stringify(reports));
+};
+
+export const createReport = (draft: DraftReport): ReportRecord => ({
+  ...draft,
+  id: `report-${draft.postId}-${Date.now()}`.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+  status: "Open",
+  createdAt: new Date().toISOString(),
+});
+
+export const loadShortlist = (): ShortlistItem[] => safeJsonParse<ShortlistItem[]>(localStorage.getItem(shortlistKey), []);
+
+export const saveShortlist = (items: ShortlistItem[]): void => {
+  localStorage.setItem(shortlistKey, JSON.stringify(items));
+};
+
+export const createShortlistItem = (draft: DraftShortlistItem): ShortlistItem => ({
+  ...draft,
+  id: `shortlist-${draft.brand}-${draft.model}-${Date.now()}`.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+});
