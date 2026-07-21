@@ -43,6 +43,15 @@ export type ShortlistComparison = {
   confidence: "Low" | "Medium" | "High";
 };
 
+export type CityCircle = {
+  city: string;
+  posts: OwnerPost[];
+  garageVehicles: GarageVehicle[];
+  topBrands: string[];
+  hotTopics: KnowledgeLabel[];
+  localSignal: "Quiet" | "Active" | "Hot";
+};
+
 export const defaultSubscriptionPreference: SubscriptionPreference = {
   emailDigest: true,
   browserAlerts: false,
@@ -265,6 +274,46 @@ export function buildShortlistComparisons(shortlist: ShortlistItem[], posts: Own
       confidence,
     };
   });
+}
+
+export function buildCityCircles(posts: OwnerPost[], garage: GarageVehicle[]): CityCircle[] {
+  const cityNames = new Set(
+    [...posts.map((post) => post.city), ...garage.map((vehicle) => vehicle.city)]
+      .map((city) => city.trim())
+      .filter(Boolean),
+  );
+
+  return [...cityNames]
+    .map((city) => {
+      const cityPosts = posts.filter((post) => post.city.trim().toLowerCase() === city.toLowerCase());
+      const cityGarage = garage.filter((vehicle) => vehicle.city.trim().toLowerCase() === city.toLowerCase());
+      const topBrands = topValues(cityPosts.map((post) => post.brand), 3);
+      const hotTopics = topValues(cityPosts.map((post) => post.label), 3) as KnowledgeLabel[];
+      const activityScore = cityPosts.length + cityGarage.length;
+      const localSignal: CityCircle["localSignal"] = activityScore >= 4 ? "Hot" : activityScore >= 2 ? "Active" : "Quiet";
+
+      return {
+        city,
+        garageVehicles: cityGarage,
+        hotTopics,
+        localSignal,
+        posts: cityPosts,
+        topBrands,
+      };
+    })
+    .sort((first, second) => second.posts.length + second.garageVehicles.length - (first.posts.length + first.garageVehicles.length));
+}
+
+function topValues(values: string[], limit: number): string[] {
+  const counts = values.reduce<Map<string, number>>((accumulator, value) => {
+    accumulator.set(value, (accumulator.get(value) ?? 0) + 1);
+    return accumulator;
+  }, new Map<string, number>());
+
+  return [...counts.entries()]
+    .sort((first, second) => second[1] - first[1] || first[0].localeCompare(second[0]))
+    .slice(0, limit)
+    .map(([value]) => value);
 }
 
 export function formatMoney(amount: number): string {

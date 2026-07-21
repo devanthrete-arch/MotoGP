@@ -3,6 +3,7 @@ import { seedGarage, seedPosts, seedTimeline } from "./domain";
 import {
   buildGarageInsights,
   buildGarageExportMarkdown,
+  buildCityCircles,
   buildModelSharePayload,
   buildModerationSummary,
   buildNotificationPreview,
@@ -162,5 +163,17 @@ describe("Autoflex insights", () => {
       confidence: "Low",
       relatedNotes: 0,
     });
+  });
+
+  it("builds city circles from posts and garage vehicles", () => {
+    const circles = buildCityCircles(seedPosts, seedGarage);
+    const pune = circles.find((circle) => circle.city === "Pune");
+
+    expect(pune).toMatchObject({
+      city: "Pune",
+      localSignal: "Active",
+      topBrands: ["Tata"],
+    });
+    expect(pune?.hotTopics).toEqual(["Fix"]);
   });
 });
