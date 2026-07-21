@@ -21,6 +21,7 @@ import {
   type TimelineEntryKind,
 } from "./domain";
 import {
+  assessPostQuality,
   buildCityCircles,
   buildGarageInsights,
   buildGarageExportMarkdown,
@@ -170,6 +171,8 @@ export function App() {
   const ownershipPlaybooks = useMemo(() => buildOwnershipPlaybooks(posts), [posts]);
   const moderationSummary = useMemo(() => buildModerationSummary(reports), [reports]);
   const shortlistComparisons = useMemo(() => buildShortlistComparisons(shortlist, posts), [posts, shortlist]);
+  const draftQuality = useMemo(() => assessPostQuality(draft), [draft]);
+  const selectedPostQuality = useMemo(() => (selectedPost ? assessPostQuality(selectedPost) : null), [selectedPost]);
 
   const stats = useMemo(
     () => ({
@@ -686,6 +689,17 @@ export function App() {
                   {selectedPost.city}
                 </p>
                 <p>{selectedPost.body}</p>
+                {selectedPostQuality ? (
+                  <div className={`quality-card ${selectedPostQuality.grade.toLowerCase().replace(/\s+/g, "-")}`}>
+                    <div className="quality-meter">
+                      <span style={{ width: `${(selectedPostQuality.score / selectedPostQuality.maxScore) * 100}%` }} />
+                    </div>
+                    <strong>
+                      {selectedPostQuality.grade} · {selectedPostQuality.score}/{selectedPostQuality.maxScore}
+                    </strong>
+                    <p>{selectedPostQuality.strengths[0] ?? "This note needs more ownership context."}</p>
+                  </div>
+                ) : null}
                 <div className="signal-row">
                   <button type="button" onClick={() => markHelpful(selectedPost.id)}>
                     Helpful · {selectedPost.helpful}
@@ -900,6 +914,19 @@ export function App() {
             The form pushes users toward context Team-BHP made valuable at its peak: variant, city, odometer, real
             symptoms, costs, and outcomes.
           </p>
+          <div className={`quality-card ${draftQuality.grade.toLowerCase().replace(/\s+/g, "-")}`}>
+            <div className="quality-meter" aria-label={`Draft detail quality ${draftQuality.score} of ${draftQuality.maxScore}`}>
+              <span style={{ width: `${(draftQuality.score / draftQuality.maxScore) * 100}%` }} />
+            </div>
+            <strong>
+              Detail meter: {draftQuality.grade} · {draftQuality.score}/{draftQuality.maxScore}
+            </strong>
+            <div className="quality-prompts">
+              {(draftQuality.missingPrompts.length ? draftQuality.missingPrompts : draftQuality.strengths).slice(0, 3).map((prompt) => (
+                <p key={prompt}>{prompt}</p>
+              ))}
+            </div>
+          </div>
         </div>
         <form className="composer" onSubmit={publishPost}>
           <input
@@ -1232,6 +1259,7 @@ export function App() {
           <p>Comments, reports, profiles, and moderator actions persist locally.</p>
           <p>Post, model notebook, and garage export sharing uses native share with clipboard fallback.</p>
           <p>City circles group local owner notes and garage vehicles by market context.</p>
+          <p>Post detail quality meter nudges variant, city, odometer, cost, and outcome context.</p>
           <p>Subscription previews and garage insights are generated from typed pure functions.</p>
           <p>Service-center integration remains outside this MVP loop.</p>
         </div>
