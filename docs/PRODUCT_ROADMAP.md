@@ -147,6 +147,10 @@ Completed slices:
   and travelogue. Model cards now surface issue/fix/cost counts.
 - Dedicated model notebook view with grouped known issues, fixes, cost notes,
   reviews, travelogues, and owner notes.
+- TypeScript ownership playbooks that turn model notebooks into buyer checks
+  and owner signals.
+- Post detail quality meter that nudges variant, city, odometer, cost, and
+  outcome context before publishing.
 - Verified-fix signal: owners can mark a Fix post as "worked for me", with
   duplicate-safe counts surfaced in model notebooks.
 - Model-page quality signals: helpfulness, stale-info flags, and moderator

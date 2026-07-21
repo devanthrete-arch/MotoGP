@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { seedGarage, seedPosts, seedTimeline } from "./domain";
 import {
+  assessPostQuality,
   buildGarageInsights,
   buildGarageExportMarkdown,
   buildCityCircles,
   buildModelSharePayload,
   buildModerationSummary,
   buildNotificationPreview,
+  buildOwnershipPlaybooks,
   buildPostSharePayload,
   buildReturnNudges,
   buildShortlistComparisons,
@@ -175,5 +177,41 @@ describe("Autoflex insights", () => {
       topBrands: ["Tata"],
     });
     expect(pune?.hotTopics).toEqual(["Fix"]);
+  });
+
+  it("turns model notebooks into ownership playbooks", () => {
+    const playbooks = buildOwnershipPlaybooks(seedPosts);
+    const nexon = playbooks.find((playbook) => playbook.key === "tata-nexon");
+
+    expect(nexon).toMatchObject({
+      brand: "Tata",
+      confidence: "Early signal",
+      evidenceCount: 1,
+      model: "Nexon",
+    });
+    expect(nexon?.ownerSignals).toContain("Confirmed fixes are available before the owner needs a dealer second opinion.");
+    expect(nexon?.buyerChecks[0]).toBe("Ask whether the common fix has already been done and keep the bill handy.");
+  });
+
+  it("assesses post quality with actionable missing context prompts", () => {
+    const strongReport = assessPostQuality(seedPosts[0]);
+    const thinReport = assessPostQuality({
+      body: "Good car.",
+      city: "",
+      label: "Owner note",
+      odometerKm: 0,
+      variant: "",
+    });
+
+    expect(strongReport).toMatchObject({
+      grade: "Garage-grade",
+      maxScore: 6,
+      score: 6,
+    });
+    expect(thinReport).toMatchObject({
+      grade: "Needs context",
+      score: 0,
+    });
+    expect(thinReport.missingPrompts).toContain("Add odometer reading to anchor the issue, review, or cost note.");
   });
 });
