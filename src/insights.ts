@@ -77,6 +77,13 @@ export type QaSessionSummary = {
   remaining: QaSessionItem[];
 };
 
+export type QaHandoffInput = {
+  feedbackSummary: FeedbackTriageSummary;
+  generatedAt: string;
+  launchSummary: LaunchReadinessSummary;
+  qaSummary: QaSessionSummary;
+};
+
 export type SharePayload = {
   title: string;
   text: string;
@@ -257,6 +264,44 @@ export function buildQaSessionSummary(items: QaSessionItem[], checkedIds: Set<st
     remaining: items.filter((item) => !checkedIds.has(item.id)),
     total: items.length,
   };
+}
+
+export function buildQaHandoffMarkdown(input: QaHandoffInput): string {
+  const feedbackTotal = Object.values(input.feedbackSummary).reduce((total, count) => total + count, 0);
+  const remainingQa = input.qaSummary.remaining.map((item) => `- ${item.label}`).join("\n") || "- None";
+  const launchBlockers = input.launchSummary.blocked.map((item) => `- ${item.label}: ${item.detail}`).join("\n") || "- None";
+
+  return [
+    "# Autoflex QA handoff",
+    "",
+    `Generated: ${input.generatedAt}`,
+    "",
+    "## QA session",
+    "",
+    `Checked: ${input.qaSummary.checked}/${input.qaSummary.total}`,
+    "",
+    "Remaining smoke checks:",
+    remainingQa,
+    "",
+    "## Launch readiness",
+    "",
+    `Ready: ${input.launchSummary.ready}/${input.launchSummary.total}`,
+    "",
+    "Open blockers:",
+    launchBlockers,
+    "",
+    "## Feedback triage",
+    "",
+    `Total tester notes: ${feedbackTotal}`,
+    `New: ${input.feedbackSummary.New}`,
+    `Reviewing: ${input.feedbackSummary.Reviewing}`,
+    `Planned: ${input.feedbackSummary.Planned}`,
+    `Shipped: ${input.feedbackSummary.Shipped}`,
+    "",
+    "## Service-center boundary",
+    "",
+    "Service-center integration remains outside this MVP loop until the owning team provides its contract.",
+  ].join("\n");
 }
 
 export function buildNotificationPreview(input: {
