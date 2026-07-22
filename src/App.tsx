@@ -330,6 +330,7 @@ export function App() {
         feedbackSummary: feedbackTriageSummary,
         generatedAt: new Date().toISOString(),
         launchSummary: launchReadinessSummary,
+        profile,
         qaSummary: qaSessionSummary,
       }),
     });
