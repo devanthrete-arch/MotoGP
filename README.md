@@ -39,6 +39,7 @@ Service-center integration is intentionally kept separate under
 - [x] Added share/copy actions for posts and model notebooks.
 - [x] Added garage markdown export using native share with clipboard fallback.
 - [x] Added buyer shortlist with model comparison against available owner notes.
+- [x] Added buyer inspection checklists generated from shortlist models and owner-note evidence.
 - [x] Added local city circles grouping owner notes and garage vehicles by city.
 - [x] Added ownership playbooks that convert model notes into owner signals and buyer checks.
 - [x] Added post detail quality meter to nudge variant, city, odometer, cost, and outcome context.
@@ -68,7 +69,7 @@ Service-center integration is intentionally kept separate under
 
 ### Yet to be done
 
-- [ ] Merge the TypeScript web MVP PR into `master`.
+- [x] Merged the TypeScript web MVP feature PRs through post quality meter into `master`.
 - [ ] Deploy the TypeScript webapp on Vercel.
 - [ ] Decide whether the first hosted backend is TypeScript/Fastify or the existing Ktor API.
 - [ ] Add durable hosted persistence after the TypeScript web surface is validated.
@@ -76,6 +77,7 @@ Service-center integration is intentionally kept separate under
 - [ ] Replace local profile/report/comment storage with hosted account and moderation APIs.
 - [ ] Replace share/copy fallbacks with hosted deep links and Open Graph metadata after deployment.
 - [ ] Replace local shortlist with hosted buyer workspace and cross-device sync.
+- [ ] Replace local inspection checklists with hosted buyer inspection sessions and saved outcomes.
 - [ ] Replace local city circles with hosted city pages and city follows.
 - [ ] Replace local ownership playbooks with hosted model playbook pages and richer evidence scoring.
 - [ ] Promote post quality scoring into hosted moderation/ranking once the backend path is selected.
@@ -127,8 +129,9 @@ model notebooks, subscription previews, garage insights, feedback capture, and
 QA/user loop panels. It also has lightweight local profiles, comments, reports,
 shareable notes/notebooks, garage export, and a moderator queue so
 trust-and-safety can be tested before backend wiring. Buyers can also keep a
-local shortlist and compare models against available ownership notes. Model
-playbooks summarize owner signals and buyer checks from the same typed post data.
+local shortlist, compare models against available ownership notes, and generate
+inspection checklists for test drives or used-car evaluations. Model playbooks
+summarize owner signals and buyer checks from the same typed post data.
 The write flow includes a detail quality meter so new posts become more useful
 before they reach the community feed.
 

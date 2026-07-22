@@ -451,6 +451,66 @@ h3 {
   text-align: center;
 }
 
+.inspection-list {
+  background: #211b16;
+  border-radius: 22px;
+  color: #fff8ed;
+  display: grid;
+  gap: 10px;
+  margin-bottom: 4px;
+  padding: 16px;
+}
+
+.inspection-list > strong {
+  color: #ffcc8d;
+  font-size: 0.82rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.inspection-item {
+  align-items: start;
+  border-top: 1px solid rgba(255, 248, 237, 0.12);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr);
+  padding-top: 10px;
+}
+
+.inspection-item span {
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  padding: 6px 8px;
+  text-transform: uppercase;
+}
+
+.inspection-item.high span {
+  background: #ffd8d4;
+  color: #8b281d;
+}
+
+.inspection-item.medium span {
+  background: #ffe0b6;
+  color: #7e321d;
+}
+
+.inspection-item.low span {
+  background: #dff3d4;
+  color: #386d27;
+}
+
+.inspection-item b {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.inspection-item p {
+  color: rgba(255, 248, 237, 0.72);
+  line-height: 1.45;
+}
+
 .section-head {
   align-items: end;
   display: flex;

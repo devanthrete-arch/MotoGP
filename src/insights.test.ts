@@ -4,6 +4,7 @@ import {
   assessPostQuality,
   buildGarageInsights,
   buildGarageExportMarkdown,
+  buildInspectionChecklists,
   buildCityCircles,
   buildModelSharePayload,
   buildModerationSummary,
@@ -213,5 +214,43 @@ describe("Autoflex insights", () => {
       score: 0,
     });
     expect(thinReport.missingPrompts).toContain("Add odometer reading to anchor the issue, review, or cost note.");
+  });
+
+  it("builds buyer inspection checklists from shortlist evidence", () => {
+    const checklists = buildInspectionChecklists(
+      [
+        {
+          brand: "Tata",
+          budget: 1200000,
+          id: "shortlist-nexon",
+          model: "Nexon",
+          notes: "Family compact SUV option",
+          status: "Researching",
+        },
+        {
+          brand: "Toyota",
+          budget: 2200000,
+          id: "shortlist-hyryder",
+          model: "Hyryder",
+          notes: "Needs owner data",
+          status: "Test drive",
+        },
+      ],
+      seedPosts,
+    );
+
+    expect(checklists[0].checklist[0]).toMatchObject({
+      priority: "High",
+      title: "Verify common fix history",
+    });
+    expect(checklists[0].checklist.map((item) => item.title)).toContain("Match odometer-stage expectations");
+    expect(checklists[1].checklist).toEqual([
+      {
+        detail: "Carry a short test-drive route, inspect tyres, service records, insurance claims, and cold-start behavior.",
+        id: "shortlist-hyryder-baseline",
+        priority: "High",
+        title: "Start with a baseline inspection checklist",
+      },
+    ]);
   });
 });

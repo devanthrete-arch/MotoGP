@@ -25,6 +25,7 @@ import {
   buildCityCircles,
   buildGarageInsights,
   buildGarageExportMarkdown,
+  buildInspectionChecklists,
   buildModelSharePayload,
   buildModerationSummary,
   buildNotificationPreview,
@@ -171,6 +172,11 @@ export function App() {
   const ownershipPlaybooks = useMemo(() => buildOwnershipPlaybooks(posts), [posts]);
   const moderationSummary = useMemo(() => buildModerationSummary(reports), [reports]);
   const shortlistComparisons = useMemo(() => buildShortlistComparisons(shortlist, posts), [posts, shortlist]);
+  const inspectionChecklists = useMemo(() => buildInspectionChecklists(shortlist, posts), [posts, shortlist]);
+  const inspectionChecklistByItemId = useMemo(
+    () => new Map(inspectionChecklists.map((checklist) => [checklist.item.id, checklist])),
+    [inspectionChecklists],
+  );
   const draftQuality = useMemo(() => assessPostQuality(draft), [draft]);
   const selectedPostQuality = useMemo(() => (selectedPost ? assessPostQuality(selectedPost) : null), [selectedPost]);
 
@@ -816,42 +822,59 @@ export function App() {
 
           <div className="comparison-grid">
             {shortlistComparisons.length ? (
-              shortlistComparisons.map((comparison) => (
-                <article className="comparison-card" key={comparison.item.id}>
-                  <span className={`confidence ${comparison.confidence.toLowerCase()}`}>{comparison.confidence} confidence</span>
-                  <h3>
-                    {comparison.item.brand} {comparison.item.model}
-                  </h3>
-                  <p>{formatMoney(comparison.item.budget)} target budget</p>
-                  <div className="comparison-stats">
-                    <span>{comparison.relatedNotes} notes</span>
-                    <span>{comparison.ownerReviews} reviews</span>
-                    <span>{comparison.knownIssues} issues</span>
-                    <span>{comparison.fixes} fixes</span>
-                  </div>
-                  <div className="form-row">
-                    <select
-                      value={comparison.item.status}
-                      onChange={(event) =>
-                        updateShortlistItem(comparison.item.id, { status: event.target.value as ShortlistItem["status"] })
-                      }
-                    >
-                      {shortlistStatuses.map((status) => (
-                        <option key={status}>{status}</option>
-                      ))}
-                    </select>
-                    <button className="save-button" type="button" onClick={() => removeShortlistItem(comparison.item.id)}>
-                      Remove
-                    </button>
-                  </div>
-                  <textarea
-                    rows={3}
-                    value={comparison.item.notes}
-                    onChange={(event) => updateShortlistItem(comparison.item.id, { notes: event.target.value })}
-                    placeholder="Decision notes"
-                  />
-                </article>
-              ))
+              shortlistComparisons.map((comparison) => {
+                const inspection = inspectionChecklistByItemId.get(comparison.item.id);
+                return (
+                  <article className="comparison-card" key={comparison.item.id}>
+                    {inspection ? (
+                      <div className="inspection-list">
+                        <strong>Inspection checklist</strong>
+                        {inspection.checklist.map((item) => (
+                          <div className={`inspection-item ${item.priority.toLowerCase()}`} key={item.id}>
+                            <span>{item.priority}</span>
+                            <div>
+                              <b>{item.title}</b>
+                              <p>{item.detail}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                    <span className={`confidence ${comparison.confidence.toLowerCase()}`}>{comparison.confidence} confidence</span>
+                    <h3>
+                      {comparison.item.brand} {comparison.item.model}
+                    </h3>
+                    <p>{formatMoney(comparison.item.budget)} target budget</p>
+                    <div className="comparison-stats">
+                      <span>{comparison.relatedNotes} notes</span>
+                      <span>{comparison.ownerReviews} reviews</span>
+                      <span>{comparison.knownIssues} issues</span>
+                      <span>{comparison.fixes} fixes</span>
+                    </div>
+                    <div className="form-row">
+                      <select
+                        value={comparison.item.status}
+                        onChange={(event) =>
+                          updateShortlistItem(comparison.item.id, { status: event.target.value as ShortlistItem["status"] })
+                        }
+                      >
+                        {shortlistStatuses.map((status) => (
+                          <option key={status}>{status}</option>
+                        ))}
+                      </select>
+                      <button className="save-button" type="button" onClick={() => removeShortlistItem(comparison.item.id)}>
+                        Remove
+                      </button>
+                    </div>
+                    <textarea
+                      rows={3}
+                      value={comparison.item.notes}
+                      onChange={(event) => updateShortlistItem(comparison.item.id, { notes: event.target.value })}
+                      placeholder="Decision notes"
+                    />
+                  </article>
+                );
+              })
             ) : (
               <div className="empty-state">Add a model manually or from an owner note to begin comparison.</div>
             )}
@@ -1260,6 +1283,7 @@ export function App() {
           <p>Post, model notebook, and garage export sharing uses native share with clipboard fallback.</p>
           <p>City circles group local owner notes and garage vehicles by market context.</p>
           <p>Post detail quality meter nudges variant, city, odometer, cost, and outcome context.</p>
+          <p>Buyer inspection checklists convert shortlist evidence into test-drive and used-car checks.</p>
           <p>Subscription previews and garage insights are generated from typed pure functions.</p>
           <p>Service-center integration remains outside this MVP loop.</p>
         </div>

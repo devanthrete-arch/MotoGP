@@ -151,6 +151,8 @@ Completed slices:
   and owner signals.
 - Post detail quality meter that nudges variant, city, odometer, cost, and
   outcome context before publishing.
+- Buyer inspection checklists generated from shortlist models and matching
+  owner-note evidence.
 - Verified-fix signal: owners can mark a Fix post as "worked for me", with
   duplicate-safe counts surfaced in model notebooks.
 - Model-page quality signals: helpfulness, stale-info flags, and moderator
