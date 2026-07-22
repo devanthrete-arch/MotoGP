@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Autoflex app icon</title>
+  <desc id="desc">A warm garage notebook icon with a road line and Autoflex mark.</desc>
+  <rect width="512" height="512" rx="112" fill="#241912" />
+  <path d="M92 354c70-90 118-134 164-134s94 44 164 134" fill="none" stroke="#ffb36b" stroke-width="34" stroke-linecap="round" />
+  <path d="M256 96v278" stroke="#fff8ed" stroke-width="28" stroke-linecap="round" stroke-dasharray="2 52" />
+  <circle cx="256" cy="220" r="70" fill="#4b2418" stroke="#fff8ed" stroke-width="26" />
+  <path d="M220 220h72M256 184v72" stroke="#ffb36b" stroke-width="24" stroke-linecap="round" />
+  <path d="M128 408h256" stroke="#fff8ed" stroke-width="24" stroke-linecap="round" opacity=".72" />
+</svg>

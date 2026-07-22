@@ -35,7 +35,7 @@
   "rewrites": [
     {
       "destination": "/index.html",
-      "source": "/((?!assets/|vite.svg|favicon.ico).*)"
+      "source": "/((?!assets/|vite.svg|favicon.ico|manifest.json|icon.svg).*)"
     }
   ]
 }

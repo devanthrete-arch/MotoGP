@@ -70,6 +70,7 @@ Service-center integration is intentionally kept separate under
 - [x] Added browser/client error capture for staging QA.
 - [x] Added health endpoint with app version and service-center boundary status.
 - [x] Added Vercel deployment config, SPA fallback routing, and launch-readiness panel.
+- [x] Added install-ready web app manifest, icon, theme metadata, and app shortcuts.
 - [x] Added local data backup export/import so testers can move MVP state before hosted sync exists.
 - [x] Added share buttons plus `/share/*` metadata landing pages for posts and model notebooks.
 - [x] Added richer starter seed content for tester onboarding.
@@ -80,7 +81,7 @@ Service-center integration is intentionally kept separate under
 
 - [x] Merged the TypeScript web MVP feature PRs through post quality meter into `master`.
 - [ ] Deploy the TypeScript webapp on Vercel.
-- [ ] Run a visual responsive QA pass on the deployed Vercel URL, including the starter route.
+- [ ] Run a visual responsive QA pass on the deployed Vercel URL, including the starter route and install prompt.
 - [ ] Decide whether the first hosted backend is TypeScript/Fastify or the existing Ktor API.
 - [ ] Add durable hosted persistence after the TypeScript web surface is validated.
 - [ ] Replace local backup/restore with hosted account sync once persistence exists.
@@ -149,6 +150,10 @@ inspection checklists for test drives or used-car evaluations. Model playbooks
 summarize owner signals and buyer checks from the same typed post data.
 The write flow includes a detail quality meter so new posts become more useful
 before they reach the community feed.
+
+The web shell includes `public/manifest.json` and `public/icon.svg` so
+Chrome/Android and supporting desktop browsers can present Autoflex as an
+installable app surface.
 
 Run the web release gate before deploying:
 

@@ -111,7 +111,7 @@ export type BuildLoopItem = {
 };
 
 export type LaunchReadinessItem = {
-  area: "Deploy" | "Responsive QA" | "Data safety" | "Trust" | "Feedback" | "Boundary";
+  area: "Deploy" | "Install" | "Responsive QA" | "Data safety" | "Trust" | "Feedback" | "Boundary";
   label: string;
   detail: string;
   ready: boolean;
@@ -334,6 +334,12 @@ export const launchReadinessItems: LaunchReadinessItem[] = [
     detail: "Needs the first production Vercel URL, deep-link refresh check, and header check before public sharing.",
     label: "Production Vercel URL",
     ready: false,
+  },
+  {
+    area: "Install",
+    detail: "Manifest, theme metadata, icon, and shortcuts are available for browser install surfaces.",
+    label: "Install-ready web shell",
+    ready: true,
   },
   {
     area: "Responsive QA",
