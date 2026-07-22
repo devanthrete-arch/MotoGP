@@ -10,6 +10,7 @@ import type {
   ModelNotebook,
   OwnerPost,
   Profile,
+  ProductionOpsItem,
   ProductionLaunchItem,
   QaSessionItem,
   ReportRecord,
@@ -96,6 +97,12 @@ export type ProductionLaunchSummary = {
   remaining: ProductionLaunchItem[];
 };
 
+export type ProductionOpsSummary = {
+  checked: number;
+  total: number;
+  remaining: ProductionOpsItem[];
+};
+
 export type TesterRunSummary = {
   total: number;
   useful: number;
@@ -119,6 +126,7 @@ export type QaHandoffInput = {
   launchSummary: LaunchReadinessSummary;
   profile: Profile;
   productionLaunchSummary: ProductionLaunchSummary;
+  productionOpsSummary: ProductionOpsSummary;
   productionUrl: string;
   qaSummary: QaSessionSummary;
   responsiveQaSummary: ResponsiveQaSummary;
@@ -326,6 +334,14 @@ export function buildProductionLaunchSummary(
   };
 }
 
+export function buildProductionOpsSummary(items: ProductionOpsItem[], checkedIds: Set<string>): ProductionOpsSummary {
+  return {
+    checked: items.filter((item) => checkedIds.has(item.id)).length,
+    remaining: items.filter((item) => !checkedIds.has(item.id)),
+    total: items.length,
+  };
+}
+
 export function buildTesterRunSummary(runs: TesterRun[]): TesterRunSummary {
   return {
     blocked: runs.filter((run) => run.outcome === "Blocked").length,
@@ -354,6 +370,8 @@ export function buildQaHandoffMarkdown(input: QaHandoffInput): string {
   const launchBlockers = input.launchSummary.blocked.map((item) => `- ${item.label}: ${item.detail}`).join("\n") || "- None";
   const productionLaunchRemaining =
     input.productionLaunchSummary.remaining.map((item) => `- ${item.label}: ${item.detail}`).join("\n") || "- None";
+  const productionOpsRemaining =
+    input.productionOpsSummary.remaining.map((item) => `- ${item.label}: ${item.detail}`).join("\n") || "- None";
   const testerFriction =
     input.testerRunSummary.openFriction
       .map((run) => `- ${run.outcome} / ${run.nextLoopStage}: ${run.scenario} — ${run.friction}`)
@@ -400,6 +418,12 @@ export function buildQaHandoffMarkdown(input: QaHandoffInput): string {
     "",
     "Remaining production checks:",
     productionLaunchRemaining,
+    "",
+    "Production operations:",
+    `Checked: ${input.productionOpsSummary.checked}/${input.productionOpsSummary.total}`,
+    "",
+    "Remaining operations checks:",
+    productionOpsRemaining,
     "",
     "## Feedback triage",
     "",

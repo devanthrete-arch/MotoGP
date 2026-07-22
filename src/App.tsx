@@ -7,6 +7,7 @@ import {
   knowledgeLabels,
   launchReadinessItems,
   productionLaunchItems,
+  productionOpsItems,
   qaSessionItems,
   responsiveQaItems,
   shortlistStatuses,
@@ -51,6 +52,7 @@ import {
   buildOwnershipPlaybooks,
   buildPostSharePayload,
   buildProductionLaunchSummary,
+  buildProductionOpsSummary,
   buildQaHandoffMarkdown,
   buildQaSessionSummary,
   buildResponsiveQaSummary,
@@ -78,6 +80,7 @@ import {
   loadProfile,
   loadPosts,
   loadProductionLaunch,
+  loadProductionOps,
   loadProductionUrl,
   loadQaSession,
   loadResponsiveQa,
@@ -94,6 +97,7 @@ import {
   saveGarage,
   savePosts,
   saveProductionLaunch,
+  saveProductionOps,
   saveProductionUrl,
   saveQaSession,
   saveResponsiveQa,
@@ -180,6 +184,7 @@ export function App() {
   const [qaSession, setQaSession] = useState<Set<string>>(() => loadQaSession());
   const [responsiveQa, setResponsiveQa] = useState<Set<string>>(() => loadResponsiveQa());
   const [productionLaunch, setProductionLaunch] = useState<Set<string>>(() => loadProductionLaunch());
+  const [productionOps, setProductionOps] = useState<Set<string>>(() => loadProductionOps());
   const [productionUrl, setProductionUrl] = useState(() => loadProductionUrl());
   const [follows, setFollows] = useState<FollowState>(() => loadFollows());
   const [subscriptionSettings, setSubscriptionSettings] = useState<SubscriptionSettings>(() => loadSubscriptionSettings());
@@ -264,6 +269,7 @@ export function App() {
     () => buildProductionLaunchSummary(productionLaunchItems, productionLaunch),
     [productionLaunch],
   );
+  const productionOpsSummary = useMemo(() => buildProductionOpsSummary(productionOpsItems, productionOps), [productionOps]);
   const testerRunSummary = useMemo(() => buildTesterRunSummary(testerRuns), [testerRuns]);
   const hostedApiSummary = useMemo(() => buildHostedApiReadinessSummary(hostedApiReadinessItems), []);
   const shortlistComparisons = useMemo(() => buildShortlistComparisons(shortlist, posts), [posts, shortlist]);
@@ -392,6 +398,14 @@ export function App() {
     saveProductionLaunch(next);
   };
 
+  const toggleProductionOpsItem = (itemId: string) => {
+    const next = new Set(productionOps);
+    if (next.has(itemId)) next.delete(itemId);
+    else next.add(itemId);
+    setProductionOps(next);
+    saveProductionOps(next);
+  };
+
   const shareQaHandoff = () => {
     void shareText({
       title: "Autoflex QA handoff",
@@ -403,6 +417,7 @@ export function App() {
         launchSummary: launchReadinessSummary,
         profile,
         productionLaunchSummary,
+        productionOpsSummary,
         productionUrl,
         qaSummary: qaSessionSummary,
         responsiveQaSummary,
@@ -526,6 +541,7 @@ export function App() {
     restoreAutoflexBackup(backup);
     setPosts(backup.data.posts);
     setProductionLaunch(new Set(backup.data.productionLaunch));
+    setProductionOps(new Set(backup.data.productionOps));
     setProductionUrl(backup.data.productionUrl);
     setSaved(new Set(backup.data.saved));
     setFeedback(backup.data.feedback);
@@ -1708,6 +1724,29 @@ export function App() {
                   onChange={() => toggleProductionLaunchItem(item.id)}
                   type="checkbox"
                 />
+                <span>{item.label}</span>
+                <small>{item.detail}</small>
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className="production-ops-card">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Production operations</p>
+              <h3>Operational checks before the first public push.</h3>
+            </div>
+            <div className="launch-score">
+              <strong>
+                {productionOpsSummary.checked}/{productionOpsSummary.total}
+              </strong>
+              hardened
+            </div>
+          </div>
+          <div className="production-ops-grid">
+            {productionOpsItems.map((item) => (
+              <label className={productionOps.has(item.id) ? "checked" : ""} key={item.id}>
+                <input checked={productionOps.has(item.id)} onChange={() => toggleProductionOpsItem(item.id)} type="checkbox" />
                 <span>{item.label}</span>
                 <small>{item.detail}</small>
               </label>

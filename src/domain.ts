@@ -176,6 +176,18 @@ export type HostedApiReadinessItem = {
   serviceCenterBoundary: boolean;
 };
 
+export type ProductionOpsItem = {
+  id:
+    | "backup-restore-drill"
+    | "non-default-admin-token"
+    | "client-error-path"
+    | "release-logs"
+    | "monitoring-owner"
+    | "https-only";
+  label: string;
+  detail: string;
+};
+
 export type ModelNotebook = {
   key: string;
   brand: string;
@@ -369,6 +381,39 @@ export const hostedApiReadinessItems: HostedApiReadinessItem[] = [
     priority: "Later",
     serviceCenterBoundary: true,
     surface: "Service-center integration",
+  },
+];
+
+export const productionOpsItems: ProductionOpsItem[] = [
+  {
+    detail: "Export backup, restore in a clean profile, and confirm garage, feedback, reports, shortlist, QA, launch, and tester-run state return.",
+    id: "backup-restore-drill",
+    label: "Backup restore drill passed",
+  },
+  {
+    detail: "Production moderation/admin path is not using the local development token.",
+    id: "non-default-admin-token",
+    label: "Non-default admin token set",
+  },
+  {
+    detail: "Crash recovery and feedback/error reporting path has been exercised before public sharing.",
+    id: "client-error-path",
+    label: "Client error path checked",
+  },
+  {
+    detail: "Release label, deployment notes, and known launch blockers are visible to the operator.",
+    id: "release-logs",
+    label: "Release notes and logs ready",
+  },
+  {
+    detail: "A human owner is assigned for monitoring Vercel, feedback, reports, and real-user runs after launch.",
+    id: "monitoring-owner",
+    label: "Monitoring owner assigned",
+  },
+  {
+    detail: "Production URL is served over HTTPS and no non-secure app URL is shared with testers.",
+    id: "https-only",
+    label: "HTTPS-only public link",
   },
 ];
 

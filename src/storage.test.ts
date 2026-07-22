@@ -188,6 +188,7 @@ describe("Autoflex storage safety", () => {
           posts: [],
           profile: { city: "Pune", displayName: "Owner", garageRole: "Owner" },
           productionLaunch: ["production-url", 42],
+          productionOps: ["https-only", 42],
           productionUrl: "https://autoflex.example.vercel.app",
           reports: [],
           responsiveQa: ["phone-nav-feed", 42],
@@ -215,6 +216,7 @@ describe("Autoflex storage safety", () => {
     expect(backup?.data.feedback[0]?.status).toBe("New");
     expect(backup?.data.feedback[0]?.loopStage).toBe("Real user");
     expect(backup?.data.productionLaunch).toEqual(["production-url"]);
+    expect(backup?.data.productionOps).toEqual(["https-only"]);
     expect(backup?.data.productionUrl).toBe("https://autoflex.example.vercel.app");
     expect(backup?.data.responsiveQa).toEqual(["phone-nav-feed"]);
     expect(backup?.data.saved).toEqual(["nexon-diesel-clutch"]);

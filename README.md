@@ -72,6 +72,7 @@ Service-center integration is intentionally kept separate under
 - [x] Added health endpoint with app version and service-center boundary status.
 - [x] Added Vercel deployment config, SPA fallback routing, and launch-readiness panel.
 - [x] Added a persisted production launch checklist for URL, deep-link refresh, headers, install metadata, offline smoke, and handoff verification.
+- [x] Added a persisted production operations checklist for backup drill, admin token, client-error path, logs, monitoring owner, and HTTPS.
 - [x] Added install-ready web app manifest, icon, theme metadata, and app shortcuts.
 - [x] Added online/offline status messaging for local-first tester sessions.
 - [x] Added a persisted QA session checklist for launch smoke passes.
@@ -108,7 +109,7 @@ Service-center integration is intentionally kept separate under
 - [ ] Replace local garage cost ledger with hosted running-cost analytics and cross-device history.
 - [ ] Replace local garage reminders with hosted reminder scheduling and notification delivery.
 - [ ] Add Google sign-in only after the lightweight profile flow proves insufficient.
-- [ ] Harden production operations: backup restore drill, non-default admin token, logs, and monitoring vendor if needed.
+- [ ] Complete production operations hardening on the deployed URL: backup restore drill, non-default admin token, logs, monitoring owner, and HTTPS-only link.
 - [ ] Bring the native Android app up to feature parity after the web MVP is validated.
 - [ ] Keep service-center integration pending until the owning team provides its contract.
 
