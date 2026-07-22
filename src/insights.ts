@@ -11,6 +11,7 @@ import type {
   Profile,
   QaSessionItem,
   ReportRecord,
+  ResponsiveQaItem,
   ShortlistItem,
   StarterRoute,
   TimelineEntry,
@@ -80,6 +81,12 @@ export type QaSessionSummary = {
   remaining: QaSessionItem[];
 };
 
+export type ResponsiveQaSummary = {
+  checked: number;
+  total: number;
+  remaining: ResponsiveQaItem[];
+};
+
 export type QaHandoffInput = {
   feedbackLoopSummary: FeedbackLoopSummary;
   feedbackSummary: FeedbackTriageSummary;
@@ -87,6 +94,7 @@ export type QaHandoffInput = {
   launchSummary: LaunchReadinessSummary;
   profile: Profile;
   qaSummary: QaSessionSummary;
+  responsiveQaSummary: ResponsiveQaSummary;
 };
 
 export type SharePayload = {
@@ -271,9 +279,20 @@ export function buildQaSessionSummary(items: QaSessionItem[], checkedIds: Set<st
   };
 }
 
+export function buildResponsiveQaSummary(items: ResponsiveQaItem[], checkedIds: Set<string>): ResponsiveQaSummary {
+  return {
+    checked: items.filter((item) => checkedIds.has(item.id)).length,
+    remaining: items.filter((item) => !checkedIds.has(item.id)),
+    total: items.length,
+  };
+}
+
 export function buildQaHandoffMarkdown(input: QaHandoffInput): string {
   const feedbackTotal = Object.values(input.feedbackSummary).reduce((total, count) => total + count, 0);
   const remainingQa = input.qaSummary.remaining.map((item) => `- ${item.label}`).join("\n") || "- None";
+  const remainingResponsiveQa =
+    input.responsiveQaSummary.remaining.map((item) => `- ${item.breakpoint} / ${item.surface}: ${item.label}`).join("\n") ||
+    "- None";
   const launchBlockers = input.launchSummary.blocked.map((item) => `- ${item.label}: ${item.detail}`).join("\n") || "- None";
   const loopRouting = Object.entries(input.feedbackLoopSummary)
     .map(([stage, count]) => `- ${stage}: ${count}`)
@@ -296,6 +315,13 @@ export function buildQaHandoffMarkdown(input: QaHandoffInput): string {
     "",
     "Remaining smoke checks:",
     remainingQa,
+    "",
+    "## Responsive QA",
+    "",
+    `Checked: ${input.responsiveQaSummary.checked}/${input.responsiveQaSummary.total}`,
+    "",
+    "Remaining responsive checks:",
+    remainingResponsiveQa,
     "",
     "## Launch readiness",
     "",

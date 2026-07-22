@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { qaSessionItems, seedGarage, seedPosts, seedTimeline, starterRoutes } from "./domain";
+import { qaSessionItems, responsiveQaItems, seedGarage, seedPosts, seedTimeline, starterRoutes } from "./domain";
 import {
   assessPostQuality,
   buildFeedbackTriageSummary,
@@ -19,6 +19,7 @@ import {
   buildPostSharePayload,
   buildQaHandoffMarkdown,
   buildQaSessionSummary,
+  buildResponsiveQaSummary,
   buildReturnNudges,
   buildShortlistComparisons,
   buildStarterRouteProgress,
@@ -105,6 +106,16 @@ describe("Autoflex insights", () => {
     expect(summary.remaining.map((item) => item.id)).not.toContain("feed");
   });
 
+  it("summarizes responsive QA checks across breakpoints", () => {
+    const summary = buildResponsiveQaSummary(responsiveQaItems, new Set(["phone-nav-feed", "desktop-data-tools"]));
+
+    expect(summary).toMatchObject({
+      checked: 2,
+      total: responsiveQaItems.length,
+    });
+    expect(summary.remaining.map((item) => item.id)).not.toContain("phone-nav-feed");
+  });
+
   it("builds a QA handoff report for the product loop", () => {
     const report = buildQaHandoffMarkdown({
       feedbackLoopSummary: {
@@ -140,6 +151,7 @@ describe("Autoflex insights", () => {
         garageRole: "Owner",
       },
       qaSummary: buildQaSessionSummary(qaSessionItems, new Set(["feed"])),
+      responsiveQaSummary: buildResponsiveQaSummary(responsiveQaItems, new Set(["phone-nav-feed"])),
     });
 
     expect(report).toContain("# Autoflex QA handoff");
@@ -147,6 +159,8 @@ describe("Autoflex insights", () => {
     expect(report).toContain("City: Pune");
     expect(report).toContain("Role: Owner");
     expect(report).toContain("Checked: 1/");
+    expect(report).toContain("## Responsive QA");
+    expect(report).toContain("Tablet / Knowledge cards");
     expect(report).toContain("Production Vercel URL: Needs production URL.");
     expect(report).toContain("Total tester notes: 4");
     expect(report).toContain("Product owner: 2");

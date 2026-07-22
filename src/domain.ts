@@ -92,6 +92,15 @@ export type QaSessionItem = {
   label: string;
 };
 
+export type ResponsiveBreakpoint = "Phone" | "Tablet" | "Desktop";
+
+export type ResponsiveQaItem = {
+  id: string;
+  breakpoint: ResponsiveBreakpoint;
+  surface: string;
+  label: string;
+};
+
 export type ReportStatus = "Open" | "Dismissed" | "Removed";
 
 export type ReportRecord = {
@@ -201,6 +210,45 @@ export const qaSessionItems: QaSessionItem[] = [
   { id: "install", label: "Manifest, icon, theme metadata, and shortcuts are available." },
   { id: "offline", label: "Offline strip explains local-first behavior when connection drops." },
   { id: "service-boundary", label: "Service-center work remains outside the community loop." },
+];
+
+export const responsiveQaItems: ResponsiveQaItem[] = [
+  {
+    breakpoint: "Phone",
+    id: "phone-nav-feed",
+    label: "Burger nav opens, closes, and feed/detail actions stay thumb-friendly.",
+    surface: "Navigation + feed",
+  },
+  {
+    breakpoint: "Phone",
+    id: "phone-forms",
+    label: "Write, feedback, garage, and shortlist forms stay readable without sideways scroll.",
+    surface: "Forms",
+  },
+  {
+    breakpoint: "Tablet",
+    id: "tablet-cards",
+    label: "Notebook, city, playbook, and garage cards keep useful two-column rhythm.",
+    surface: "Knowledge cards",
+  },
+  {
+    breakpoint: "Tablet",
+    id: "tablet-qa-loop",
+    label: "QA, feedback routing, and launch panels remain scannable in one pass.",
+    surface: "Loop panels",
+  },
+  {
+    breakpoint: "Desktop",
+    id: "desktop-hero-detail",
+    label: "Hero, feed detail, and sticky ownership note avoid cramped or floating dead space.",
+    surface: "Hero + detail",
+  },
+  {
+    breakpoint: "Desktop",
+    id: "desktop-data-tools",
+    label: "Backup, moderation, garage ledger, and reminders keep clear action hierarchy.",
+    surface: "Data tools",
+  },
 ];
 
 export const knowledgeLabels: KnowledgeLabel[] = [
