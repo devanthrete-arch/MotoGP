@@ -6,6 +6,7 @@ import {
   readStoredJson,
   safeJsonParse,
   type StorageLike,
+  updateFeedbackLoopStage,
   updateFeedbackStatus,
   writeStoredJson,
 } from "./storage";
@@ -63,6 +64,7 @@ describe("Autoflex storage safety", () => {
 
     expect(notes[0]).toMatchObject({
       id: "feedback-old",
+      loopStage: "Real user",
       status: "New",
     });
   });
@@ -72,12 +74,14 @@ describe("Autoflex storage safety", () => {
       {
         createdAt: "2026-07-21T10:00:00.000Z",
         id: "feedback-one",
+        loopStage: "Real user",
         message: "Add city follow.",
         status: "New",
       },
       {
         createdAt: "2026-07-21T11:00:00.000Z",
         id: "feedback-two",
+        loopStage: "Designer",
         message: "Keep this untouched.",
         status: "Reviewing",
       },
@@ -85,6 +89,30 @@ describe("Autoflex storage safety", () => {
 
     expect(updateFeedbackStatus(feedback, "feedback-one", "Planned")).toEqual([
       { ...feedback[0], status: "Planned" },
+      feedback[1],
+    ]);
+  });
+
+  it("routes feedback through the product loop without mutating other notes", () => {
+    const feedback: FeedbackNote[] = [
+      {
+        createdAt: "2026-07-21T10:00:00.000Z",
+        id: "feedback-one",
+        loopStage: "Real user",
+        message: "The hero copy feels unclear.",
+        status: "New",
+      },
+      {
+        createdAt: "2026-07-21T11:00:00.000Z",
+        id: "feedback-two",
+        loopStage: "Frontend engineer",
+        message: "Keep this untouched.",
+        status: "Reviewing",
+      },
+    ];
+
+    expect(updateFeedbackLoopStage(feedback, "feedback-one", "Designer")).toEqual([
+      { ...feedback[0], loopStage: "Designer" },
       feedback[1],
     ]);
   });
@@ -121,6 +149,7 @@ describe("Autoflex storage safety", () => {
     );
 
     expect(backup?.data.feedback[0]?.status).toBe("New");
+    expect(backup?.data.feedback[0]?.loopStage).toBe("Real user");
     expect(backup?.data.saved).toEqual(["nexon-diesel-clutch"]);
     expect(backup?.data.profile.displayName).toBe("Owner");
   });

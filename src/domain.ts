@@ -22,6 +22,7 @@ export type OwnerPost = {
 
 export type FeedbackNote = {
   id: string;
+  loopStage: BuildRole;
   message: string;
   status: FeedbackStatus;
   createdAt: string;
@@ -147,6 +148,15 @@ export type DraftTimelineEntry = Omit<TimelineEntry, "id">;
 export const shortlistStatuses: ShortlistStatus[] = ["Researching", "Test drive", "Negotiating", "Rejected", "Bought"];
 
 export const feedbackStatuses: FeedbackStatus[] = ["New", "Reviewing", "Planned", "Shipped"];
+
+export const feedbackLoopStages: BuildRole[] = [
+  "Product owner",
+  "Designer",
+  "Backend engineer",
+  "Frontend engineer",
+  "Tested / QA",
+  "Real user",
+];
 
 export const starterRoutes: StarterRoute[] = [
   {

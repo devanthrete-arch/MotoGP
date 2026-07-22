@@ -1,4 +1,5 @@
 import type {
+  BuildRole,
   FeedbackNote,
   FeedbackStatus,
   FollowState,
@@ -55,6 +56,8 @@ export type ModerationSummary = {
 
 export type FeedbackTriageSummary = Record<FeedbackStatus, number>;
 
+export type FeedbackLoopSummary = Record<BuildRole, number>;
+
 export type LaunchReadinessSummary = {
   ready: number;
   total: number;
@@ -78,6 +81,7 @@ export type QaSessionSummary = {
 };
 
 export type QaHandoffInput = {
+  feedbackLoopSummary: FeedbackLoopSummary;
   feedbackSummary: FeedbackTriageSummary;
   generatedAt: string;
   launchSummary: LaunchReadinessSummary;
@@ -271,6 +275,9 @@ export function buildQaHandoffMarkdown(input: QaHandoffInput): string {
   const feedbackTotal = Object.values(input.feedbackSummary).reduce((total, count) => total + count, 0);
   const remainingQa = input.qaSummary.remaining.map((item) => `- ${item.label}`).join("\n") || "- None";
   const launchBlockers = input.launchSummary.blocked.map((item) => `- ${item.label}: ${item.detail}`).join("\n") || "- None";
+  const loopRouting = Object.entries(input.feedbackLoopSummary)
+    .map(([stage, count]) => `- ${stage}: ${count}`)
+    .join("\n");
 
   return [
     "# Autoflex QA handoff",
@@ -305,10 +312,30 @@ export function buildQaHandoffMarkdown(input: QaHandoffInput): string {
     `Planned: ${input.feedbackSummary.Planned}`,
     `Shipped: ${input.feedbackSummary.Shipped}`,
     "",
+    "Loop routing:",
+    loopRouting,
+    "",
     "## Service-center boundary",
     "",
     "Service-center integration remains outside this MVP loop until the owning team provides its contract.",
   ].join("\n");
+}
+
+export function buildFeedbackLoopSummary(feedback: FeedbackNote[]): FeedbackLoopSummary {
+  return feedback.reduce<FeedbackLoopSummary>(
+    (summary, note) => ({
+      ...summary,
+      [note.loopStage]: summary[note.loopStage] + 1,
+    }),
+    {
+      "Backend engineer": 0,
+      Designer: 0,
+      "Frontend engineer": 0,
+      "Product owner": 0,
+      "Real user": 0,
+      "Tested / QA": 0,
+    },
+  );
 }
 
 export function buildNotificationPreview(input: {

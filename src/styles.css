@@ -888,7 +888,8 @@ a:focus-visible {
   margin: 18px 0;
 }
 
-.feedback-triage-bar span {
+.feedback-triage-bar span,
+.feedback-loop-bar span {
   background: #211b16;
   border-radius: 18px;
   color: rgba(255, 248, 237, 0.74);
@@ -897,11 +898,29 @@ a:focus-visible {
   padding: 14px;
 }
 
-.feedback-triage-bar strong {
+.feedback-loop-bar {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0 0 18px;
+}
+
+.feedback-loop-bar span {
+  background: #f8ead8;
+  color: #725a48;
+  padding: 12px;
+}
+
+.feedback-triage-bar strong,
+.feedback-loop-bar strong {
   color: #ffcc8d;
   font-size: 1.45rem;
   letter-spacing: -0.05em;
   line-height: 1;
+}
+
+.feedback-loop-bar strong {
+  color: #7e321d;
 }
 
 .feedback-list {
@@ -923,6 +942,12 @@ a:focus-visible {
   display: flex;
   gap: 10px;
   justify-content: space-between;
+}
+
+.feedback-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .feedback-card span {
@@ -950,6 +975,11 @@ a:focus-visible {
 .feedback-card.shipped span {
   background: #dff3d4;
   color: #386d27;
+}
+
+.feedback-card .loop-stage {
+  background: #f1e5d9;
+  color: #4f3c2f;
 }
 
 .feedback-card time,
@@ -1494,6 +1524,7 @@ a:focus-visible {
   .playbook-grid,
   .moderation-grid,
   .launch-grid,
+  .feedback-loop-bar,
   .feedback-triage-bar {
     grid-template-columns: 1fr;
   }
@@ -1534,6 +1565,7 @@ a:focus-visible {
   .filters,
   .preference-toggles,
   .moderation-stats,
+  .feedback-loop-bar,
   .qa-actions {
     justify-content: flex-start;
   }

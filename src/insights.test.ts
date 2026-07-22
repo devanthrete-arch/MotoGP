@@ -3,6 +3,7 @@ import { qaSessionItems, seedGarage, seedPosts, seedTimeline, starterRoutes } fr
 import {
   assessPostQuality,
   buildFeedbackTriageSummary,
+  buildFeedbackLoopSummary,
   buildConnectionStatusCopy,
   buildGarageCostLedger,
   buildGarageInsights,
@@ -106,6 +107,14 @@ describe("Autoflex insights", () => {
 
   it("builds a QA handoff report for the product loop", () => {
     const report = buildQaHandoffMarkdown({
+      feedbackLoopSummary: {
+        "Backend engineer": 0,
+        Designer: 1,
+        "Frontend engineer": 0,
+        "Product owner": 2,
+        "Real user": 1,
+        "Tested / QA": 0,
+      },
       feedbackSummary: {
         New: 2,
         Planned: 1,
@@ -140,7 +149,32 @@ describe("Autoflex insights", () => {
     expect(report).toContain("Checked: 1/");
     expect(report).toContain("Production Vercel URL: Needs production URL.");
     expect(report).toContain("Total tester notes: 4");
+    expect(report).toContain("Product owner: 2");
+    expect(report).toContain("Designer: 1");
     expect(report).toContain("Service-center integration remains outside this MVP loop");
+  });
+
+  it("summarizes feedback by product loop stage", () => {
+    const summary = buildFeedbackLoopSummary([
+      {
+        createdAt: "2026-07-22T10:00:00.000Z",
+        id: "feedback-product",
+        loopStage: "Product owner",
+        message: "Make buyer onboarding clearer.",
+        status: "New",
+      },
+      {
+        createdAt: "2026-07-22T11:00:00.000Z",
+        id: "feedback-qa",
+        loopStage: "Tested / QA",
+        message: "Run mobile smoke check on shortlist.",
+        status: "Reviewing",
+      },
+    ]);
+
+    expect(summary["Product owner"]).toBe(1);
+    expect(summary["Tested / QA"]).toBe(1);
+    expect(summary["Real user"]).toBe(0);
   });
 
   it("creates notification previews without requiring a backend", () => {
@@ -248,18 +282,21 @@ describe("Autoflex insights", () => {
       {
         createdAt: "2026-07-21T10:00:00.000Z",
         id: "feedback-one",
+        loopStage: "Product owner",
         message: "Show ownership cost earlier.",
         status: "New",
       },
       {
         createdAt: "2026-07-21T11:00:00.000Z",
         id: "feedback-two",
+        loopStage: "Tested / QA",
         message: "Garage reminders are useful.",
         status: "Shipped",
       },
       {
         createdAt: "2026-07-21T12:00:00.000Z",
         id: "feedback-three",
+        loopStage: "Backend engineer",
         message: "City follows should sync.",
         status: "Planned",
       },
