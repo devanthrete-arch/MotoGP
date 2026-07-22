@@ -47,6 +47,7 @@ Service-center integration is intentionally kept separate under
 - [x] Added post detail quality meter to nudge variant, city, odometer, cost, and outcome context.
 - [x] Added responsive layout polish for phone, tablet, and desktop use.
 - [x] Hardened local browser storage reads/writes so blocked or corrupt storage does not crash the app.
+- [x] Added app-level crash recovery UI to avoid a blank page on render errors.
 - [x] Added shared Kotlin request/response models.
 - [x] Added native Android project scaffolding for the later Android app path.
 - [x] Added community feed with latest/popular sorting, search, brand/topic filters, and pagination.

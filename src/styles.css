@@ -51,6 +51,32 @@ a {
   padding: 28px clamp(18px, 4vw, 64px) 64px;
 }
 
+.crash-panel {
+  background:
+    radial-gradient(circle at 85% 10%, rgba(255, 179, 107, 0.22), transparent 24rem),
+    linear-gradient(135deg, #241912 0%, #4b2418 100%);
+  color: #fff8ed;
+  display: grid;
+  gap: 18px;
+  min-height: 100vh;
+  padding: clamp(28px, 7vw, 88px);
+  place-content: center;
+}
+
+.crash-panel > * {
+  max-width: 760px;
+}
+
+.crash-panel code {
+  background: rgba(255, 248, 237, 0.1);
+  border: 1px solid rgba(255, 248, 237, 0.16);
+  border-radius: 18px;
+  color: #ffcc8d;
+  display: block;
+  overflow-wrap: anywhere;
+  padding: 16px;
+}
+
 .nav,
 .hero-grid,
 .panel,
