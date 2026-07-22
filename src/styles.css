@@ -1191,6 +1191,69 @@ a:focus-visible {
   padding-top: 24px;
 }
 
+.launch-panel {
+  padding-top: 30px;
+}
+
+.launch-score {
+  background: #211b16;
+  border-radius: 999px;
+  color: rgba(255, 248, 237, 0.78);
+  display: inline-flex;
+  font-weight: 900;
+  gap: 8px;
+  padding: 10px 14px;
+}
+
+.launch-score strong {
+  color: #ffcc8d;
+}
+
+.launch-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.launch-card {
+  background:
+    linear-gradient(180deg, #fffaf2, #f8ead8),
+    radial-gradient(circle at 95% 0%, rgba(255, 179, 107, 0.22), transparent 15rem);
+  border: 1px solid rgba(95, 61, 40, 0.16);
+  border-radius: 26px;
+  padding: 22px;
+}
+
+.launch-card > span {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  padding: 7px 10px;
+  text-transform: uppercase;
+}
+
+.launch-card.ready > span {
+  background: #dff3d4;
+  color: #386d27;
+}
+
+.launch-card.blocked > span {
+  background: #ffd8d4;
+  color: #8b281d;
+}
+
+.launch-card h3 {
+  margin: 14px 0 8px;
+}
+
+.launch-card p {
+  color: #725a48;
+  line-height: 1.55;
+  margin: 0;
+}
+
 .moderation-stats {
   display: flex;
   flex-wrap: wrap;
@@ -1284,6 +1347,7 @@ a:focus-visible {
   .insight-grid,
   .playbook-grid,
   .moderation-grid,
+  .launch-grid,
   .feedback-triage-bar {
     grid-template-columns: 1fr;
   }

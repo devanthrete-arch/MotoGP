@@ -68,6 +68,7 @@ Service-center integration is intentionally kept separate under
 - [x] Added local feedback triage states for Product owner → Design → Engineering → QA loop follow-through.
 - [x] Added browser/client error capture for staging QA.
 - [x] Added health endpoint with app version and service-center boundary status.
+- [x] Added Vercel deployment config, SPA fallback routing, and launch-readiness panel.
 - [x] Added share buttons plus `/share/*` metadata landing pages for posts and model notebooks.
 - [x] Added richer starter seed content for tester onboarding.
 - [x] Added Docker staging packaging and staging deployment docs.
@@ -144,6 +145,12 @@ summarize owner signals and buyer checks from the same typed post data.
 The write flow includes a detail quality meter so new posts become more useful
 before they reach the community feed.
 
+Run the web release gate before deploying:
+
+```bash
+npm run release:check
+```
+
 Run the preserved Kotlin web/API path:
 
 ```bash
@@ -172,6 +179,7 @@ Set `UPLOAD_DIR` to move them in a shared environment.
 ## Production checklist
 
 - Deploy the active TypeScript webapp through Vercel.
+- Run `npm run release:check`.
 - Serve the future hosted API over HTTPS.
 - Set `ADMIN_TOKEN`, `DATABASE_PATH`, `UPLOAD_DIR`, and `APP_VERSION`.
 - Back up the database and upload directory.

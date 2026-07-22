@@ -4,6 +4,7 @@ import type {
   FollowState,
   GarageVehicle,
   KnowledgeLabel,
+  LaunchReadinessItem,
   ModelNotebook,
   OwnerPost,
   ReportRecord,
@@ -50,6 +51,12 @@ export type ModerationSummary = {
 };
 
 export type FeedbackTriageSummary = Record<FeedbackStatus, number>;
+
+export type LaunchReadinessSummary = {
+  ready: number;
+  total: number;
+  blocked: LaunchReadinessItem[];
+};
 
 export type SharePayload = {
   title: string;
@@ -370,6 +377,16 @@ export function buildFeedbackTriageSummary(feedback: FeedbackNote[]): FeedbackTr
       Shipped: 0,
     },
   );
+}
+
+export function buildLaunchReadinessSummary(items: LaunchReadinessItem[]): LaunchReadinessSummary {
+  const blocked = items.filter((item) => !item.ready);
+
+  return {
+    blocked,
+    ready: items.length - blocked.length,
+    total: items.length,
+  };
 }
 
 export function buildPostSharePayload(post: OwnerPost): SharePayload {

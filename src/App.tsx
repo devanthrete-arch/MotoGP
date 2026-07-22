@@ -3,6 +3,7 @@ import {
   buildLoop,
   feedbackStatuses,
   knowledgeLabels,
+  launchReadinessItems,
   shortlistStatuses,
   timelineKinds,
   type DraftPost,
@@ -31,6 +32,7 @@ import {
   buildGarageExportMarkdown,
   buildGarageReminders,
   buildInspectionChecklists,
+  buildLaunchReadinessSummary,
   buildModelSharePayload,
   buildModerationSummary,
   buildNotificationPreview,
@@ -182,6 +184,7 @@ export function App() {
   const ownershipPlaybooks = useMemo(() => buildOwnershipPlaybooks(posts), [posts]);
   const moderationSummary = useMemo(() => buildModerationSummary(reports), [reports]);
   const feedbackTriageSummary = useMemo(() => buildFeedbackTriageSummary(feedback), [feedback]);
+  const launchReadinessSummary = useMemo(() => buildLaunchReadinessSummary(launchReadinessItems), []);
   const shortlistComparisons = useMemo(() => buildShortlistComparisons(shortlist, posts), [posts, shortlist]);
   const inspectionChecklists = useMemo(() => buildInspectionChecklists(shortlist, posts), [posts, shortlist]);
   const inspectionChecklistByItemId = useMemo(
@@ -1381,6 +1384,30 @@ export function App() {
           <p>Responsive layout keeps navigation, forms, cards, and action buttons usable on phone, tablet, and desktop.</p>
           <p>Subscription previews and garage insights are generated from typed pure functions.</p>
           <p>Service-center integration remains outside this MVP loop.</p>
+        </div>
+      </section>
+
+      <section className="panel launch-panel" id="launch">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Launch readiness</p>
+            <h2>What must hold before the Vercel link goes public.</h2>
+          </div>
+          <div className="launch-score">
+            <strong>
+              {launchReadinessSummary.ready}/{launchReadinessSummary.total}
+            </strong>
+            ready
+          </div>
+        </div>
+        <div className="launch-grid">
+          {launchReadinessItems.map((item) => (
+            <article className={`launch-card ${item.ready ? "ready" : "blocked"}`} key={item.label}>
+              <span>{item.area}</span>
+              <h3>{item.label}</h3>
+              <p>{item.detail}</p>
+            </article>
+          ))}
         </div>
       </section>
 
