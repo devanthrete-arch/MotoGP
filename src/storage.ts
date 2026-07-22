@@ -32,6 +32,23 @@ export type StorageLike = Pick<Storage, "getItem" | "setItem">;
 
 type StoredFeedbackNote = FeedbackNote | Omit<FeedbackNote, "status">;
 
+export type AutoflexBackup = {
+  version: 1;
+  exportedAt: string;
+  data: {
+    feedback: FeedbackNote[];
+    follows: FollowState;
+    garage: GarageVehicle[];
+    posts: OwnerPost[];
+    profile: Profile;
+    reports: ReportRecord[];
+    saved: string[];
+    shortlist: ShortlistItem[];
+    subscriptionSettings: SubscriptionSettings;
+    timeline: TimelineEntry[];
+  };
+};
+
 export const safeJsonParse = <T,>(value: string | null, fallback: T): T => {
   if (!value) return fallback;
 
@@ -68,6 +85,80 @@ export const writeStoredJson = <T,>(key: string, value: T, storage: StorageLike 
   } catch {
     // Storage can be blocked, full, or unavailable in private browsing. Keep the in-memory UI alive.
   }
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+export const buildAutoflexBackup = (exportedAt = new Date().toISOString()): AutoflexBackup => ({
+  data: {
+    feedback: loadFeedback(),
+    follows: loadFollows(),
+    garage: loadGarage(),
+    posts: loadPosts(),
+    profile: loadProfile(),
+    reports: loadReports(),
+    saved: [...loadSaved()],
+    shortlist: loadShortlist(),
+    subscriptionSettings: loadSubscriptionSettings(),
+    timeline: loadTimeline(),
+  },
+  exportedAt,
+  version: 1,
+});
+
+export const parseAutoflexBackup = (raw: string): AutoflexBackup | null => {
+  const parsed = safeJsonParse<unknown>(raw, null);
+  if (!isRecord(parsed) || parsed.version !== 1 || typeof parsed.exportedAt !== "string" || !isRecord(parsed.data)) {
+    return null;
+  }
+
+  return {
+    data: {
+      feedback: normalizeFeedbackNotes(Array.isArray(parsed.data.feedback) ? (parsed.data.feedback as StoredFeedbackNote[]) : []),
+      follows: isRecord(parsed.data.follows)
+        ? (parsed.data.follows as FollowState)
+        : {
+            models: [],
+            topics: [],
+          },
+      garage: Array.isArray(parsed.data.garage) ? (parsed.data.garage as GarageVehicle[]) : [],
+      posts: Array.isArray(parsed.data.posts) ? (parsed.data.posts as OwnerPost[]) : [],
+      profile: isRecord(parsed.data.profile)
+        ? (parsed.data.profile as Profile)
+        : {
+            city: "",
+            displayName: "",
+            garageRole: "Owner",
+          },
+      reports: Array.isArray(parsed.data.reports) ? (parsed.data.reports as ReportRecord[]) : [],
+      saved: Array.isArray(parsed.data.saved) ? parsed.data.saved.filter((item): item is string => typeof item === "string") : [],
+      shortlist: Array.isArray(parsed.data.shortlist) ? (parsed.data.shortlist as ShortlistItem[]) : [],
+      subscriptionSettings: isRecord(parsed.data.subscriptionSettings)
+        ? (parsed.data.subscriptionSettings as SubscriptionSettings)
+        : {
+            browserAlerts: false,
+            emailDigest: true,
+            quietHours: true,
+          },
+      timeline: Array.isArray(parsed.data.timeline) ? (parsed.data.timeline as TimelineEntry[]) : [],
+    },
+    exportedAt: parsed.exportedAt,
+    version: 1,
+  };
+};
+
+export const restoreAutoflexBackup = (backup: AutoflexBackup): void => {
+  saveFeedback(backup.data.feedback);
+  saveFollows(backup.data.follows);
+  saveGarage(backup.data.garage);
+  savePosts(backup.data.posts);
+  saveProfile(backup.data.profile);
+  saveReports(backup.data.reports);
+  saveSaved(new Set(backup.data.saved));
+  saveShortlist(backup.data.shortlist);
+  saveSubscriptionSettings(backup.data.subscriptionSettings);
+  saveTimeline(backup.data.timeline);
 };
 
 export const loadPosts = (): OwnerPost[] => {

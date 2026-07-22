@@ -69,6 +69,7 @@ Service-center integration is intentionally kept separate under
 - [x] Added browser/client error capture for staging QA.
 - [x] Added health endpoint with app version and service-center boundary status.
 - [x] Added Vercel deployment config, SPA fallback routing, and launch-readiness panel.
+- [x] Added local data backup export/import so testers can move MVP state before hosted sync exists.
 - [x] Added share buttons plus `/share/*` metadata landing pages for posts and model notebooks.
 - [x] Added richer starter seed content for tester onboarding.
 - [x] Added Docker staging packaging and staging deployment docs.
@@ -81,6 +82,7 @@ Service-center integration is intentionally kept separate under
 - [ ] Run a visual responsive QA pass on the deployed Vercel URL.
 - [ ] Decide whether the first hosted backend is TypeScript/Fastify or the existing Ktor API.
 - [ ] Add durable hosted persistence after the TypeScript web surface is validated.
+- [ ] Replace local backup/restore with hosted account sync once persistence exists.
 - [ ] Replace local subscription previews with real hosted notification jobs after accounts/persistence exist.
 - [ ] Replace local profile/report/comment storage with hosted account and moderation APIs.
 - [ ] Replace share/copy fallbacks with hosted deep links and Open Graph metadata after deployment.
@@ -137,7 +139,7 @@ the hosted backend decision is finalized. It includes owner posts, saved notes,
 followed models/topics, a following feed, garage vehicles, timeline entries,
 model notebooks, subscription previews, garage insights, feedback capture, and
 QA/user loop panels. It also has lightweight local profiles, comments, reports,
-shareable notes/notebooks, garage export, and a moderator queue so
+shareable notes/notebooks, garage export, local backup/restore, and a moderator queue so
 trust-and-safety can be tested before backend wiring. Buyers can also keep a
 local shortlist, compare models against available ownership notes, and generate
 inspection checklists for test drives or used-car evaluations. Model playbooks
