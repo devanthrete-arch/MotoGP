@@ -256,7 +256,7 @@ export const buildLoop: BuildLoopItem[] = [
   {
     role: "Frontend engineer",
     question: "What can ship on Vercel today?",
-    currentDecision: "A TypeScript web MVP with local-first data and future API wiring.",
+    currentDecision: "A fast ownership community surface with local-first data and future API wiring.",
   },
   {
     role: "Tested / QA",

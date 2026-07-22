@@ -1,7 +1,7 @@
 # Autoflex community rules
 
-Autoflex is inspired by Team-BHP's useful ownership-detail culture, but the MVP
-should feel faster, more recoverable, and easier to moderate.
+Autoflex is built for useful ownership-detail culture, but the MVP should feel
+fast, recoverable, and easy to moderate.
 
 ## Posting standard
 

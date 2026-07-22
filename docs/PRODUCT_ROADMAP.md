@@ -3,10 +3,10 @@
 ## Direction
 
 Autoflex should launch as a webapp MVP first, then move to Android once the
-community loop is validated. Team-BHP is the inspiration for deep ownership
-detail, hot discussions, reviews, travelogues, and help articles; Autoflex
-should make that spirit feel new-age with faster publishing, recoverable
-profiles, saved knowledge, modern moderation, and later garage/model layers.
+community loop is validated. The product direction is deep ownership detail,
+useful discussions, reviews, travelogues, and help articles, made modern with
+faster publishing, recoverable profiles, saved knowledge, moderation, and later
+garage/model layers.
 The imported Expo/React Native, TypeScript/Fastify, iOS, and web plan is now
 treated as long-form product direction. The immediate MVP has pivoted back to a
 TypeScript webapp so the web product can ship quickly on Vercel. Kotlin/Ktor and
@@ -155,6 +155,8 @@ Completed slices:
   owner-note evidence.
 - Responsive TypeScript web layout polish across phone, tablet, and desktop
   breakpoints.
+- Garage reminders for upcoming service, insurance, and tyre checks generated
+  from local ownership timeline notes.
 - Garage running-cost ledger summarizing spend totals, cost/km, and latest
   timeline event from local ownership notes.
 - Verified-fix signal: owners can mark a Fix post as "worked for me", with
