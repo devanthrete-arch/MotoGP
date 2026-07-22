@@ -3,6 +3,7 @@ import {
   buildLoop,
   feedbackLoopStages,
   feedbackStatuses,
+  hostedApiReadinessItems,
   knowledgeLabels,
   launchReadinessItems,
   productionLaunchItems,
@@ -41,6 +42,7 @@ import {
   buildGarageInsights,
   buildGarageExportMarkdown,
   buildGarageReminders,
+  buildHostedApiReadinessSummary,
   buildInspectionChecklists,
   buildLaunchReadinessSummary,
   buildModelSharePayload,
@@ -263,6 +265,7 @@ export function App() {
     [productionLaunch],
   );
   const testerRunSummary = useMemo(() => buildTesterRunSummary(testerRuns), [testerRuns]);
+  const hostedApiSummary = useMemo(() => buildHostedApiReadinessSummary(hostedApiReadinessItems), []);
   const shortlistComparisons = useMemo(() => buildShortlistComparisons(shortlist, posts), [posts, shortlist]);
   const inspectionChecklists = useMemo(() => buildInspectionChecklists(shortlist, posts), [posts, shortlist]);
   const inspectionChecklistByItemId = useMemo(
@@ -396,6 +399,7 @@ export function App() {
         feedbackSummary: feedbackTriageSummary,
         feedbackLoopSummary,
         generatedAt: new Date().toISOString(),
+        hostedApiSummary,
         launchSummary: launchReadinessSummary,
         profile,
         productionLaunchSummary,
@@ -1707,6 +1711,31 @@ export function App() {
                 <span>{item.label}</span>
                 <small>{item.detail}</small>
               </label>
+            ))}
+          </div>
+        </div>
+        <div className="hosted-api-card">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Hosted API readiness</p>
+              <h3>What moves from local-first into durable sync.</h3>
+            </div>
+            <div className="hosted-api-stats">
+              <span>{hostedApiSummary.beta} beta</span>
+              <span>{hostedApiSummary.later} later</span>
+              <span>{hostedApiSummary.serviceCenterBoundaries} reserved</span>
+            </div>
+          </div>
+          <div className="hosted-api-grid">
+            {hostedApiReadinessItems.map((item) => (
+              <article className={item.serviceCenterBoundary ? "reserved" : item.priority.toLowerCase().replace(" ", "-")} key={item.id}>
+                <div>
+                  <span>{item.currentMode}</span>
+                  <small>{item.serviceCenterBoundary ? "Separate team" : item.priority}</small>
+                </div>
+                <h4>{item.surface}</h4>
+                <p>{item.hostedNeed}</p>
+              </article>
             ))}
           </div>
         </div>

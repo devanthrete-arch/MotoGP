@@ -167,6 +167,15 @@ export type ProductionLaunchItem = {
   detail: string;
 };
 
+export type HostedApiReadinessItem = {
+  id: string;
+  surface: string;
+  currentMode: "Local-first" | "Static" | "Reserved";
+  hostedNeed: string;
+  priority: "Launch blocker" | "Beta" | "Later";
+  serviceCenterBoundary: boolean;
+};
+
 export type ModelNotebook = {
   key: string;
   brand: string;
@@ -309,6 +318,57 @@ export const productionLaunchItems: ProductionLaunchItem[] = [
     detail: "QA handoff was shared with product, design, engineering, QA, and real-user notes.",
     id: "handoff-shared",
     label: "Launch handoff shared",
+  },
+];
+
+export const hostedApiReadinessItems: HostedApiReadinessItem[] = [
+  {
+    currentMode: "Local-first",
+    hostedNeed: "Persist posts, comments, helpful/stale signals, reports, and moderation outcomes across devices.",
+    id: "community-feed",
+    priority: "Beta",
+    serviceCenterBoundary: false,
+    surface: "Community feed and moderation",
+  },
+  {
+    currentMode: "Local-first",
+    hostedNeed: "Map profile, saved notes, follows, feedback, and tester runs to a recoverable account.",
+    id: "profile-feedback",
+    priority: "Beta",
+    serviceCenterBoundary: false,
+    surface: "Profile, saves, follows, and feedback",
+  },
+  {
+    currentMode: "Local-first",
+    hostedNeed: "Sync garage vehicles, timeline, reminders, running costs, and backups after web validation.",
+    id: "garage-ownership",
+    priority: "Later",
+    serviceCenterBoundary: false,
+    surface: "Garage and ownership timeline",
+  },
+  {
+    currentMode: "Local-first",
+    hostedNeed: "Turn local shortlist and inspection outcomes into cross-device buyer workspaces.",
+    id: "buyer-workspace",
+    priority: "Later",
+    serviceCenterBoundary: false,
+    surface: "Buyer shortlist and inspections",
+  },
+  {
+    currentMode: "Static",
+    hostedNeed: "Replace share-copy fallbacks with hosted routes and Open Graph metadata after deployment.",
+    id: "sharing-metadata",
+    priority: "Beta",
+    serviceCenterBoundary: false,
+    surface: "Share links and metadata",
+  },
+  {
+    currentMode: "Reserved",
+    hostedNeed: "Keep `/api/service-centers/*` owned by the separate service-center team.",
+    id: "service-center",
+    priority: "Later",
+    serviceCenterBoundary: true,
+    surface: "Service-center integration",
   },
 ];
 

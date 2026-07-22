@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { productionLaunchItems, qaSessionItems, responsiveQaItems, seedGarage, seedPosts, seedTimeline, starterRoutes } from "./domain";
+import {
+  hostedApiReadinessItems,
+  productionLaunchItems,
+  qaSessionItems,
+  responsiveQaItems,
+  seedGarage,
+  seedPosts,
+  seedTimeline,
+  starterRoutes,
+} from "./domain";
 import {
   assessPostQuality,
   buildFeedbackTriageSummary,
@@ -9,6 +18,7 @@ import {
   buildGarageInsights,
   buildGarageExportMarkdown,
   buildGarageReminders,
+  buildHostedApiReadinessSummary,
   buildInspectionChecklists,
   buildCityCircles,
   buildLaunchReadinessSummary,
@@ -159,6 +169,17 @@ describe("Autoflex insights", () => {
     expect(summary.openFriction[0]?.nextLoopStage).toBe("Designer");
   });
 
+  it("summarizes hosted API readiness without crossing service-center ownership", () => {
+    const summary = buildHostedApiReadinessSummary(hostedApiReadinessItems);
+
+    expect(summary).toMatchObject({
+      beta: 3,
+      later: 3,
+      launchBlockers: 0,
+      serviceCenterBoundaries: 1,
+    });
+  });
+
   it("builds a QA handoff report for the product loop", () => {
     const report = buildQaHandoffMarkdown({
       feedbackLoopSummary: {
@@ -176,6 +197,7 @@ describe("Autoflex insights", () => {
         Shipped: 1,
       },
       generatedAt: "2026-07-22T12:00:00.000Z",
+      hostedApiSummary: buildHostedApiReadinessSummary(hostedApiReadinessItems),
       launchSummary: {
         blocked: [
           {
@@ -226,6 +248,8 @@ describe("Autoflex insights", () => {
     expect(report).toContain("Designer: 1");
     expect(report).toContain("## Real-user test runs");
     expect(report).toContain("Confusing / Designer");
+    expect(report).toContain("## Hosted API readiness");
+    expect(report).toContain("Service-center boundaries: 1");
     expect(report).toContain("Service-center integration remains outside this MVP loop");
   });
 

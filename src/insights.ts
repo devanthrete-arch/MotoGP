@@ -4,6 +4,7 @@ import type {
   FeedbackStatus,
   FollowState,
   GarageVehicle,
+  HostedApiReadinessItem,
   KnowledgeLabel,
   LaunchReadinessItem,
   ModelNotebook,
@@ -103,10 +104,18 @@ export type TesterRunSummary = {
   openFriction: TesterRun[];
 };
 
+export type HostedApiReadinessSummary = {
+  launchBlockers: number;
+  beta: number;
+  later: number;
+  serviceCenterBoundaries: number;
+};
+
 export type QaHandoffInput = {
   feedbackLoopSummary: FeedbackLoopSummary;
   feedbackSummary: FeedbackTriageSummary;
   generatedAt: string;
+  hostedApiSummary: HostedApiReadinessSummary;
   launchSummary: LaunchReadinessSummary;
   profile: Profile;
   productionLaunchSummary: ProductionLaunchSummary;
@@ -327,6 +336,15 @@ export function buildTesterRunSummary(runs: TesterRun[]): TesterRunSummary {
   };
 }
 
+export function buildHostedApiReadinessSummary(items: HostedApiReadinessItem[]): HostedApiReadinessSummary {
+  return {
+    beta: items.filter((item) => item.priority === "Beta").length,
+    later: items.filter((item) => item.priority === "Later").length,
+    launchBlockers: items.filter((item) => item.priority === "Launch blocker").length,
+    serviceCenterBoundaries: items.filter((item) => item.serviceCenterBoundary).length,
+  };
+}
+
 export function buildQaHandoffMarkdown(input: QaHandoffInput): string {
   const feedbackTotal = Object.values(input.feedbackSummary).reduce((total, count) => total + count, 0);
   const remainingQa = input.qaSummary.remaining.map((item) => `- ${item.label}`).join("\n") || "- None";
@@ -403,6 +421,13 @@ export function buildQaHandoffMarkdown(input: QaHandoffInput): string {
     "",
     "Open tester friction:",
     testerFriction,
+    "",
+    "## Hosted API readiness",
+    "",
+    `Launch blockers: ${input.hostedApiSummary.launchBlockers}`,
+    `Beta items: ${input.hostedApiSummary.beta}`,
+    `Later items: ${input.hostedApiSummary.later}`,
+    `Service-center boundaries: ${input.hostedApiSummary.serviceCenterBoundaries}`,
     "",
     "## Service-center boundary",
     "",
