@@ -27,7 +27,9 @@ const profileKey = "autoflex.web.profile.v1";
 const reportsKey = "autoflex.web.reports.v1";
 const shortlistKey = "autoflex.web.shortlist.v1";
 
-const safeJsonParse = <T,>(value: string | null, fallback: T): T => {
+export type StorageLike = Pick<Storage, "getItem" | "setItem">;
+
+export const safeJsonParse = <T,>(value: string | null, fallback: T): T => {
   if (!value) return fallback;
 
   try {
@@ -37,13 +39,41 @@ const safeJsonParse = <T,>(value: string | null, fallback: T): T => {
   }
 };
 
+const getBrowserStorage = (): StorageLike | null => {
+  try {
+    return globalThis.localStorage ?? null;
+  } catch {
+    return null;
+  }
+};
+
+export const readStoredJson = <T,>(key: string, fallback: T, storage: StorageLike | null = getBrowserStorage()): T => {
+  if (!storage) return fallback;
+
+  try {
+    return safeJsonParse<T>(storage.getItem(key), fallback);
+  } catch {
+    return fallback;
+  }
+};
+
+export const writeStoredJson = <T,>(key: string, value: T, storage: StorageLike | null = getBrowserStorage()): void => {
+  if (!storage) return;
+
+  try {
+    storage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Storage can be blocked, full, or unavailable in private browsing. Keep the in-memory UI alive.
+  }
+};
+
 export const loadPosts = (): OwnerPost[] => {
-  const posts = safeJsonParse<OwnerPost[]>(localStorage.getItem(postsKey), seedPosts);
+  const posts = readStoredJson<OwnerPost[]>(postsKey, seedPosts);
   return posts.sort((first, second) => Date.parse(second.createdAt) - Date.parse(first.createdAt));
 };
 
 export const savePosts = (posts: OwnerPost[]): void => {
-  localStorage.setItem(postsKey, JSON.stringify(posts));
+  writeStoredJson(postsKey, posts);
 };
 
 export const createPost = (draft: DraftPost): OwnerPost => ({
@@ -55,13 +85,13 @@ export const createPost = (draft: DraftPost): OwnerPost => ({
   comments: [],
 });
 
-export const loadSaved = (): Set<string> => new Set(safeJsonParse<string[]>(localStorage.getItem(savedKey), []));
+export const loadSaved = (): Set<string> => new Set(readStoredJson<string[]>(savedKey, []));
 
 export const saveSaved = (saved: Set<string>): void => {
-  localStorage.setItem(savedKey, JSON.stringify([...saved]));
+  writeStoredJson(savedKey, [...saved]);
 };
 
-export const loadFeedback = (): FeedbackNote[] => safeJsonParse<FeedbackNote[]>(localStorage.getItem(feedbackKey), []);
+export const loadFeedback = (): FeedbackNote[] => readStoredJson<FeedbackNote[]>(feedbackKey, []);
 
 export const addFeedback = (message: string): FeedbackNote[] => {
   const next = [
@@ -72,21 +102,21 @@ export const addFeedback = (message: string): FeedbackNote[] => {
     },
     ...loadFeedback(),
   ];
-  localStorage.setItem(feedbackKey, JSON.stringify(next));
+  writeStoredJson(feedbackKey, next);
   return next;
 };
 
 export const loadFollows = (): FollowState =>
-  safeJsonParse<FollowState>(localStorage.getItem(followKey), { models: [], topics: [] });
+  readStoredJson<FollowState>(followKey, { models: [], topics: [] });
 
 export const saveFollows = (follows: FollowState): void => {
-  localStorage.setItem(followKey, JSON.stringify(follows));
+  writeStoredJson(followKey, follows);
 };
 
-export const loadGarage = (): GarageVehicle[] => safeJsonParse<GarageVehicle[]>(localStorage.getItem(garageKey), seedGarage);
+export const loadGarage = (): GarageVehicle[] => readStoredJson<GarageVehicle[]>(garageKey, seedGarage);
 
 export const saveGarage = (garage: GarageVehicle[]): void => {
-  localStorage.setItem(garageKey, JSON.stringify(garage));
+  writeStoredJson(garageKey, garage);
 };
 
 export const createVehicle = (draft: DraftVehicle): GarageVehicle => ({
@@ -95,12 +125,12 @@ export const createVehicle = (draft: DraftVehicle): GarageVehicle => ({
 });
 
 export const loadTimeline = (): TimelineEntry[] =>
-  safeJsonParse<TimelineEntry[]>(localStorage.getItem(timelineKey), seedTimeline).sort(
+  readStoredJson<TimelineEntry[]>(timelineKey, seedTimeline).sort(
     (first, second) => Date.parse(second.happenedOn) - Date.parse(first.happenedOn),
   );
 
 export const saveTimeline = (entries: TimelineEntry[]): void => {
-  localStorage.setItem(timelineKey, JSON.stringify(entries));
+  writeStoredJson(timelineKey, entries);
 };
 
 export const createTimelineEntry = (draft: DraftTimelineEntry): TimelineEntry => ({
@@ -109,31 +139,31 @@ export const createTimelineEntry = (draft: DraftTimelineEntry): TimelineEntry =>
 });
 
 export const loadSubscriptionSettings = (): SubscriptionSettings =>
-  safeJsonParse<SubscriptionSettings>(localStorage.getItem(subscriptionKey), {
+  readStoredJson<SubscriptionSettings>(subscriptionKey, {
     emailDigest: true,
     browserAlerts: false,
     quietHours: true,
   });
 
 export const saveSubscriptionSettings = (settings: SubscriptionSettings): void => {
-  localStorage.setItem(subscriptionKey, JSON.stringify(settings));
+  writeStoredJson(subscriptionKey, settings);
 };
 
 export const loadProfile = (): Profile =>
-  safeJsonParse<Profile>(localStorage.getItem(profileKey), {
+  readStoredJson<Profile>(profileKey, {
     city: "",
     displayName: "",
     garageRole: "Owner",
   });
 
 export const saveProfile = (profile: Profile): void => {
-  localStorage.setItem(profileKey, JSON.stringify(profile));
+  writeStoredJson(profileKey, profile);
 };
 
-export const loadReports = (): ReportRecord[] => safeJsonParse<ReportRecord[]>(localStorage.getItem(reportsKey), []);
+export const loadReports = (): ReportRecord[] => readStoredJson<ReportRecord[]>(reportsKey, []);
 
 export const saveReports = (reports: ReportRecord[]): void => {
-  localStorage.setItem(reportsKey, JSON.stringify(reports));
+  writeStoredJson(reportsKey, reports);
 };
 
 export const createReport = (draft: DraftReport): ReportRecord => ({
@@ -143,10 +173,10 @@ export const createReport = (draft: DraftReport): ReportRecord => ({
   createdAt: new Date().toISOString(),
 });
 
-export const loadShortlist = (): ShortlistItem[] => safeJsonParse<ShortlistItem[]>(localStorage.getItem(shortlistKey), []);
+export const loadShortlist = (): ShortlistItem[] => readStoredJson<ShortlistItem[]>(shortlistKey, []);
 
 export const saveShortlist = (items: ShortlistItem[]): void => {
-  localStorage.setItem(shortlistKey, JSON.stringify(items));
+  writeStoredJson(shortlistKey, items);
 };
 
 export const createShortlistItem = (draft: DraftShortlistItem): ShortlistItem => ({
