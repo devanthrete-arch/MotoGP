@@ -433,7 +433,6 @@ h3 {
 }
 
 .nudge-grid p,
-.qa-grid p,
 .notification-grid p {
   background: #211b16;
   border-radius: 22px;
@@ -441,6 +440,46 @@ h3 {
   line-height: 1.55;
   margin: 0;
   padding: 18px;
+}
+
+.qa-score {
+  background: #211b16;
+  border-radius: 999px;
+  color: rgba(255, 248, 237, 0.78);
+  display: inline-flex;
+  font-weight: 900;
+  gap: 8px;
+  padding: 10px 14px;
+}
+
+.qa-score strong {
+  color: #ffcc8d;
+}
+
+.qa-grid label {
+  align-items: flex-start;
+  background: #211b16;
+  border: 1px solid rgba(255, 248, 237, 0.08);
+  border-radius: 22px;
+  color: rgba(255, 248, 237, 0.82);
+  cursor: pointer;
+  display: flex;
+  gap: 12px;
+  line-height: 1.55;
+  margin: 0;
+  padding: 18px;
+}
+
+.qa-grid label.checked {
+  background: #dff3d4;
+  border-color: rgba(56, 109, 39, 0.24);
+  color: #386d27;
+}
+
+.qa-grid input {
+  accent-color: #ffb36b;
+  flex: 0 0 auto;
+  margin-top: 4px;
 }
 
 .preference-toggles {

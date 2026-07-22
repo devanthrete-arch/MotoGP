@@ -77,6 +77,20 @@ export type StarterRoute = {
   href: string;
 };
 
+export type QaSessionItem = {
+  id:
+    | "feed"
+    | "starter"
+    | "garage"
+    | "buyer"
+    | "trust"
+    | "backup"
+    | "install"
+    | "offline"
+    | "service-boundary";
+  label: string;
+};
+
 export type ReportStatus = "Open" | "Dismissed" | "Removed";
 
 export type ReportRecord = {
@@ -165,6 +179,18 @@ export const starterRoutes: StarterRoute[] = [
     id: "feedback",
     title: "Leave tester feedback",
   },
+];
+
+export const qaSessionItems: QaSessionItem[] = [
+  { id: "feed", label: "Feed filters, saved notes, and following mode work." },
+  { id: "starter", label: "Starter route updates as a fresh tester completes first actions." },
+  { id: "garage", label: "Garage, timeline, reminders, and cost ledger persist locally." },
+  { id: "buyer", label: "Buyer shortlist and inspection checklist stay readable on mobile." },
+  { id: "trust", label: "Comments, reports, moderator queue, and feedback triage work." },
+  { id: "backup", label: "Local backup export/import restores tester state." },
+  { id: "install", label: "Manifest, icon, theme metadata, and shortcuts are available." },
+  { id: "offline", label: "Offline strip explains local-first behavior when connection drops." },
+  { id: "service-boundary", label: "Service-center work remains outside the community loop." },
 ];
 
 export const knowledgeLabels: KnowledgeLabel[] = [

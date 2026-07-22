@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { seedGarage, seedPosts, seedTimeline, starterRoutes } from "./domain";
+import { qaSessionItems, seedGarage, seedPosts, seedTimeline, starterRoutes } from "./domain";
 import {
   assessPostQuality,
   buildFeedbackTriageSummary,
@@ -16,6 +16,7 @@ import {
   buildNotificationPreview,
   buildOwnershipPlaybooks,
   buildPostSharePayload,
+  buildQaSessionSummary,
   buildReturnNudges,
   buildShortlistComparisons,
   buildStarterRouteProgress,
@@ -90,6 +91,16 @@ describe("Autoflex insights", () => {
       label: "Online",
       tone: "online",
     });
+  });
+
+  it("summarizes a saved QA session checklist", () => {
+    const summary = buildQaSessionSummary(qaSessionItems, new Set(["feed", "offline"]));
+
+    expect(summary).toMatchObject({
+      checked: 2,
+      total: qaSessionItems.length,
+    });
+    expect(summary.remaining.map((item) => item.id)).not.toContain("feed");
   });
 
   it("creates notification previews without requiring a backend", () => {
