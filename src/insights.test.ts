@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { seedGarage, seedPosts, seedTimeline } from "./domain";
 import {
   assessPostQuality,
+  buildFeedbackTriageSummary,
   buildGarageCostLedger,
   buildGarageInsights,
   buildGarageExportMarkdown,
@@ -158,6 +159,36 @@ describe("Autoflex insights", () => {
       openReports: 2,
       removedReports: 0,
       riskyPostIds: ["post-a"],
+    });
+  });
+
+  it("summarizes feedback through the product loop triage states", () => {
+    const summary = buildFeedbackTriageSummary([
+      {
+        createdAt: "2026-07-21T10:00:00.000Z",
+        id: "feedback-one",
+        message: "Show ownership cost earlier.",
+        status: "New",
+      },
+      {
+        createdAt: "2026-07-21T11:00:00.000Z",
+        id: "feedback-two",
+        message: "Garage reminders are useful.",
+        status: "Shipped",
+      },
+      {
+        createdAt: "2026-07-21T12:00:00.000Z",
+        id: "feedback-three",
+        message: "City follows should sync.",
+        status: "Planned",
+      },
+    ]);
+
+    expect(summary).toEqual({
+      New: 1,
+      Planned: 1,
+      Reviewing: 0,
+      Shipped: 1,
     });
   });
 

@@ -1,6 +1,7 @@
 import { FormEvent, useMemo, useState } from "react";
 import {
   buildLoop,
+  feedbackStatuses,
   knowledgeLabels,
   shortlistStatuses,
   timelineKinds,
@@ -9,6 +10,7 @@ import {
   type DraftTimelineEntry,
   type DraftVehicle,
   type FeedbackNote,
+  type FeedbackStatus,
   type FollowState,
   type GarageVehicle,
   type KnowledgeLabel,
@@ -23,6 +25,7 @@ import {
 import {
   assessPostQuality,
   buildCityCircles,
+  buildFeedbackTriageSummary,
   buildGarageCostLedger,
   buildGarageInsights,
   buildGarageExportMarkdown,
@@ -57,6 +60,7 @@ import {
   loadShortlist,
   loadSubscriptionSettings,
   loadTimeline,
+  saveFeedback,
   saveFollows,
   saveGarage,
   savePosts,
@@ -66,6 +70,7 @@ import {
   saveShortlist,
   saveSubscriptionSettings,
   saveTimeline,
+  updateFeedbackStatus,
 } from "./storage";
 
 type FeedMode = "latest" | "helpful" | "saved" | "following";
@@ -176,6 +181,7 @@ export function App() {
   const cityCircles = useMemo(() => buildCityCircles(posts, garage), [garage, posts]);
   const ownershipPlaybooks = useMemo(() => buildOwnershipPlaybooks(posts), [posts]);
   const moderationSummary = useMemo(() => buildModerationSummary(reports), [reports]);
+  const feedbackTriageSummary = useMemo(() => buildFeedbackTriageSummary(feedback), [feedback]);
   const shortlistComparisons = useMemo(() => buildShortlistComparisons(shortlist, posts), [posts, shortlist]);
   const inspectionChecklists = useMemo(() => buildInspectionChecklists(shortlist, posts), [posts, shortlist]);
   const inspectionChecklistByItemId = useMemo(
@@ -222,6 +228,11 @@ export function App() {
   const persistReports = (nextReports: ReportRecord[]) => {
     setReports(nextReports);
     saveReports(nextReports);
+  };
+
+  const persistFeedback = (nextFeedback: FeedbackNote[]) => {
+    setFeedback(nextFeedback);
+    saveFeedback(nextFeedback);
   };
 
   const persistShortlist = (nextShortlist: ShortlistItem[]) => {
@@ -428,6 +439,10 @@ export function App() {
     if (!feedbackDraft.trim()) return;
     setFeedback(addFeedback(feedbackDraft.trim()));
     setFeedbackDraft("");
+  };
+
+  const setFeedbackStatus = (feedbackId: string, status: FeedbackStatus) => {
+    persistFeedback(updateFeedbackStatus(feedback, feedbackId, status));
   };
 
   return (
@@ -1377,10 +1392,40 @@ export function App() {
             This local feedback lane is the first version of the product-owner inbox. It keeps the MVP loop honest
             until a hosted backend is wired.
           </p>
-          <div className="feedback-list">
-            {feedback.slice(0, 3).map((note) => (
-              <p key={note.id}>{note.message}</p>
+          <div className="feedback-triage-bar" aria-label="Feedback triage summary">
+            {feedbackStatuses.map((status) => (
+              <span key={status}>
+                <strong>{feedbackTriageSummary[status]}</strong>
+                {status}
+              </span>
             ))}
+          </div>
+          <div className="feedback-list">
+            {feedback.length ? (
+              feedback.slice(0, 4).map((note) => (
+                <article className={`feedback-card ${note.status.toLowerCase()}`} key={note.id}>
+                  <div>
+                    <span>{note.status}</span>
+                    <time dateTime={note.createdAt}>{new Date(note.createdAt).toLocaleDateString("en-IN")}</time>
+                  </div>
+                  <p>{note.message}</p>
+                  <div className="feedback-status-row" aria-label={`Update status for feedback ${note.id}`}>
+                    {feedbackStatuses.map((status) => (
+                      <button
+                        aria-pressed={note.status === status}
+                        key={status}
+                        type="button"
+                        onClick={() => setFeedbackStatus(note.id, status)}
+                      >
+                        {status}
+                      </button>
+                    ))}
+                  </div>
+                </article>
+              ))
+            ) : (
+              <div className="empty-state">No tester feedback yet. First real-user notes will land here for triage.</div>
+            )}
           </div>
         </div>
         <form className="composer" onSubmit={submitFeedback}>

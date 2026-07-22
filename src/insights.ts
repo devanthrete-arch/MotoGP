@@ -1,4 +1,6 @@
 import type {
+  FeedbackNote,
+  FeedbackStatus,
   FollowState,
   GarageVehicle,
   KnowledgeLabel,
@@ -46,6 +48,8 @@ export type ModerationSummary = {
   removedReports: number;
   riskyPostIds: string[];
 };
+
+export type FeedbackTriageSummary = Record<FeedbackStatus, number>;
 
 export type SharePayload = {
   title: string;
@@ -351,6 +355,21 @@ export function buildModerationSummary(reports: ReportRecord[]): ModerationSumma
     removedReports: reports.filter((report) => report.status === "Removed").length,
     riskyPostIds: [...reportCounts.entries()].filter(([, count]) => count >= 2).map(([postId]) => postId),
   };
+}
+
+export function buildFeedbackTriageSummary(feedback: FeedbackNote[]): FeedbackTriageSummary {
+  return feedback.reduce<FeedbackTriageSummary>(
+    (summary, note) => ({
+      ...summary,
+      [note.status]: summary[note.status] + 1,
+    }),
+    {
+      New: 0,
+      Planned: 0,
+      Reviewing: 0,
+      Shipped: 0,
+    },
+  );
 }
 
 export function buildPostSharePayload(post: OwnerPost): SharePayload {
