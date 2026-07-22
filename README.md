@@ -29,6 +29,7 @@ Service-center integration is intentionally kept separate under
 - [x] Added followed models/topics and a following feed for return-user behavior.
 - [x] Added return-user nudges based on follows, saved notes, and garage mileage.
 - [x] Added a local-first garage with vehicles and ownership timeline entries.
+- [x] Added garage running-cost ledger with spend totals, cost/km, and latest timeline event.
 - [x] Added a visible QA smoke-check panel for the current MVP slice.
 - [x] Added local subscription preferences and notification previews for followed models/topics.
 - [x] Added garage insights for service checkpoints, logged spend, and matching community context.
@@ -87,6 +88,7 @@ Service-center integration is intentionally kept separate under
 - [ ] Add hosted persistence/API for follows, garage, timeline, and feedback.
 - [ ] Add basic notification/subscription flows after hosted follows exist.
 - [ ] Add richer garage profile fields and timeline analytics.
+- [ ] Replace local garage cost ledger with hosted running-cost analytics and cross-device history.
 - [ ] Add Google sign-in only after the lightweight profile flow proves insufficient.
 - [ ] Harden production operations: backup restore drill, non-default admin token, logs, and monitoring vendor if needed.
 - [ ] Bring the native Android app up to feature parity after the web MVP is validated.

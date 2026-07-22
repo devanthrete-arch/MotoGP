@@ -155,6 +155,8 @@ Completed slices:
   owner-note evidence.
 - Responsive TypeScript web layout polish across phone, tablet, and desktop
   breakpoints.
+- Garage running-cost ledger summarizing spend totals, cost/km, and latest
+  timeline event from local ownership notes.
 - Verified-fix signal: owners can mark a Fix post as "worked for me", with
   duplicate-safe counts surfaced in model notebooks.
 - Model-page quality signals: helpfulness, stale-info flags, and moderator
