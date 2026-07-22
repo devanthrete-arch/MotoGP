@@ -1,26 +1,15 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   buildLoop,
-  feedbackLoopStages,
-  feedbackStatuses,
-  hostedApiReadinessItems,
   knowledgeLabels,
-  launchReadinessItems,
-  productionLaunchItems,
-  productionOpsItems,
-  qaSessionItems,
-  responsiveQaItems,
+  privacyReadinessItems,
   shortlistStatuses,
   starterRoutes,
-  testerRunOutcomes,
   timelineKinds,
   type DraftPost,
   type DraftShortlistItem,
-  type DraftTesterRun,
   type DraftTimelineEntry,
   type DraftVehicle,
-  type FeedbackNote,
-  type FeedbackStatus,
   type FollowState,
   type GarageVehicle,
   type KnowledgeLabel,
@@ -29,7 +18,6 @@ import {
   type ReportRecord,
   type ShortlistItem,
   type SubscriptionSettings,
-  type TesterRun,
   type TimelineEntry,
   type TimelineEntryKind,
 } from "./domain";
@@ -37,79 +25,49 @@ import {
   assessPostQuality,
   buildCityCircles,
   buildConnectionStatusCopy,
-  buildFeedbackTriageSummary,
-  buildFeedbackLoopSummary,
   buildGarageCostLedger,
   buildGarageInsights,
   buildGarageExportMarkdown,
   buildGarageReminders,
-  buildHostedApiReadinessSummary,
   buildInspectionChecklists,
-  buildLaunchReadinessSummary,
   buildModelSharePayload,
   buildModerationSummary,
   buildNotificationPreview,
   buildOwnershipPlaybooks,
   buildPostSharePayload,
-  buildProductionLaunchSummary,
-  buildProductionOpsSummary,
-  buildQaHandoffMarkdown,
-  buildQaSessionSummary,
-  buildResponsiveQaSummary,
+  buildPrivacyReadinessSummary,
   buildReturnNudges,
   buildShortlistComparisons,
   buildStarterRouteProgress,
-  buildTesterRunSummary,
   filterPostsByMode,
   formatMoney,
   groupByModel,
   modelKeyFor,
 } from "./insights";
 import {
-  addFeedback,
-  buildAutoflexBackup,
   createPost,
   createReport,
   createShortlistItem,
-  createTesterRun,
   createTimelineEntry,
   createVehicle,
-  loadFeedback,
   loadFollows,
   loadGarage,
   loadProfile,
   loadPosts,
-  loadProductionLaunch,
-  loadProductionOps,
-  loadProductionUrl,
-  loadQaSession,
-  loadResponsiveQa,
   loadReports,
   loadSaved,
   loadShortlist,
   loadSubscriptionSettings,
-  loadTesterRuns,
   loadTimeline,
-  parseAutoflexBackup,
-  restoreAutoflexBackup,
-  saveFeedback,
   saveFollows,
   saveGarage,
   savePosts,
-  saveProductionLaunch,
-  saveProductionOps,
-  saveProductionUrl,
-  saveQaSession,
-  saveResponsiveQa,
   saveProfile,
   saveReports,
   saveSaved,
   saveShortlist,
   saveSubscriptionSettings,
-  saveTesterRuns,
   saveTimeline,
-  updateFeedbackStatus,
-  updateFeedbackLoopStage,
 } from "./storage";
 
 type FeedMode = "latest" | "helpful" | "saved" | "following";
@@ -157,14 +115,6 @@ const initialShortlistDraft: DraftShortlistItem = {
   status: "Researching",
 };
 
-const initialTesterRunDraft: DraftTesterRun = {
-  friction: "",
-  nextLoopStage: "Product owner",
-  outcome: "Useful",
-  scenario: "",
-  testerName: "",
-};
-
 const garageRoles: Profile["garageRole"][] = ["Owner", "Buyer", "Enthusiast", "Mechanic"];
 
 const getInitialOnlineStatus = (): boolean => {
@@ -181,17 +131,10 @@ export function App() {
   const [reports, setReports] = useState<ReportRecord[]>(() => loadReports());
   const [shortlist, setShortlist] = useState<ShortlistItem[]>(() => loadShortlist());
   const [saved, setSaved] = useState<Set<string>>(() => loadSaved());
-  const [qaSession, setQaSession] = useState<Set<string>>(() => loadQaSession());
-  const [responsiveQa, setResponsiveQa] = useState<Set<string>>(() => loadResponsiveQa());
-  const [productionLaunch, setProductionLaunch] = useState<Set<string>>(() => loadProductionLaunch());
-  const [productionOps, setProductionOps] = useState<Set<string>>(() => loadProductionOps());
-  const [productionUrl, setProductionUrl] = useState(() => loadProductionUrl());
   const [follows, setFollows] = useState<FollowState>(() => loadFollows());
   const [subscriptionSettings, setSubscriptionSettings] = useState<SubscriptionSettings>(() => loadSubscriptionSettings());
   const [garage, setGarage] = useState<GarageVehicle[]>(() => loadGarage());
   const [timeline, setTimeline] = useState<TimelineEntry[]>(() => loadTimeline());
-  const [feedback, setFeedback] = useState<FeedbackNote[]>(() => loadFeedback());
-  const [testerRuns, setTesterRuns] = useState<TesterRun[]>(() => loadTesterRuns());
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<FeedMode>("latest");
   const [selectedLabel, setSelectedLabel] = useState<KnowledgeLabel | "All">("All");
@@ -203,11 +146,8 @@ export function App() {
     vehicleId: loadGarage()[0]?.id ?? "",
   }));
   const [shortlistDraft, setShortlistDraft] = useState<DraftShortlistItem>(initialShortlistDraft);
-  const [testerRunDraft, setTesterRunDraft] = useState<DraftTesterRun>(initialTesterRunDraft);
   const [commentDraft, setCommentDraft] = useState("");
   const [reportDraft, setReportDraft] = useState("");
-  const [feedbackDraft, setFeedbackDraft] = useState("");
-  const [backupDraft, setBackupDraft] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [navMenuOpen, setNavMenuOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(getInitialOnlineStatus);
@@ -236,7 +176,6 @@ export function App() {
   const starterProgress = useMemo(
     () =>
       buildStarterRouteProgress({
-        feedbackCount: feedback.length,
         follows,
         garage,
         profile,
@@ -244,12 +183,10 @@ export function App() {
         savedCount: saved.size,
         shortlistCount: shortlist.length,
       }),
-    [feedback.length, follows, garage, profile, saved.size, shortlist.length],
+    [follows, garage, profile, saved.size, shortlist.length],
   );
   const completedStarterSteps = starterProgress.filter((step) => step.complete).length;
   const connectionStatus = useMemo(() => buildConnectionStatusCopy(isOnline), [isOnline]);
-  const qaSessionSummary = useMemo(() => buildQaSessionSummary(qaSessionItems, qaSession), [qaSession]);
-  const responsiveQaSummary = useMemo(() => buildResponsiveQaSummary(responsiveQaItems, responsiveQa), [responsiveQa]);
 
   const notificationPreview = useMemo(
     () => buildNotificationPreview({ follows, posts, preference: subscriptionSettings }),
@@ -262,16 +199,7 @@ export function App() {
   const cityCircles = useMemo(() => buildCityCircles(posts, garage), [garage, posts]);
   const ownershipPlaybooks = useMemo(() => buildOwnershipPlaybooks(posts), [posts]);
   const moderationSummary = useMemo(() => buildModerationSummary(reports), [reports]);
-  const feedbackTriageSummary = useMemo(() => buildFeedbackTriageSummary(feedback), [feedback]);
-  const feedbackLoopSummary = useMemo(() => buildFeedbackLoopSummary(feedback), [feedback]);
-  const launchReadinessSummary = useMemo(() => buildLaunchReadinessSummary(launchReadinessItems), []);
-  const productionLaunchSummary = useMemo(
-    () => buildProductionLaunchSummary(productionLaunchItems, productionLaunch),
-    [productionLaunch],
-  );
-  const productionOpsSummary = useMemo(() => buildProductionOpsSummary(productionOpsItems, productionOps), [productionOps]);
-  const testerRunSummary = useMemo(() => buildTesterRunSummary(testerRuns), [testerRuns]);
-  const hostedApiSummary = useMemo(() => buildHostedApiReadinessSummary(hostedApiReadinessItems), []);
+  const privacySummary = useMemo(() => buildPrivacyReadinessSummary(privacyReadinessItems), []);
   const shortlistComparisons = useMemo(() => buildShortlistComparisons(shortlist, posts), [posts, shortlist]);
   const inspectionChecklists = useMemo(() => buildInspectionChecklists(shortlist, posts), [posts, shortlist]);
   const inspectionChecklistByItemId = useMemo(
@@ -333,16 +261,6 @@ export function App() {
     saveReports(nextReports);
   };
 
-  const persistFeedback = (nextFeedback: FeedbackNote[]) => {
-    setFeedback(nextFeedback);
-    saveFeedback(nextFeedback);
-  };
-
-  const persistTesterRuns = (nextTesterRuns: TesterRun[]) => {
-    setTesterRuns(nextTesterRuns);
-    saveTesterRuns(nextTesterRuns);
-  };
-
   const persistShortlist = (nextShortlist: ShortlistItem[]) => {
     setShortlist(nextShortlist);
     saveShortlist(nextShortlist);
@@ -367,63 +285,6 @@ export function App() {
     else next.add(postId);
     setSaved(next);
     saveSaved(next);
-  };
-
-  const toggleQaSessionItem = (itemId: string) => {
-    const next = new Set(qaSession);
-    if (next.has(itemId)) next.delete(itemId);
-    else next.add(itemId);
-    setQaSession(next);
-    saveQaSession(next);
-  };
-
-  const toggleResponsiveQaItem = (itemId: string) => {
-    const next = new Set(responsiveQa);
-    if (next.has(itemId)) next.delete(itemId);
-    else next.add(itemId);
-    setResponsiveQa(next);
-    saveResponsiveQa(next);
-  };
-
-  const updateProductionUrl = (url: string) => {
-    setProductionUrl(url);
-    saveProductionUrl(url);
-  };
-
-  const toggleProductionLaunchItem = (itemId: string) => {
-    const next = new Set(productionLaunch);
-    if (next.has(itemId)) next.delete(itemId);
-    else next.add(itemId);
-    setProductionLaunch(next);
-    saveProductionLaunch(next);
-  };
-
-  const toggleProductionOpsItem = (itemId: string) => {
-    const next = new Set(productionOps);
-    if (next.has(itemId)) next.delete(itemId);
-    else next.add(itemId);
-    setProductionOps(next);
-    saveProductionOps(next);
-  };
-
-  const shareQaHandoff = () => {
-    void shareText({
-      title: "Autoflex QA handoff",
-      text: buildQaHandoffMarkdown({
-        feedbackSummary: feedbackTriageSummary,
-        feedbackLoopSummary,
-        generatedAt: new Date().toISOString(),
-        hostedApiSummary,
-        launchSummary: launchReadinessSummary,
-        profile,
-        productionLaunchSummary,
-        productionOpsSummary,
-        productionUrl,
-        qaSummary: qaSessionSummary,
-        responsiveQaSummary,
-        testerRunSummary,
-      }),
-    });
   };
 
   const toggleFollowModel = (brand: string, model: string) => {
@@ -522,47 +383,6 @@ export function App() {
     });
   };
 
-  const exportLocalBackup = () => {
-    const backup = JSON.stringify(buildAutoflexBackup(), null, 2);
-    void shareText({
-      title: "Autoflex local backup",
-      text: backup,
-    });
-  };
-
-  const importLocalBackup = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const backup = parseAutoflexBackup(backupDraft);
-    if (!backup) {
-      setActionMessage("Backup could not be read. Paste a valid Autoflex backup JSON.");
-      return;
-    }
-
-    restoreAutoflexBackup(backup);
-    setPosts(backup.data.posts);
-    setProductionLaunch(new Set(backup.data.productionLaunch));
-    setProductionOps(new Set(backup.data.productionOps));
-    setProductionUrl(backup.data.productionUrl);
-    setSaved(new Set(backup.data.saved));
-    setFeedback(backup.data.feedback);
-    setFollows(backup.data.follows);
-    setGarage(backup.data.garage);
-    setTimeline(backup.data.timeline);
-    setSubscriptionSettings(backup.data.subscriptionSettings);
-    setProfile(backup.data.profile);
-    setReports(backup.data.reports);
-    setResponsiveQa(new Set(backup.data.responsiveQa));
-    setShortlist(backup.data.shortlist);
-    setTesterRuns(backup.data.testerRuns);
-    setSelectedPost(backup.data.posts[0] ?? null);
-    setTimelineDraft({
-      ...initialTimelineDraft,
-      vehicleId: backup.data.garage[0]?.id ?? "",
-    });
-    setBackupDraft("");
-    setActionMessage("Backup restored on this browser.");
-  };
-
   const addShortlistItem = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!shortlistDraft.model.trim()) return;
@@ -640,41 +460,6 @@ export function App() {
     });
   };
 
-  const submitFeedback = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!feedbackDraft.trim()) return;
-    setFeedback(addFeedback(feedbackDraft.trim()));
-    setFeedbackDraft("");
-  };
-
-  const submitTesterRun = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!testerRunDraft.scenario.trim()) return;
-    const run = createTesterRun({
-      ...testerRunDraft,
-      friction: testerRunDraft.friction.trim() || "No major friction captured.",
-      scenario: testerRunDraft.scenario.trim(),
-      testerName: testerRunDraft.testerName.trim() || profile.displayName.trim() || "Anonymous tester",
-    });
-    persistTesterRuns([run, ...testerRuns]);
-    setTesterRunDraft({
-      ...initialTesterRunDraft,
-      testerName: testerRunDraft.testerName,
-    });
-  };
-
-  const removeTesterRun = (runId: string) => {
-    persistTesterRuns(testerRuns.filter((run) => run.id !== runId));
-  };
-
-  const setFeedbackStatus = (feedbackId: string, status: FeedbackStatus) => {
-    persistFeedback(updateFeedbackStatus(feedback, feedbackId, status));
-  };
-
-  const setFeedbackLoopStage = (feedbackId: string, loopStage: FeedbackNote["loopStage"]) => {
-    persistFeedback(updateFeedbackLoopStage(feedback, feedbackId, loopStage));
-  };
-
   return (
     <main className="app-shell">
       <section className="hero">
@@ -712,9 +497,6 @@ export function App() {
             </a>
             <a href="#loop" onClick={() => setNavMenuOpen(false)}>
               Build loop
-            </a>
-            <a href="#backup" onClick={() => setNavMenuOpen(false)}>
-              Backup
             </a>
           </div>
         </nav>
@@ -852,13 +634,40 @@ export function App() {
         </form>
       </section>
 
-      <section className="panel notification-panel" id="notifications">
+      <section className="panel privacy-panel" id="privacy">
         <div className="section-head">
           <div>
-            <p className="eyebrow">Subscriptions</p>
-            <h2>Useful alerts, not another noisy inbox.</h2>
+            <p className="eyebrow">Privacy readiness</p>
+            <h2>Be explicit about what the MVP stores.</h2>
           </div>
-          <div className="preference-toggles" aria-label="Notification preferences">
+          <div className="privacy-stats" aria-label="Privacy readiness summary">
+            <span>{privacySummary["Stored for MVP"]} stored</span>
+            <span>{privacySummary["Not collected"]} not collected</span>
+            <span>{privacySummary["Deletion baseline"]} deletion</span>
+          </div>
+        </div>
+        <div className="privacy-grid">
+          {privacyReadinessItems.map((item) => (
+            <article className={item.stance.toLowerCase().replaceAll(" ", "-")} key={item.id}>
+              <span>{item.stance}</span>
+              <h3>{item.label}</h3>
+              <p>{item.detail}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel notification-panel" id="notifications">
+        <div className="notification-layout">
+          <div className="notification-copy">
+            <p className="eyebrow">Subscriptions</p>
+            <h2>Choose the updates you actually want.</h2>
+            <p>
+              Keep this lightweight for the MVP: weekly ownership summaries, optional browser alerts, and quiet hours
+              when notification jobs are added.
+            </p>
+          </div>
+          <div className="preference-card" aria-label="Notification preferences">
             <label>
               <input
                 checked={subscriptionSettings.emailDigest}
@@ -867,7 +676,10 @@ export function App() {
                 }
                 type="checkbox"
               />
-              Weekly digest
+              <span>
+                <strong>Weekly digest</strong>
+                <small>One roundup for followed models and topics.</small>
+              </span>
             </label>
             <label>
               <input
@@ -877,7 +689,10 @@ export function App() {
                 }
                 type="checkbox"
               />
-              Browser alerts
+              <span>
+                <strong>Browser alerts</strong>
+                <small>Reserved for important updates after hosted notifications exist.</small>
+              </span>
             </label>
             <label>
               <input
@@ -887,7 +702,10 @@ export function App() {
                 }
                 type="checkbox"
               />
-              Quiet hours
+              <span>
+                <strong>Quiet hours</strong>
+                <small>Keep alerts muted outside useful ownership hours.</small>
+              </span>
             </label>
           </div>
         </div>
@@ -1624,364 +1442,6 @@ export function App() {
         </div>
       </section>
 
-      <section className="panel qa-panel">
-        <div className="section-head">
-          <div>
-            <p className="eyebrow">Tested / QA</p>
-            <h2>Smoke checks for this session.</h2>
-          </div>
-          <div className="qa-score">
-            <strong>
-              {qaSessionSummary.checked}/{qaSessionSummary.total}
-            </strong>
-            checked
-          </div>
-        </div>
-        <div className="qa-actions">
-          <button className="save-button" type="button" onClick={shareQaHandoff}>
-            Share QA handoff
-          </button>
-        </div>
-        <div className="qa-grid">
-          {qaSessionItems.map((item) => (
-            <label className={qaSession.has(item.id) ? "checked" : ""} key={item.id}>
-              <input checked={qaSession.has(item.id)} onChange={() => toggleQaSessionItem(item.id)} type="checkbox" />
-              <span>{item.label}</span>
-            </label>
-          ))}
-        </div>
-        <div className="responsive-qa-head">
-          <div>
-            <p className="eyebrow">Responsive QA matrix</p>
-            <h3>Phone, tablet, and desktop passes.</h3>
-          </div>
-          <span>
-            {responsiveQaSummary.checked}/{responsiveQaSummary.total} checked
-          </span>
-        </div>
-        <div className="responsive-qa-grid">
-          {responsiveQaItems.map((item) => (
-            <label className={responsiveQa.has(item.id) ? "checked" : ""} key={item.id}>
-              <input checked={responsiveQa.has(item.id)} onChange={() => toggleResponsiveQaItem(item.id)} type="checkbox" />
-              <span>{item.breakpoint}</span>
-              <strong>{item.surface}</strong>
-              <small>{item.label}</small>
-            </label>
-          ))}
-        </div>
-      </section>
-
-      <section className="panel launch-panel" id="launch">
-        <div className="section-head">
-          <div>
-            <p className="eyebrow">Launch readiness</p>
-            <h2>What must hold before the Vercel link goes public.</h2>
-          </div>
-          <div className="launch-score">
-            <strong>
-              {launchReadinessSummary.ready}/{launchReadinessSummary.total}
-            </strong>
-            ready
-          </div>
-        </div>
-        <div className="launch-grid">
-          {launchReadinessItems.map((item) => (
-            <article className={`launch-card ${item.ready ? "ready" : "blocked"}`} key={item.label}>
-              <span>{item.area}</span>
-              <h3>{item.label}</h3>
-              <p>{item.detail}</p>
-            </article>
-          ))}
-        </div>
-        <div className="production-launch-card">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">Production launch checks</p>
-              <h3>Verify the Vercel link before public sharing.</h3>
-            </div>
-            <div className="launch-score">
-              <strong>
-                {productionLaunchSummary.checked}/{productionLaunchSummary.total}
-              </strong>
-              verified
-            </div>
-          </div>
-          <label className="production-url-field">
-            <span>Production URL</span>
-            <input
-              inputMode="url"
-              type="url"
-              value={productionUrl}
-              onChange={(event) => updateProductionUrl(event.target.value)}
-              placeholder="https://autoflex.example.vercel.app"
-            />
-          </label>
-          <div className="production-launch-grid">
-            {productionLaunchItems.map((item) => (
-              <label className={productionLaunch.has(item.id) ? "checked" : ""} key={item.id}>
-                <input
-                  checked={productionLaunch.has(item.id)}
-                  onChange={() => toggleProductionLaunchItem(item.id)}
-                  type="checkbox"
-                />
-                <span>{item.label}</span>
-                <small>{item.detail}</small>
-              </label>
-            ))}
-          </div>
-        </div>
-        <div className="production-ops-card">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">Production operations</p>
-              <h3>Operational checks before the first public push.</h3>
-            </div>
-            <div className="launch-score">
-              <strong>
-                {productionOpsSummary.checked}/{productionOpsSummary.total}
-              </strong>
-              hardened
-            </div>
-          </div>
-          <div className="production-ops-grid">
-            {productionOpsItems.map((item) => (
-              <label className={productionOps.has(item.id) ? "checked" : ""} key={item.id}>
-                <input checked={productionOps.has(item.id)} onChange={() => toggleProductionOpsItem(item.id)} type="checkbox" />
-                <span>{item.label}</span>
-                <small>{item.detail}</small>
-              </label>
-            ))}
-          </div>
-        </div>
-        <div className="hosted-api-card">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">Hosted API readiness</p>
-              <h3>What moves from local-first into durable sync.</h3>
-            </div>
-            <div className="hosted-api-stats">
-              <span>{hostedApiSummary.beta} beta</span>
-              <span>{hostedApiSummary.later} later</span>
-              <span>{hostedApiSummary.serviceCenterBoundaries} reserved</span>
-            </div>
-          </div>
-          <div className="hosted-api-grid">
-            {hostedApiReadinessItems.map((item) => (
-              <article className={item.serviceCenterBoundary ? "reserved" : item.priority.toLowerCase().replace(" ", "-")} key={item.id}>
-                <div>
-                  <span>{item.currentMode}</span>
-                  <small>{item.serviceCenterBoundary ? "Separate team" : item.priority}</small>
-                </div>
-                <h4>{item.surface}</h4>
-                <p>{item.hostedNeed}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="panel split-panel backup-panel" id="backup">
-        <div>
-          <p className="eyebrow">Data portability</p>
-          <h2>Carry the local MVP before hosted sync exists.</h2>
-          <p>
-            Until accounts and hosted persistence are wired, testers can export a full Autoflex backup and restore it
-            in another browser. This keeps garage notes, follows, feedback, reports, and shortlist work recoverable.
-          </p>
-          <button className="primary-action" type="button" onClick={exportLocalBackup}>
-            Export local backup
-          </button>
-        </div>
-        <form className="composer" onSubmit={importLocalBackup}>
-          <textarea
-            required
-            rows={7}
-            value={backupDraft}
-            onChange={(event) => setBackupDraft(event.target.value)}
-            placeholder="Paste Autoflex backup JSON here to restore this browser."
-          />
-          <p className="form-note">Restore replaces the local MVP data in this browser with the backup contents.</p>
-          <button className="save-button" type="submit">
-            Restore backup
-          </button>
-        </form>
-      </section>
-
-      <section className="panel split-panel">
-        <div>
-          <p className="eyebrow">Real user perspective</p>
-          <h2>Capture what testers trip over.</h2>
-          <p>
-            This local feedback lane is the first version of the product-owner inbox. It keeps the MVP loop honest
-            until a hosted backend is wired.
-          </p>
-          <div className="feedback-triage-bar" aria-label="Feedback triage summary">
-            {feedbackStatuses.map((status) => (
-              <span key={status}>
-                <strong>{feedbackTriageSummary[status]}</strong>
-                {status}
-              </span>
-            ))}
-          </div>
-          <div className="feedback-loop-bar" aria-label="Feedback loop routing summary">
-            {feedbackLoopStages.map((stage) => (
-              <span key={stage}>
-                <strong>{feedbackLoopSummary[stage]}</strong>
-                {stage}
-              </span>
-            ))}
-          </div>
-          <div className="feedback-list">
-            {feedback.length ? (
-              feedback.slice(0, 4).map((note) => (
-                <article className={`feedback-card ${note.status.toLowerCase()}`} key={note.id}>
-                  <div>
-                    <div className="feedback-badges">
-                      <span>{note.status}</span>
-                      <span className="loop-stage">{note.loopStage}</span>
-                    </div>
-                    <time dateTime={note.createdAt}>{new Date(note.createdAt).toLocaleDateString("en-IN")}</time>
-                  </div>
-                  <p>{note.message}</p>
-                  <div className="feedback-status-row" aria-label={`Update status for feedback ${note.id}`}>
-                    {feedbackStatuses.map((status) => (
-                      <button
-                        aria-pressed={note.status === status}
-                        key={status}
-                        type="button"
-                        onClick={() => setFeedbackStatus(note.id, status)}
-                      >
-                        {status}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="feedback-status-row" aria-label={`Route feedback ${note.id} to the product loop`}>
-                    {feedbackLoopStages.map((stage) => (
-                      <button
-                        aria-pressed={note.loopStage === stage}
-                        key={stage}
-                        type="button"
-                        onClick={() => setFeedbackLoopStage(note.id, stage)}
-                      >
-                        {stage}
-                      </button>
-                    ))}
-                  </div>
-                </article>
-              ))
-            ) : (
-              <div className="empty-state">No tester feedback yet. First real-user notes will land here for triage.</div>
-            )}
-          </div>
-        </div>
-        <form className="composer" onSubmit={submitFeedback}>
-          <textarea
-            required
-            rows={6}
-            value={feedbackDraft}
-            onChange={(event) => setFeedbackDraft(event.target.value)}
-            placeholder="What felt useful, missing, confusing, or worth building next?"
-          />
-          <button className="primary-action" type="submit">
-            Save feedback
-          </button>
-        </form>
-      </section>
-
-      <section className="panel split-panel tester-run-panel">
-        <div>
-          <p className="eyebrow">Real-user test runs</p>
-          <h2>Turn tester sessions into loop evidence.</h2>
-          <p>
-            Use this after each hands-on pass: what the tester tried, whether it worked, what slowed them down, and
-            who should pick it up next.
-          </p>
-          <div className="tester-run-stats" aria-label="Tester run summary">
-            <span>
-              <strong>{testerRunSummary.total}</strong>
-              runs
-            </span>
-            <span>
-              <strong>{testerRunSummary.useful}</strong>
-              useful
-            </span>
-            <span>
-              <strong>{testerRunSummary.confusing}</strong>
-              confusing
-            </span>
-            <span>
-              <strong>{testerRunSummary.blocked}</strong>
-              blocked
-            </span>
-          </div>
-          <div className="tester-run-list">
-            {testerRuns.length ? (
-              testerRuns.slice(0, 4).map((run) => (
-                <article className={`tester-run-card ${run.outcome.toLowerCase()}`} key={run.id}>
-                  <div>
-                    <span>{run.outcome}</span>
-                    <small>{run.nextLoopStage}</small>
-                  </div>
-                  <h3>{run.scenario}</h3>
-                  <p>{run.friction}</p>
-                  <footer>
-                    {run.testerName} · {new Date(run.createdAt).toLocaleDateString("en-IN")}
-                    <button type="button" onClick={() => removeTesterRun(run.id)}>
-                      Remove
-                    </button>
-                  </footer>
-                </article>
-              ))
-            ) : (
-              <div className="empty-state">No real-user test runs yet. Log the first hands-on pass after QA.</div>
-            )}
-          </div>
-        </div>
-        <form className="composer" onSubmit={submitTesterRun}>
-          <input
-            value={testerRunDraft.testerName}
-            onChange={(event) => setTesterRunDraft({ ...testerRunDraft, testerName: event.target.value })}
-            placeholder="Tester name, optional"
-          />
-          <input
-            required
-            value={testerRunDraft.scenario}
-            onChange={(event) => setTesterRunDraft({ ...testerRunDraft, scenario: event.target.value })}
-            placeholder="Scenario, e.g. Buyer checks Nexon diesel fixes on mobile"
-          />
-          <select
-            value={testerRunDraft.outcome}
-            onChange={(event) => setTesterRunDraft({ ...testerRunDraft, outcome: event.target.value as DraftTesterRun["outcome"] })}
-          >
-            {testerRunOutcomes.map((outcome) => (
-              <option key={outcome} value={outcome}>
-                {outcome}
-              </option>
-            ))}
-          </select>
-          <textarea
-            rows={5}
-            value={testerRunDraft.friction}
-            onChange={(event) => setTesterRunDraft({ ...testerRunDraft, friction: event.target.value })}
-            placeholder="What helped, confused, blocked, or felt missing?"
-          />
-          <select
-            value={testerRunDraft.nextLoopStage}
-            onChange={(event) =>
-              setTesterRunDraft({ ...testerRunDraft, nextLoopStage: event.target.value as DraftTesterRun["nextLoopStage"] })
-            }
-          >
-            {feedbackLoopStages.map((stage) => (
-              <option key={stage} value={stage}>
-                {stage}
-              </option>
-            ))}
-          </select>
-          <button className="primary-action" type="submit">
-            Save test run
-          </button>
-        </form>
-      </section>
     </main>
   );
 }

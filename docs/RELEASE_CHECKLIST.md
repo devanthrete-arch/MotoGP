@@ -6,24 +6,21 @@
 2. Run `npm run dev` and open `http://localhost:8080`.
 3. Run `npm run test`.
 4. Run `npm run release:check`.
-5. Confirm the feed, filters, saved posts, following mode, starter route, city circles, ownership playbooks, post detail quality meter, buyer shortlist, buyer inspection checklists, profile form, comments, reports, moderator queue, write form, subscriptions, model notebooks, post sharing, notebook sharing, garage export, local backup/restore, garage timeline, garage reminders, garage running-cost ledger, garage insights, build loop, launch-readiness panel, production launch checklist, production operations checklist, hosted API readiness map, install metadata, connection status, QA checklist, responsive QA matrix, feedback loop routing, and real-user test-run log work.
+5. Confirm the public MVP surfaces work: feed, filters, saved posts, following mode, starter route, city circles, ownership playbooks, post detail quality meter, buyer shortlist, buyer inspection checklists, profile form, privacy readiness panel, comments, reports, moderator queue, write form, subscriptions, model notebooks, post sharing, notebook sharing, garage export, garage timeline, garage reminders, garage running-cost ledger, garage insights, build loop, install metadata, and connection status.
 6. Confirm the service-center integration boundary is visible and still treated as a separate workstream.
-7. Confirm the hosted API readiness map lists community, profile/feedback, garage, buyer, sharing, and service-center surfaces without assigning service-center work to the webapp team.
-8. Deploy the TypeScript webapp through Vercel and paste the production URL into the launch panel.
-9. Confirm direct refresh on deep paths falls back to the app instead of a Vercel 404, then tick the deep-link launch check.
-10. Confirm production responses include `X-Content-Type-Options`, `Referrer-Policy`, and `Permissions-Policy`, then tick the security-header launch check.
-11. Complete the production operations checklist: backup restore drill, non-default admin token, client-error path, release logs, monitoring owner, and HTTPS-only link.
-12. Confirm return-user nudges appear after following a model/topic, saving a note, or adding a garage vehicle.
-13. Check responsive layout at phone, tablet, and desktop widths; confirm nav, forms, feed detail, shortlist cards, inspection checklists, and action buttons remain readable and tappable, then tick the matching responsive QA matrix items.
-14. Confirm blocked, unavailable, or corrupt browser storage falls back safely without breaking the page.
-15. Confirm app-level crash recovery shows a reload/try-again path instead of a blank page.
-16. Submit tester feedback, move it through New/Reviewing/Planned/Shipped, route it across Product owner/Designer/Backend/Frontend/QA/Real user, log a real-user test run, and confirm summary counts update.
-17. Export a local backup, restore it in a fresh browser/profile, and confirm posts, follows, garage, feedback, reports, and shortlist data return.
-18. On a fresh browser/profile, confirm the starter route shows pending first actions and marks profile, follows, garage, saved/shortlist, and feedback steps complete as testers use them.
-19. Confirm `/manifest.json` loads, references `/icon.svg`, uses standalone display, and exposes shortcuts for write, garage, and model notebooks, then tick the install-metadata launch check.
-20. Toggle the browser offline and confirm the connection strip explains that local posts, garage notes, backups, and feedback still work, then tick the offline-smoke launch check.
-21. Tick and untick QA checklist items, refresh, and confirm checked smoke-pass items persist locally.
-22. Share the QA handoff report and confirm it includes tester identity, QA progress, responsive QA progress, production launch checks, production operations checks, launch blockers, hosted API readiness, feedback triage, feedback loop routing, real-user test runs, and the service-center boundary.
+7. Confirm the next-team handoff docs list community, profile, garage, buyer, sharing, notification, and service-center boundaries without assigning service-center work to the webapp team.
+8. Confirm the privacy readiness panel states what is stored for the local MVP, what is not collected, the deletion baseline, and the service-center privacy boundary.
+9. Confirm the deployed Vercel URL loads the current public MVP.
+10. Confirm direct refresh on deep paths falls back to the app instead of a Vercel 404.
+11. Confirm production responses include `X-Content-Type-Options`, `Referrer-Policy`, and `Permissions-Policy`.
+12. Complete production operations outside the public UI: backup restore drill, non-default admin token, client-error path, release logs, monitoring owner, and HTTPS-only link.
+13. Confirm return-user nudges appear after following a model/topic, saving a note, or adding a garage vehicle.
+14. Check responsive layout at phone, tablet, and desktop widths; confirm nav, forms, feed detail, shortlist cards, inspection checklists, and action buttons remain readable and tappable.
+15. Confirm blocked, unavailable, or corrupt browser storage falls back safely without breaking the page.
+16. Confirm app-level crash recovery shows a reload/try-again path instead of a blank page.
+17. On a fresh browser/profile, confirm the starter route shows pending first actions and marks profile, follows, garage, and saved/shortlist steps complete as users interact.
+18. Confirm `/manifest.json` loads, references `/icon.svg`, uses standalone display, and exposes shortcuts for write, garage, and model notebooks.
+19. Toggle the browser offline and confirm the connection strip explains that local posts, garage notes, saved notes, and shortlist work still work.
 
 ## Required environment
 

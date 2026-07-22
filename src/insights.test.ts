@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   hostedApiReadinessItems,
+  privacyReadinessItems,
   productionLaunchItems,
   productionOpsItems,
   qaSessionItems,
@@ -28,6 +29,7 @@ import {
   buildNotificationPreview,
   buildOwnershipPlaybooks,
   buildPostSharePayload,
+  buildPrivacyReadinessSummary,
   buildProductionLaunchSummary,
   buildProductionOpsSummary,
   buildQaHandoffMarkdown,
@@ -85,7 +87,6 @@ describe("Autoflex insights", () => {
 
   it("tracks first-run starter route progress", () => {
     const progress = buildStarterRouteProgress({
-      feedbackCount: 0,
       follows: { models: ["tata-nexon"], topics: [] },
       garage: [],
       profile: { city: "Pune", displayName: "Owner" },
@@ -192,6 +193,14 @@ describe("Autoflex insights", () => {
     });
   });
 
+  it("summarizes privacy readiness for stored, excluded, and deletion-baseline data", () => {
+    expect(buildPrivacyReadinessSummary(privacyReadinessItems)).toEqual({
+      "Deletion baseline": 1,
+      "Not collected": 2,
+      "Stored for MVP": 2,
+    });
+  });
+
   it("builds a QA handoff report for the product loop", () => {
     const report = buildQaHandoffMarkdown({
       feedbackLoopSummary: {
@@ -227,6 +236,7 @@ describe("Autoflex insights", () => {
         displayName: "QA Owner",
         garageRole: "Owner",
       },
+      privacySummary: buildPrivacyReadinessSummary(privacyReadinessItems),
       productionLaunchSummary: buildProductionLaunchSummary(productionLaunchItems, new Set(["production-url"])),
       productionOpsSummary: buildProductionOpsSummary(productionOpsItems, new Set(["https-only"])),
       productionUrl: "https://autoflex-zeta.vercel.app",
@@ -265,6 +275,8 @@ describe("Autoflex insights", () => {
     expect(report).toContain("Confusing / Designer");
     expect(report).toContain("## Hosted API readiness");
     expect(report).toContain("Service-center boundaries: 1");
+    expect(report).toContain("## Privacy readiness");
+    expect(report).toContain("Not collected: 2");
     expect(report).toContain("Service-center integration remains outside this MVP loop");
   });
 

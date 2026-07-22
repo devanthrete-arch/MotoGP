@@ -34,8 +34,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <p className="eyebrow">Recovery mode</p>
           <h1>Autoflex hit a rough patch.</h1>
           <p>
-            Your local garage data should still be safe. Try reloading the app; if this keeps happening, copy the
-            message below into the feedback lane.
+            Your local garage data should still be safe. Try reloading the app. If this keeps happening, share the
+            message below with the Autoflex team.
           </p>
           <code>{this.state.error.message || "Unknown interface error"}</code>
           <div className="hero-actions">
