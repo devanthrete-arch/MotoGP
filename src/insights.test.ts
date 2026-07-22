@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { seedGarage, seedPosts, seedTimeline } from "./domain";
+import { seedGarage, seedPosts, seedTimeline, starterRoutes } from "./domain";
 import {
   assessPostQuality,
   buildFeedbackTriageSummary,
@@ -17,6 +17,7 @@ import {
   buildPostSharePayload,
   buildReturnNudges,
   buildShortlistComparisons,
+  buildStarterRouteProgress,
   filterPostsByMode,
   groupByModel,
   modelKeyFor,
@@ -61,6 +62,21 @@ describe("Autoflex insights", () => {
       "2 saved notes waiting in your garage shelf.",
       "Daily diesel is close to the next 10k km service checkpoint.",
     ]);
+  });
+
+  it("tracks first-run starter route progress", () => {
+    const progress = buildStarterRouteProgress({
+      feedbackCount: 0,
+      follows: { models: ["tata-nexon"], topics: [] },
+      garage: [],
+      profile: { city: "Pune", displayName: "Owner" },
+      routes: starterRoutes,
+      savedCount: 1,
+      shortlistCount: 0,
+    });
+
+    expect(progress.filter((step) => step.complete).map((step) => step.id)).toEqual(["profile", "follow", "save"]);
+    expect(progress.find((step) => step.id === "garage")?.complete).toBe(false);
   });
 
   it("creates notification previews without requiring a backend", () => {
