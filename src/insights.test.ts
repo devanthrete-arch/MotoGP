@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { qaSessionItems, responsiveQaItems, seedGarage, seedPosts, seedTimeline, starterRoutes } from "./domain";
+import { productionLaunchItems, qaSessionItems, responsiveQaItems, seedGarage, seedPosts, seedTimeline, starterRoutes } from "./domain";
 import {
   assessPostQuality,
   buildFeedbackTriageSummary,
@@ -17,6 +17,7 @@ import {
   buildNotificationPreview,
   buildOwnershipPlaybooks,
   buildPostSharePayload,
+  buildProductionLaunchSummary,
   buildQaHandoffMarkdown,
   buildQaSessionSummary,
   buildResponsiveQaSummary,
@@ -116,6 +117,16 @@ describe("Autoflex insights", () => {
     expect(summary.remaining.map((item) => item.id)).not.toContain("phone-nav-feed");
   });
 
+  it("summarizes production launch checks", () => {
+    const summary = buildProductionLaunchSummary(productionLaunchItems, new Set(["production-url", "security-headers"]));
+
+    expect(summary).toMatchObject({
+      checked: 2,
+      total: productionLaunchItems.length,
+    });
+    expect(summary.remaining.map((item) => item.id)).not.toContain("production-url");
+  });
+
   it("builds a QA handoff report for the product loop", () => {
     const report = buildQaHandoffMarkdown({
       feedbackLoopSummary: {
@@ -150,6 +161,8 @@ describe("Autoflex insights", () => {
         displayName: "QA Owner",
         garageRole: "Owner",
       },
+      productionLaunchSummary: buildProductionLaunchSummary(productionLaunchItems, new Set(["production-url"])),
+      productionUrl: "https://autoflex-zeta.vercel.app",
       qaSummary: buildQaSessionSummary(qaSessionItems, new Set(["feed"])),
       responsiveQaSummary: buildResponsiveQaSummary(responsiveQaItems, new Set(["phone-nav-feed"])),
     });
@@ -161,6 +174,9 @@ describe("Autoflex insights", () => {
     expect(report).toContain("Checked: 1/");
     expect(report).toContain("## Responsive QA");
     expect(report).toContain("Tablet / Knowledge cards");
+    expect(report).toContain("Production URL: https://autoflex-zeta.vercel.app");
+    expect(report).toContain("Production launch checks:");
+    expect(report).toContain("Deep-link refresh works");
     expect(report).toContain("Production Vercel URL: Needs production URL.");
     expect(report).toContain("Total tester notes: 4");
     expect(report).toContain("Product owner: 2");

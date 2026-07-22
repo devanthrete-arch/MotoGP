@@ -5,6 +5,7 @@ import {
   feedbackStatuses,
   knowledgeLabels,
   launchReadinessItems,
+  productionLaunchItems,
   qaSessionItems,
   responsiveQaItems,
   shortlistStatuses,
@@ -44,6 +45,7 @@ import {
   buildNotificationPreview,
   buildOwnershipPlaybooks,
   buildPostSharePayload,
+  buildProductionLaunchSummary,
   buildQaHandoffMarkdown,
   buildQaSessionSummary,
   buildResponsiveQaSummary,
@@ -68,6 +70,8 @@ import {
   loadGarage,
   loadProfile,
   loadPosts,
+  loadProductionLaunch,
+  loadProductionUrl,
   loadQaSession,
   loadResponsiveQa,
   loadReports,
@@ -81,6 +85,8 @@ import {
   saveFollows,
   saveGarage,
   savePosts,
+  saveProductionLaunch,
+  saveProductionUrl,
   saveQaSession,
   saveResponsiveQa,
   saveProfile,
@@ -156,6 +162,8 @@ export function App() {
   const [saved, setSaved] = useState<Set<string>>(() => loadSaved());
   const [qaSession, setQaSession] = useState<Set<string>>(() => loadQaSession());
   const [responsiveQa, setResponsiveQa] = useState<Set<string>>(() => loadResponsiveQa());
+  const [productionLaunch, setProductionLaunch] = useState<Set<string>>(() => loadProductionLaunch());
+  const [productionUrl, setProductionUrl] = useState(() => loadProductionUrl());
   const [follows, setFollows] = useState<FollowState>(() => loadFollows());
   const [subscriptionSettings, setSubscriptionSettings] = useState<SubscriptionSettings>(() => loadSubscriptionSettings());
   const [garage, setGarage] = useState<GarageVehicle[]>(() => loadGarage());
@@ -233,6 +241,10 @@ export function App() {
   const feedbackTriageSummary = useMemo(() => buildFeedbackTriageSummary(feedback), [feedback]);
   const feedbackLoopSummary = useMemo(() => buildFeedbackLoopSummary(feedback), [feedback]);
   const launchReadinessSummary = useMemo(() => buildLaunchReadinessSummary(launchReadinessItems), []);
+  const productionLaunchSummary = useMemo(
+    () => buildProductionLaunchSummary(productionLaunchItems, productionLaunch),
+    [productionLaunch],
+  );
   const shortlistComparisons = useMemo(() => buildShortlistComparisons(shortlist, posts), [posts, shortlist]);
   const inspectionChecklists = useMemo(() => buildInspectionChecklists(shortlist, posts), [posts, shortlist]);
   const inspectionChecklistByItemId = useMemo(
@@ -341,6 +353,19 @@ export function App() {
     saveResponsiveQa(next);
   };
 
+  const updateProductionUrl = (url: string) => {
+    setProductionUrl(url);
+    saveProductionUrl(url);
+  };
+
+  const toggleProductionLaunchItem = (itemId: string) => {
+    const next = new Set(productionLaunch);
+    if (next.has(itemId)) next.delete(itemId);
+    else next.add(itemId);
+    setProductionLaunch(next);
+    saveProductionLaunch(next);
+  };
+
   const shareQaHandoff = () => {
     void shareText({
       title: "Autoflex QA handoff",
@@ -350,6 +375,8 @@ export function App() {
         generatedAt: new Date().toISOString(),
         launchSummary: launchReadinessSummary,
         profile,
+        productionLaunchSummary,
+        productionUrl,
         qaSummary: qaSessionSummary,
         responsiveQaSummary,
       }),
@@ -470,6 +497,8 @@ export function App() {
 
     restoreAutoflexBackup(backup);
     setPosts(backup.data.posts);
+    setProductionLaunch(new Set(backup.data.productionLaunch));
+    setProductionUrl(backup.data.productionUrl);
     setSaved(new Set(backup.data.saved));
     setFeedback(backup.data.feedback);
     setFollows(backup.data.follows);
@@ -1598,6 +1627,43 @@ export function App() {
               <p>{item.detail}</p>
             </article>
           ))}
+        </div>
+        <div className="production-launch-card">
+          <div className="section-head">
+            <div>
+              <p className="eyebrow">Production launch checks</p>
+              <h3>Verify the Vercel link before public sharing.</h3>
+            </div>
+            <div className="launch-score">
+              <strong>
+                {productionLaunchSummary.checked}/{productionLaunchSummary.total}
+              </strong>
+              verified
+            </div>
+          </div>
+          <label className="production-url-field">
+            <span>Production URL</span>
+            <input
+              inputMode="url"
+              type="url"
+              value={productionUrl}
+              onChange={(event) => updateProductionUrl(event.target.value)}
+              placeholder="https://autoflex.example.vercel.app"
+            />
+          </label>
+          <div className="production-launch-grid">
+            {productionLaunchItems.map((item) => (
+              <label className={productionLaunch.has(item.id) ? "checked" : ""} key={item.id}>
+                <input
+                  checked={productionLaunch.has(item.id)}
+                  onChange={() => toggleProductionLaunchItem(item.id)}
+                  type="checkbox"
+                />
+                <span>{item.label}</span>
+                <small>{item.detail}</small>
+              </label>
+            ))}
+          </div>
         </div>
       </section>
 
