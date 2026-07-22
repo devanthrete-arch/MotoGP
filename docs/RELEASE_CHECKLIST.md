@@ -9,6 +9,7 @@
 5. Confirm the service-center integration boundary is visible and still treated as a separate workstream.
 6. Deploy the TypeScript webapp through Vercel.
 7. Confirm return-user nudges appear after following a model/topic, saving a note, or adding a garage vehicle.
+8. Check responsive layout at phone, tablet, and desktop widths; confirm nav, forms, feed detail, shortlist cards, inspection checklists, and action buttons remain readable and tappable.
 
 ## Required environment
 

@@ -43,6 +43,7 @@ Service-center integration is intentionally kept separate under
 - [x] Added local city circles grouping owner notes and garage vehicles by city.
 - [x] Added ownership playbooks that convert model notes into owner signals and buyer checks.
 - [x] Added post detail quality meter to nudge variant, city, odometer, cost, and outcome context.
+- [x] Added responsive layout polish for phone, tablet, and desktop use.
 - [x] Added shared Kotlin request/response models.
 - [x] Added native Android project scaffolding for the later Android app path.
 - [x] Added community feed with latest/popular sorting, search, brand/topic filters, and pagination.
@@ -71,6 +72,7 @@ Service-center integration is intentionally kept separate under
 
 - [x] Merged the TypeScript web MVP feature PRs through post quality meter into `master`.
 - [ ] Deploy the TypeScript webapp on Vercel.
+- [ ] Run a visual responsive QA pass on the deployed Vercel URL.
 - [ ] Decide whether the first hosted backend is TypeScript/Fastify or the existing Ktor API.
 - [ ] Add durable hosted persistence after the TypeScript web surface is validated.
 - [ ] Replace local subscription previews with real hosted notification jobs after accounts/persistence exist.

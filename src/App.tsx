@@ -1284,6 +1284,7 @@ export function App() {
           <p>City circles group local owner notes and garage vehicles by market context.</p>
           <p>Post detail quality meter nudges variant, city, odometer, cost, and outcome context.</p>
           <p>Buyer inspection checklists convert shortlist evidence into test-drive and used-car checks.</p>
+          <p>Responsive layout keeps navigation, forms, cards, and action buttons usable on phone, tablet, and desktop.</p>
           <p>Subscription previews and garage insights are generated from typed pure functions.</p>
           <p>Service-center integration remains outside this MVP loop.</p>
         </div>
