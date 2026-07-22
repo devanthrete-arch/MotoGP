@@ -354,6 +354,12 @@ export const launchReadinessItems: LaunchReadinessItem[] = [
     ready: true,
   },
   {
+    area: "Data safety",
+    detail: "The app explains online/offline state and what local-first work still continues.",
+    label: "Offline-aware local mode",
+    ready: true,
+  },
+  {
     area: "Trust",
     detail: "Reports, moderation queue, community rules, and owner blocking are available for tester abuse handling.",
     label: "Trust-and-safety loop",
