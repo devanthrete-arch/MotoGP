@@ -14,6 +14,8 @@ import type {
   ReportRecord,
   ShortlistItem,
   SubscriptionSettings,
+  DraftTesterRun,
+  TesterRun,
   TimelineEntry,
 } from "./domain";
 import { seedGarage, seedPosts, seedTimeline } from "./domain";
@@ -32,6 +34,7 @@ const qaSessionKey = "autoflex.web.qa-session.v1";
 const responsiveQaKey = "autoflex.web.responsive-qa.v1";
 const productionLaunchKey = "autoflex.web.production-launch.v1";
 const productionUrlKey = "autoflex.web.production-url.v1";
+const testerRunsKey = "autoflex.web.tester-runs.v1";
 
 export type StorageLike = Pick<Storage, "getItem" | "setItem">;
 
@@ -55,6 +58,7 @@ export type AutoflexBackup = {
     saved: string[];
     shortlist: ShortlistItem[];
     subscriptionSettings: SubscriptionSettings;
+    testerRuns: TesterRun[];
     timeline: TimelineEntry[];
   };
 };
@@ -114,6 +118,7 @@ export const buildAutoflexBackup = (exportedAt = new Date().toISOString()): Auto
     saved: [...loadSaved()],
     shortlist: loadShortlist(),
     subscriptionSettings: loadSubscriptionSettings(),
+    testerRuns: loadTesterRuns(),
     timeline: loadTimeline(),
   },
   exportedAt,
@@ -161,6 +166,7 @@ export const parseAutoflexBackup = (raw: string): AutoflexBackup | null => {
             emailDigest: true,
             quietHours: true,
           },
+      testerRuns: Array.isArray(parsed.data.testerRuns) ? (parsed.data.testerRuns as TesterRun[]) : [],
       timeline: Array.isArray(parsed.data.timeline) ? (parsed.data.timeline as TimelineEntry[]) : [],
     },
     exportedAt: parsed.exportedAt,
@@ -181,6 +187,7 @@ export const restoreAutoflexBackup = (backup: AutoflexBackup): void => {
   saveSaved(new Set(backup.data.saved));
   saveShortlist(backup.data.shortlist);
   saveSubscriptionSettings(backup.data.subscriptionSettings);
+  saveTesterRuns(backup.data.testerRuns);
   saveTimeline(backup.data.timeline);
 };
 
@@ -231,6 +238,19 @@ export const loadProductionUrl = (): string => readStoredJson<string>(production
 export const saveProductionUrl = (url: string): void => {
   writeStoredJson(productionUrlKey, url);
 };
+
+export const loadTesterRuns = (): TesterRun[] =>
+  readStoredJson<TesterRun[]>(testerRunsKey, []).sort((first, second) => Date.parse(second.createdAt) - Date.parse(first.createdAt));
+
+export const saveTesterRuns = (runs: TesterRun[]): void => {
+  writeStoredJson(testerRunsKey, runs);
+};
+
+export const createTesterRun = (draft: DraftTesterRun): TesterRun => ({
+  ...draft,
+  id: `tester-run-${Date.now()}`,
+  createdAt: new Date().toISOString(),
+});
 
 export const normalizeFeedbackNotes = (notes: StoredFeedbackNote[]): FeedbackNote[] =>
   notes

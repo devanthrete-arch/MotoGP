@@ -24,6 +24,7 @@ import {
   buildReturnNudges,
   buildShortlistComparisons,
   buildStarterRouteProgress,
+  buildTesterRunSummary,
   filterPostsByMode,
   groupByModel,
   modelKeyFor,
@@ -127,6 +128,37 @@ describe("Autoflex insights", () => {
     expect(summary.remaining.map((item) => item.id)).not.toContain("production-url");
   });
 
+  it("summarizes real-user test runs", () => {
+    const summary = buildTesterRunSummary([
+      {
+        createdAt: "2026-07-22T10:00:00.000Z",
+        friction: "Could not find the garage export.",
+        id: "run-one",
+        nextLoopStage: "Designer",
+        outcome: "Confusing",
+        scenario: "Owner exports garage on phone.",
+        testerName: "Riya",
+      },
+      {
+        createdAt: "2026-07-22T11:00:00.000Z",
+        friction: "Feed helped them save a fix.",
+        id: "run-two",
+        nextLoopStage: "Real user",
+        outcome: "Useful",
+        scenario: "Buyer checks a known issue.",
+        testerName: "Amit",
+      },
+    ]);
+
+    expect(summary).toMatchObject({
+      blocked: 0,
+      confusing: 1,
+      total: 2,
+      useful: 1,
+    });
+    expect(summary.openFriction[0]?.nextLoopStage).toBe("Designer");
+  });
+
   it("builds a QA handoff report for the product loop", () => {
     const report = buildQaHandoffMarkdown({
       feedbackLoopSummary: {
@@ -165,6 +197,17 @@ describe("Autoflex insights", () => {
       productionUrl: "https://autoflex-zeta.vercel.app",
       qaSummary: buildQaSessionSummary(qaSessionItems, new Set(["feed"])),
       responsiveQaSummary: buildResponsiveQaSummary(responsiveQaItems, new Set(["phone-nav-feed"])),
+      testerRunSummary: buildTesterRunSummary([
+        {
+          createdAt: "2026-07-22T10:00:00.000Z",
+          friction: "The install prompt was hard to find.",
+          id: "run-one",
+          nextLoopStage: "Designer",
+          outcome: "Confusing",
+          scenario: "Fresh tester tries to install the app.",
+          testerName: "QA Owner",
+        },
+      ]),
     });
 
     expect(report).toContain("# Autoflex QA handoff");
@@ -181,6 +224,8 @@ describe("Autoflex insights", () => {
     expect(report).toContain("Total tester notes: 4");
     expect(report).toContain("Product owner: 2");
     expect(report).toContain("Designer: 1");
+    expect(report).toContain("## Real-user test runs");
+    expect(report).toContain("Confusing / Designer");
     expect(report).toContain("Service-center integration remains outside this MVP loop");
   });
 

@@ -15,6 +15,7 @@ import type {
   ResponsiveQaItem,
   ShortlistItem,
   StarterRoute,
+  TesterRun,
   TimelineEntry,
 } from "./domain";
 
@@ -94,6 +95,14 @@ export type ProductionLaunchSummary = {
   remaining: ProductionLaunchItem[];
 };
 
+export type TesterRunSummary = {
+  total: number;
+  useful: number;
+  confusing: number;
+  blocked: number;
+  openFriction: TesterRun[];
+};
+
 export type QaHandoffInput = {
   feedbackLoopSummary: FeedbackLoopSummary;
   feedbackSummary: FeedbackTriageSummary;
@@ -104,6 +113,7 @@ export type QaHandoffInput = {
   productionUrl: string;
   qaSummary: QaSessionSummary;
   responsiveQaSummary: ResponsiveQaSummary;
+  testerRunSummary: TesterRunSummary;
 };
 
 export type SharePayload = {
@@ -307,6 +317,16 @@ export function buildProductionLaunchSummary(
   };
 }
 
+export function buildTesterRunSummary(runs: TesterRun[]): TesterRunSummary {
+  return {
+    blocked: runs.filter((run) => run.outcome === "Blocked").length,
+    confusing: runs.filter((run) => run.outcome === "Confusing").length,
+    openFriction: runs.filter((run) => run.outcome !== "Useful").slice(0, 5),
+    total: runs.length,
+    useful: runs.filter((run) => run.outcome === "Useful").length,
+  };
+}
+
 export function buildQaHandoffMarkdown(input: QaHandoffInput): string {
   const feedbackTotal = Object.values(input.feedbackSummary).reduce((total, count) => total + count, 0);
   const remainingQa = input.qaSummary.remaining.map((item) => `- ${item.label}`).join("\n") || "- None";
@@ -316,6 +336,10 @@ export function buildQaHandoffMarkdown(input: QaHandoffInput): string {
   const launchBlockers = input.launchSummary.blocked.map((item) => `- ${item.label}: ${item.detail}`).join("\n") || "- None";
   const productionLaunchRemaining =
     input.productionLaunchSummary.remaining.map((item) => `- ${item.label}: ${item.detail}`).join("\n") || "- None";
+  const testerFriction =
+    input.testerRunSummary.openFriction
+      .map((run) => `- ${run.outcome} / ${run.nextLoopStage}: ${run.scenario} — ${run.friction}`)
+      .join("\n") || "- None";
   const loopRouting = Object.entries(input.feedbackLoopSummary)
     .map(([stage, count]) => `- ${stage}: ${count}`)
     .join("\n");
@@ -369,6 +393,16 @@ export function buildQaHandoffMarkdown(input: QaHandoffInput): string {
     "",
     "Loop routing:",
     loopRouting,
+    "",
+    "## Real-user test runs",
+    "",
+    `Runs: ${input.testerRunSummary.total}`,
+    `Useful: ${input.testerRunSummary.useful}`,
+    `Confusing: ${input.testerRunSummary.confusing}`,
+    `Blocked: ${input.testerRunSummary.blocked}`,
+    "",
+    "Open tester friction:",
+    testerFriction,
     "",
     "## Service-center boundary",
     "",
