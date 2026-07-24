@@ -78,6 +78,7 @@ Service-center integration is intentionally kept separate under
 - [x] Added a persisted responsive QA matrix for phone, tablet, and desktop release passes.
 - [x] Added a shareable QA handoff report with tester identity for Product → Design → Engineering → QA → Real User review.
 - [x] Added local data backup export/import so testers can move MVP state before hosted sync exists.
+- [x] Added a hosted API readiness map for local-first surfaces, beta sync needs, later sync needs, and service-center boundaries.
 - [x] Added share buttons plus `/share/*` metadata landing pages for posts and model notebooks.
 - [x] Added richer starter seed content for tester onboarding.
 - [x] Added Docker staging packaging and staging deployment docs.
@@ -89,7 +90,7 @@ Service-center integration is intentionally kept separate under
 - [ ] Deploy the TypeScript webapp on Vercel and record the production URL in the launch panel.
 - [ ] Run a visual responsive QA pass on the deployed Vercel URL, including the starter route, QA checklist, responsive QA matrix, and install prompt.
 - [ ] Run an offline-mode smoke check in the deployed browser.
-- [ ] Decide whether the first hosted backend is TypeScript/Fastify or the existing Ktor API.
+- [ ] Decide whether the first hosted backend is TypeScript/Fastify or the existing Ktor API using the hosted API readiness map.
 - [ ] Add durable hosted persistence after the TypeScript web surface is validated.
 - [ ] Replace local backup/restore with hosted account sync once persistence exists.
 - [ ] Replace local subscription previews with real hosted notification jobs after accounts/persistence exist.
