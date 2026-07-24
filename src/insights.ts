@@ -10,6 +10,7 @@ import type {
   ModelNotebook,
   OwnerPost,
   Profile,
+  PrivacyReadinessItem,
   ProductionOpsItem,
   ProductionLaunchItem,
   QaSessionItem,
@@ -103,6 +104,8 @@ export type ProductionOpsSummary = {
   remaining: ProductionOpsItem[];
 };
 
+export type PrivacyReadinessSummary = Record<PrivacyReadinessItem["stance"], number>;
+
 export type TesterRunSummary = {
   total: number;
   useful: number;
@@ -125,6 +128,7 @@ export type QaHandoffInput = {
   hostedApiSummary: HostedApiReadinessSummary;
   launchSummary: LaunchReadinessSummary;
   profile: Profile;
+  privacySummary: PrivacyReadinessSummary;
   productionLaunchSummary: ProductionLaunchSummary;
   productionOpsSummary: ProductionOpsSummary;
   productionUrl: string;
@@ -269,7 +273,6 @@ export function buildReturnNudges(input: {
 }
 
 export function buildStarterRouteProgress(input: {
-  feedbackCount: number;
   follows: FollowState;
   garage: GarageVehicle[];
   profile: Pick<Profile, "city" | "displayName">;
@@ -278,7 +281,6 @@ export function buildStarterRouteProgress(input: {
   shortlistCount: number;
 }): StarterRouteProgress[] {
   const completedById: Record<StarterRoute["id"], boolean> = {
-    feedback: input.feedbackCount > 0,
     follow: input.follows.models.length + input.follows.topics.length > 0,
     garage: input.garage.length > 0,
     profile: Boolean(input.profile.displayName.trim() && input.profile.city.trim()),
@@ -340,6 +342,20 @@ export function buildProductionOpsSummary(items: ProductionOpsItem[], checkedIds
     remaining: items.filter((item) => !checkedIds.has(item.id)),
     total: items.length,
   };
+}
+
+export function buildPrivacyReadinessSummary(items: PrivacyReadinessItem[]): PrivacyReadinessSummary {
+  return items.reduce<PrivacyReadinessSummary>(
+    (summary, item) => ({
+      ...summary,
+      [item.stance]: summary[item.stance] + 1,
+    }),
+    {
+      "Deletion baseline": 0,
+      "Not collected": 0,
+      "Stored for MVP": 0,
+    },
+  );
 }
 
 export function buildTesterRunSummary(runs: TesterRun[]): TesterRunSummary {
@@ -452,6 +468,12 @@ export function buildQaHandoffMarkdown(input: QaHandoffInput): string {
     `Beta items: ${input.hostedApiSummary.beta}`,
     `Later items: ${input.hostedApiSummary.later}`,
     `Service-center boundaries: ${input.hostedApiSummary.serviceCenterBoundaries}`,
+    "",
+    "## Privacy readiness",
+    "",
+    `Stored for MVP: ${input.privacySummary["Stored for MVP"]}`,
+    `Not collected: ${input.privacySummary["Not collected"]}`,
+    `Deletion baseline: ${input.privacySummary["Deletion baseline"]}`,
     "",
     "## Service-center boundary",
     "",

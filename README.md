@@ -64,26 +64,21 @@ Service-center integration is intentionally kept separate under
 - [x] Added moderator pin/unpin for important notes.
 - [x] Added reporting, admin moderation queue, report dismissal, abusive post deletion, and owner blocking.
 - [x] Added community rules and privacy/deletion notes.
+- [x] Added an in-app privacy readiness panel covering stored MVP data, excluded sensitive data, deletion baseline, and service-center privacy boundary.
 - [x] Added real web image upload with size/type checks and JPEG storage.
-- [x] Added product feedback capture and admin feedback inbox.
-- [x] Added local feedback triage states and loop-stage routing for Product owner → Design → Engineering → QA follow-through.
-- [x] Added a local real-user test-run log for scenario, outcome, friction, and next loop owner.
+- [x] Kept feedback, QA, launch, backup, and handoff logic out of the public homepage so the MVP is clean for customers.
 - [x] Added browser/client error capture for staging QA.
 - [x] Added health endpoint with app version and service-center boundary status.
-- [x] Added Vercel deployment config, SPA fallback routing, and launch-readiness panel.
-- [x] Added a persisted production launch checklist for URL, deep-link refresh, headers, install metadata, offline smoke, and handoff verification.
-- [x] Added a persisted production operations checklist for backup drill, admin token, client-error path, logs, monitoring owner, and HTTPS.
+- [x] Added Vercel deployment config and SPA fallback routing.
+- [x] Added internal production launch and operations checklist docs for the team.
 - [x] Added install-ready web app manifest, icon, theme metadata, and app shortcuts.
 - [x] Added online/offline status messaging for local-first tester sessions.
-- [x] Added a persisted QA session checklist for launch smoke passes.
-- [x] Added a persisted responsive QA matrix for phone, tablet, and desktop release passes.
-- [x] Added a shareable QA handoff report with tester identity for Product → Design → Engineering → QA → Real User review.
-- [x] Added local data backup export/import so testers can move MVP state before hosted sync exists.
-- [x] Added a hosted API readiness map for local-first surfaces, beta sync needs, later sync needs, and service-center boundaries.
+- [x] Added internal QA and hosted API readiness docs for the next build team.
 - [x] Added share buttons plus `/share/*` metadata landing pages for posts and model notebooks.
 - [x] Added richer starter seed content for tester onboarding.
 - [x] Added Docker staging packaging and staging deployment docs.
 - [x] Kept service-center endpoints separate from the community product surface.
+- [x] Decided the first hosted backend path: TypeScript/Fastify for the web MVP, with Kotlin/Ktor retained for the later Android/native path.
 
 ### Yet to be done
 
@@ -91,7 +86,6 @@ Service-center integration is intentionally kept separate under
 - [ ] Deploy the TypeScript webapp on Vercel and record the production URL in the launch panel.
 - [ ] Run a visual responsive QA pass on the deployed Vercel URL, including the starter route, QA checklist, responsive QA matrix, and install prompt.
 - [ ] Run an offline-mode smoke check in the deployed browser.
-- [ ] Decide whether the first hosted backend is TypeScript/Fastify or the existing Ktor API using the hosted API readiness map.
 - [ ] Add durable hosted persistence after the TypeScript web surface is validated.
 - [ ] Replace local backup/restore with hosted account sync once persistence exists.
 - [ ] Replace local subscription previews with real hosted notification jobs after accounts/persistence exist.
@@ -125,6 +119,8 @@ Service-center integration is intentionally kept separate under
 - `docs/COMMUNITY_RULES.md` — posting and moderation standard
 - `docs/SERVICE_CENTER_INTEGRATION.md` — separate service-center integration boundary
 - `docs/RELEASE_CHECKLIST.md` — web MVP release checks
+- `docs/PENDING_PRIORITIES.md` — prioritized remaining production work
+- `docs/HOSTED_BACKEND_DECISION.md` — TypeScript/Fastify-first backend decision
 - `docs/STAGING_DEPLOYMENT.md` — Docker staging runbook
 - `docs/PRIVACY_AND_DELETION.md` — current privacy and profile deletion notes
 
@@ -146,13 +142,12 @@ npm run dev
 Open `http://localhost:8080`.
 
 The current TypeScript MVP is local-first so it can move quickly on Vercel while
-the hosted backend decision is finalized. It includes owner posts, saved notes,
+the hosted backend path is implemented. It includes owner posts, saved notes,
 followed models/topics, a following feed, garage vehicles, timeline entries,
-model notebooks, subscription previews, garage insights, feedback capture, and
-QA/user loop panels. The starter route shows first-time testers how to set a
-profile, follow a model, create a garage baseline, keep a useful note, and leave
-feedback. It also has lightweight local profiles, comments, reports,
-shareable notes/notebooks, garage export, local backup/restore, and a moderator queue so
+model notebooks, subscription previews, and garage insights. The starter route shows first-time testers how to set a
+profile, follow a model, create a garage baseline, and keep a useful note.
+It also has lightweight local profiles, comments, reports,
+shareable notes/notebooks, garage export, and a moderator queue so
 trust-and-safety can be tested before backend wiring. Buyers can also keep a
 local shortlist, compare models against available ownership notes, and generate
 inspection checklists for test drives or used-car evaluations. Model playbooks
@@ -164,10 +159,7 @@ The web shell includes `public/manifest.json` and `public/icon.svg` so
 Chrome/Android and supporting desktop browsers can present Autoflex as an
 installable app surface.
 The webapp also shows online/offline status so testers know local notes,
-garage entries, backups, and feedback still work when connectivity drops.
-The QA panel now keeps per-browser smoke-check progress and can share a handoff
-report with the lightweight tester profile, so product, QA, and real-user
-passes can see who verified what.
+garage entries, saved notes, and shortlist work still work when connectivity drops.
 
 Run the web release gate before deploying:
 

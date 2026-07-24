@@ -86,7 +86,7 @@ export type Profile = {
 };
 
 export type StarterRoute = {
-  id: "profile" | "follow" | "garage" | "save" | "feedback";
+  id: "profile" | "follow" | "garage" | "save";
   title: string;
   detail: string;
   href: string;
@@ -188,6 +188,13 @@ export type ProductionOpsItem = {
   detail: string;
 };
 
+export type PrivacyReadinessItem = {
+  id: string;
+  stance: "Stored for MVP" | "Not collected" | "Deletion baseline";
+  label: string;
+  detail: string;
+};
+
 export type ModelNotebook = {
   key: string;
   brand: string;
@@ -240,12 +247,6 @@ export const starterRoutes: StarterRoute[] = [
     href: "#feed",
     id: "save",
     title: "Keep one useful note",
-  },
-  {
-    detail: "Tell the product loop what confused you, helped you, or felt missing.",
-    href: "#feedback",
-    id: "feedback",
-    title: "Leave tester feedback",
   },
 ];
 
@@ -414,6 +415,39 @@ export const productionOpsItems: ProductionOpsItem[] = [
     detail: "Production URL is served over HTTPS and no non-secure app URL is shared with testers.",
     id: "https-only",
     label: "HTTPS-only public link",
+  },
+];
+
+export const privacyReadinessItems: PrivacyReadinessItem[] = [
+  {
+    detail: "Owner posts, comments, reports, saved notes, follows, garage entries, feedback, QA checks, launch checks, and tester runs stay local until hosted persistence is chosen.",
+    id: "local-mvp-state",
+    label: "Local MVP state is explicit",
+    stance: "Stored for MVP",
+  },
+  {
+    detail: "Display name, city, and role help comments, reports, and handoff context feel human without requiring a full account.",
+    id: "light-profile",
+    label: "Lightweight profile only",
+    stance: "Stored for MVP",
+  },
+  {
+    detail: "The web MVP does not collect passwords, phone numbers, payment data, service-center requests, OBD data, or vehicle telemetry.",
+    id: "not-collected",
+    label: "Sensitive data stays out",
+    stance: "Not collected",
+  },
+  {
+    detail: "Service-center data remains outside the Autoflex community MVP and is owned by the separate service-center team.",
+    id: "service-center-privacy",
+    label: "Service-center privacy boundary",
+    stance: "Not collected",
+  },
+  {
+    detail: "Before hosted accounts, testers can clear or replace local state with backup/restore; hosted deletion rules come after the backend decision.",
+    id: "local-delete-path",
+    label: "Local deletion path is honest",
+    stance: "Deletion baseline",
   },
 ];
 
