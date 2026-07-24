@@ -1695,6 +1695,60 @@ a:focus-visible {
   line-height: 1.55;
 }
 
+.production-ops-card {
+  background:
+    linear-gradient(135deg, rgba(33, 27, 22, 0.96), rgba(95, 61, 40, 0.92)),
+    radial-gradient(circle at 100% 0%, rgba(255, 179, 107, 0.26), transparent 18rem);
+  border: 1px solid rgba(255, 248, 237, 0.12);
+  border-radius: 30px;
+  margin-top: 18px;
+  padding: 22px;
+}
+
+.production-ops-card h3 {
+  color: #fff8ed;
+  font-size: clamp(1.45rem, 2vw, 2.2rem);
+  letter-spacing: -0.05em;
+  margin: 0;
+}
+
+.production-ops-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.production-ops-grid label {
+  background: rgba(255, 248, 237, 0.06);
+  border: 1px solid rgba(255, 248, 237, 0.14);
+  border-radius: 22px;
+  color: rgba(255, 248, 237, 0.78);
+  cursor: pointer;
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+}
+
+.production-ops-grid label.checked {
+  background: rgba(223, 243, 212, 0.14);
+  border-color: rgba(148, 200, 121, 0.42);
+}
+
+.production-ops-grid input {
+  accent-color: #ffb36b;
+  inline-size: 18px;
+}
+
+.production-ops-grid span {
+  color: #fff8ed;
+  font-weight: 900;
+}
+
+.production-ops-grid small {
+  color: rgba(255, 248, 237, 0.66);
+  line-height: 1.55;
+}
+
 .hosted-api-card {
   background: #fffaf2;
   border: 1px solid rgba(95, 61, 40, 0.16);
@@ -1881,6 +1935,7 @@ a:focus-visible {
   .moderation-grid,
   .launch-grid,
   .production-launch-grid,
+  .production-ops-grid,
   .hosted-api-grid,
   .feedback-loop-bar,
   .feedback-triage-bar,

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   hostedApiReadinessItems,
   productionLaunchItems,
+  productionOpsItems,
   qaSessionItems,
   responsiveQaItems,
   seedGarage,
@@ -28,6 +29,7 @@ import {
   buildOwnershipPlaybooks,
   buildPostSharePayload,
   buildProductionLaunchSummary,
+  buildProductionOpsSummary,
   buildQaHandoffMarkdown,
   buildQaSessionSummary,
   buildResponsiveQaSummary,
@@ -138,6 +140,16 @@ describe("Autoflex insights", () => {
     expect(summary.remaining.map((item) => item.id)).not.toContain("production-url");
   });
 
+  it("summarizes production operations checks", () => {
+    const summary = buildProductionOpsSummary(productionOpsItems, new Set(["backup-restore-drill", "https-only"]));
+
+    expect(summary).toMatchObject({
+      checked: 2,
+      total: productionOpsItems.length,
+    });
+    expect(summary.remaining.map((item) => item.id)).not.toContain("https-only");
+  });
+
   it("summarizes real-user test runs", () => {
     const summary = buildTesterRunSummary([
       {
@@ -216,6 +228,7 @@ describe("Autoflex insights", () => {
         garageRole: "Owner",
       },
       productionLaunchSummary: buildProductionLaunchSummary(productionLaunchItems, new Set(["production-url"])),
+      productionOpsSummary: buildProductionOpsSummary(productionOpsItems, new Set(["https-only"])),
       productionUrl: "https://autoflex-zeta.vercel.app",
       qaSummary: buildQaSessionSummary(qaSessionItems, new Set(["feed"])),
       responsiveQaSummary: buildResponsiveQaSummary(responsiveQaItems, new Set(["phone-nav-feed"])),
@@ -242,6 +255,8 @@ describe("Autoflex insights", () => {
     expect(report).toContain("Production URL: https://autoflex-zeta.vercel.app");
     expect(report).toContain("Production launch checks:");
     expect(report).toContain("Deep-link refresh works");
+    expect(report).toContain("Production operations:");
+    expect(report).toContain("Non-default admin token set");
     expect(report).toContain("Production Vercel URL: Needs production URL.");
     expect(report).toContain("Total tester notes: 4");
     expect(report).toContain("Product owner: 2");
