@@ -11,6 +11,7 @@
 7. Confirm return-user nudges appear after following a model/topic, saving a note, or adding a garage vehicle.
 8. Check responsive layout at phone, tablet, and desktop widths; confirm nav, forms, feed detail, shortlist cards, inspection checklists, and action buttons remain readable and tappable.
 9. Confirm blocked, unavailable, or corrupt browser storage falls back safely without breaking the page.
+10. Confirm app-level crash recovery shows a reload/try-again path instead of a blank page.
 
 ## Required environment
 
