@@ -70,6 +70,7 @@ Service-center integration is intentionally kept separate under
 - [x] Added browser/client error capture for staging QA.
 - [x] Added health endpoint with app version and service-center boundary status.
 - [x] Added Vercel deployment config, SPA fallback routing, and launch-readiness panel.
+- [x] Added a persisted production launch checklist for URL, deep-link refresh, headers, install metadata, offline smoke, and handoff verification.
 - [x] Added install-ready web app manifest, icon, theme metadata, and app shortcuts.
 - [x] Added online/offline status messaging for local-first tester sessions.
 - [x] Added a persisted QA session checklist for launch smoke passes.
@@ -84,7 +85,7 @@ Service-center integration is intentionally kept separate under
 ### Yet to be done
 
 - [x] Merged the TypeScript web MVP feature PRs through post quality meter into `master`.
-- [ ] Deploy the TypeScript webapp on Vercel.
+- [ ] Deploy the TypeScript webapp on Vercel and record the production URL in the launch panel.
 - [ ] Run a visual responsive QA pass on the deployed Vercel URL, including the starter route, QA checklist, responsive QA matrix, and install prompt.
 - [ ] Run an offline-mode smoke check in the deployed browser.
 - [ ] Decide whether the first hosted backend is TypeScript/Fastify or the existing Ktor API.

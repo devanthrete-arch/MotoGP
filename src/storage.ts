@@ -30,6 +30,8 @@ const reportsKey = "autoflex.web.reports.v1";
 const shortlistKey = "autoflex.web.shortlist.v1";
 const qaSessionKey = "autoflex.web.qa-session.v1";
 const responsiveQaKey = "autoflex.web.responsive-qa.v1";
+const productionLaunchKey = "autoflex.web.production-launch.v1";
+const productionUrlKey = "autoflex.web.production-url.v1";
 
 export type StorageLike = Pick<Storage, "getItem" | "setItem">;
 
@@ -46,6 +48,8 @@ export type AutoflexBackup = {
     garage: GarageVehicle[];
     posts: OwnerPost[];
     profile: Profile;
+    productionLaunch: string[];
+    productionUrl: string;
     reports: ReportRecord[];
     responsiveQa: string[];
     saved: string[];
@@ -103,6 +107,8 @@ export const buildAutoflexBackup = (exportedAt = new Date().toISOString()): Auto
     garage: loadGarage(),
     posts: loadPosts(),
     profile: loadProfile(),
+    productionLaunch: [...loadProductionLaunch()],
+    productionUrl: loadProductionUrl(),
     reports: loadReports(),
     responsiveQa: [...loadResponsiveQa()],
     saved: [...loadSaved()],
@@ -138,6 +144,10 @@ export const parseAutoflexBackup = (raw: string): AutoflexBackup | null => {
             displayName: "",
             garageRole: "Owner",
           },
+      productionLaunch: Array.isArray(parsed.data.productionLaunch)
+        ? parsed.data.productionLaunch.filter((item): item is string => typeof item === "string")
+        : [],
+      productionUrl: typeof parsed.data.productionUrl === "string" ? parsed.data.productionUrl : "",
       reports: Array.isArray(parsed.data.reports) ? (parsed.data.reports as ReportRecord[]) : [],
       responsiveQa: Array.isArray(parsed.data.responsiveQa)
         ? parsed.data.responsiveQa.filter((item): item is string => typeof item === "string")
@@ -164,6 +174,8 @@ export const restoreAutoflexBackup = (backup: AutoflexBackup): void => {
   saveGarage(backup.data.garage);
   savePosts(backup.data.posts);
   saveProfile(backup.data.profile);
+  saveProductionLaunch(new Set(backup.data.productionLaunch));
+  saveProductionUrl(backup.data.productionUrl);
   saveReports(backup.data.reports);
   saveResponsiveQa(new Set(backup.data.responsiveQa));
   saveSaved(new Set(backup.data.saved));
@@ -206,6 +218,18 @@ export const loadResponsiveQa = (): Set<string> => new Set(readStoredJson<string
 
 export const saveResponsiveQa = (checkedIds: Set<string>): void => {
   writeStoredJson(responsiveQaKey, [...checkedIds]);
+};
+
+export const loadProductionLaunch = (): Set<string> => new Set(readStoredJson<string[]>(productionLaunchKey, []));
+
+export const saveProductionLaunch = (checkedIds: Set<string>): void => {
+  writeStoredJson(productionLaunchKey, [...checkedIds]);
+};
+
+export const loadProductionUrl = (): string => readStoredJson<string>(productionUrlKey, "");
+
+export const saveProductionUrl = (url: string): void => {
+  writeStoredJson(productionUrlKey, url);
 };
 
 export const normalizeFeedbackNotes = (notes: StoredFeedbackNote[]): FeedbackNote[] =>

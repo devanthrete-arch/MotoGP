@@ -141,6 +141,18 @@ export type LaunchReadinessItem = {
   ready: boolean;
 };
 
+export type ProductionLaunchItem = {
+  id:
+    | "production-url"
+    | "deep-link-refresh"
+    | "security-headers"
+    | "manifest-install"
+    | "offline-smoke"
+    | "handoff-shared";
+  label: string;
+  detail: string;
+};
+
 export type ModelNotebook = {
   key: string;
   brand: string;
@@ -248,6 +260,39 @@ export const responsiveQaItems: ResponsiveQaItem[] = [
     id: "desktop-data-tools",
     label: "Backup, moderation, garage ledger, and reminders keep clear action hierarchy.",
     surface: "Data tools",
+  },
+];
+
+export const productionLaunchItems: ProductionLaunchItem[] = [
+  {
+    detail: "Vercel production URL is available and opens the TypeScript webapp.",
+    id: "production-url",
+    label: "Production URL opens",
+  },
+  {
+    detail: "A refreshed deep link falls back to the app instead of showing Vercel 404.",
+    id: "deep-link-refresh",
+    label: "Deep-link refresh works",
+  },
+  {
+    detail: "Production response includes content-type, referrer, and permissions policy headers.",
+    id: "security-headers",
+    label: "Security headers verified",
+  },
+  {
+    detail: "Manifest, icon, theme color, and install shortcuts are reachable on the deployed URL.",
+    id: "manifest-install",
+    label: "Install metadata verified",
+  },
+  {
+    detail: "Offline toggle confirms local posts, garage notes, backup, and feedback still work.",
+    id: "offline-smoke",
+    label: "Offline smoke pass",
+  },
+  {
+    detail: "QA handoff was shared with product, design, engineering, QA, and real-user notes.",
+    id: "handoff-shared",
+    label: "Launch handoff shared",
   },
 ];
 

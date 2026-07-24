@@ -9,6 +9,7 @@ import type {
   ModelNotebook,
   OwnerPost,
   Profile,
+  ProductionLaunchItem,
   QaSessionItem,
   ReportRecord,
   ResponsiveQaItem,
@@ -87,12 +88,20 @@ export type ResponsiveQaSummary = {
   remaining: ResponsiveQaItem[];
 };
 
+export type ProductionLaunchSummary = {
+  checked: number;
+  total: number;
+  remaining: ProductionLaunchItem[];
+};
+
 export type QaHandoffInput = {
   feedbackLoopSummary: FeedbackLoopSummary;
   feedbackSummary: FeedbackTriageSummary;
   generatedAt: string;
   launchSummary: LaunchReadinessSummary;
   profile: Profile;
+  productionLaunchSummary: ProductionLaunchSummary;
+  productionUrl: string;
   qaSummary: QaSessionSummary;
   responsiveQaSummary: ResponsiveQaSummary;
 };
@@ -287,6 +296,17 @@ export function buildResponsiveQaSummary(items: ResponsiveQaItem[], checkedIds: 
   };
 }
 
+export function buildProductionLaunchSummary(
+  items: ProductionLaunchItem[],
+  checkedIds: Set<string>,
+): ProductionLaunchSummary {
+  return {
+    checked: items.filter((item) => checkedIds.has(item.id)).length,
+    remaining: items.filter((item) => !checkedIds.has(item.id)),
+    total: items.length,
+  };
+}
+
 export function buildQaHandoffMarkdown(input: QaHandoffInput): string {
   const feedbackTotal = Object.values(input.feedbackSummary).reduce((total, count) => total + count, 0);
   const remainingQa = input.qaSummary.remaining.map((item) => `- ${item.label}`).join("\n") || "- None";
@@ -294,6 +314,8 @@ export function buildQaHandoffMarkdown(input: QaHandoffInput): string {
     input.responsiveQaSummary.remaining.map((item) => `- ${item.breakpoint} / ${item.surface}: ${item.label}`).join("\n") ||
     "- None";
   const launchBlockers = input.launchSummary.blocked.map((item) => `- ${item.label}: ${item.detail}`).join("\n") || "- None";
+  const productionLaunchRemaining =
+    input.productionLaunchSummary.remaining.map((item) => `- ${item.label}: ${item.detail}`).join("\n") || "- None";
   const loopRouting = Object.entries(input.feedbackLoopSummary)
     .map(([stage, count]) => `- ${stage}: ${count}`)
     .join("\n");
@@ -326,9 +348,16 @@ export function buildQaHandoffMarkdown(input: QaHandoffInput): string {
     "## Launch readiness",
     "",
     `Ready: ${input.launchSummary.ready}/${input.launchSummary.total}`,
+    `Production URL: ${input.productionUrl.trim() || "Not set"}`,
     "",
     "Open blockers:",
     launchBlockers,
+    "",
+    "Production launch checks:",
+    `Checked: ${input.productionLaunchSummary.checked}/${input.productionLaunchSummary.total}`,
+    "",
+    "Remaining production checks:",
+    productionLaunchRemaining,
     "",
     "## Feedback triage",
     "",

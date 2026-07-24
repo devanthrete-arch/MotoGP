@@ -69,6 +69,25 @@ describe("Autoflex storage safety", () => {
     ]);
   });
 
+  it("persists production launch checks and URL through the storage adapter", () => {
+    const values = new Map<string, string>();
+    const storage: StorageLike = {
+      getItem: (key) => values.get(key) ?? "",
+      setItem: (key, value) => {
+        values.set(key, value);
+      },
+    };
+
+    writeStoredJson("autoflex.web.production-launch.v1", ["production-url", "security-headers"], storage);
+    writeStoredJson("autoflex.web.production-url.v1", "https://autoflex.example.vercel.app", storage);
+
+    expect(readStoredJson<string[]>("autoflex.web.production-launch.v1", [], storage)).toEqual([
+      "production-url",
+      "security-headers",
+    ]);
+    expect(readStoredJson<string>("autoflex.web.production-url.v1", "", storage)).toBe("https://autoflex.example.vercel.app");
+  });
+
   it("migrates old feedback notes into the triage lane", () => {
     const notes = normalizeFeedbackNotes([
       {
@@ -153,6 +172,8 @@ describe("Autoflex storage safety", () => {
           garage: [],
           posts: [],
           profile: { city: "Pune", displayName: "Owner", garageRole: "Owner" },
+          productionLaunch: ["production-url", 42],
+          productionUrl: "https://autoflex.example.vercel.app",
           reports: [],
           responsiveQa: ["phone-nav-feed", 42],
           saved: ["nexon-diesel-clutch", 42],
@@ -167,6 +188,8 @@ describe("Autoflex storage safety", () => {
 
     expect(backup?.data.feedback[0]?.status).toBe("New");
     expect(backup?.data.feedback[0]?.loopStage).toBe("Real user");
+    expect(backup?.data.productionLaunch).toEqual(["production-url"]);
+    expect(backup?.data.productionUrl).toBe("https://autoflex.example.vercel.app");
     expect(backup?.data.responsiveQa).toEqual(["phone-nav-feed"]);
     expect(backup?.data.saved).toEqual(["nexon-diesel-clutch"]);
     expect(backup?.data.profile.displayName).toBe("Owner");
