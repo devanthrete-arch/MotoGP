@@ -6,7 +6,7 @@
 2. Run `npm run dev` and open `http://localhost:8080`.
 3. Run `npm run test`.
 4. Run `npm run release:check`.
-5. Confirm the feed, filters, saved posts, following mode, starter route, city circles, ownership playbooks, post detail quality meter, buyer shortlist, buyer inspection checklists, profile form, comments, reports, moderator queue, write form, subscriptions, model notebooks, post sharing, notebook sharing, garage export, local backup/restore, garage timeline, garage reminders, garage running-cost ledger, garage insights, build loop, launch-readiness panel, production launch checklist, install metadata, connection status, QA checklist, responsive QA matrix, and feedback loop routing work.
+5. Confirm the feed, filters, saved posts, following mode, starter route, city circles, ownership playbooks, post detail quality meter, buyer shortlist, buyer inspection checklists, profile form, comments, reports, moderator queue, write form, subscriptions, model notebooks, post sharing, notebook sharing, garage export, local backup/restore, garage timeline, garage reminders, garage running-cost ledger, garage insights, build loop, launch-readiness panel, production launch checklist, install metadata, connection status, QA checklist, responsive QA matrix, feedback loop routing, and real-user test-run log work.
 6. Confirm the service-center integration boundary is visible and still treated as a separate workstream.
 7. Deploy the TypeScript webapp through Vercel and paste the production URL into the launch panel.
 8. Confirm direct refresh on deep paths falls back to the app instead of a Vercel 404, then tick the deep-link launch check.
@@ -15,13 +15,13 @@
 11. Check responsive layout at phone, tablet, and desktop widths; confirm nav, forms, feed detail, shortlist cards, inspection checklists, and action buttons remain readable and tappable, then tick the matching responsive QA matrix items.
 12. Confirm blocked, unavailable, or corrupt browser storage falls back safely without breaking the page.
 13. Confirm app-level crash recovery shows a reload/try-again path instead of a blank page.
-14. Submit tester feedback, move it through New/Reviewing/Planned/Shipped, route it across Product owner/Designer/Backend/Frontend/QA/Real user, and confirm both summary counts update.
+14. Submit tester feedback, move it through New/Reviewing/Planned/Shipped, route it across Product owner/Designer/Backend/Frontend/QA/Real user, log a real-user test run, and confirm summary counts update.
 15. Export a local backup, restore it in a fresh browser/profile, and confirm posts, follows, garage, feedback, reports, and shortlist data return.
 16. On a fresh browser/profile, confirm the starter route shows pending first actions and marks profile, follows, garage, saved/shortlist, and feedback steps complete as testers use them.
 17. Confirm `/manifest.json` loads, references `/icon.svg`, uses standalone display, and exposes shortcuts for write, garage, and model notebooks, then tick the install-metadata launch check.
 18. Toggle the browser offline and confirm the connection strip explains that local posts, garage notes, backups, and feedback still work, then tick the offline-smoke launch check.
 19. Tick and untick QA checklist items, refresh, and confirm checked smoke-pass items persist locally.
-20. Share the QA handoff report and confirm it includes tester identity, QA progress, responsive QA progress, production launch checks, launch blockers, feedback triage, feedback loop routing, and the service-center boundary.
+20. Share the QA handoff report and confirm it includes tester identity, QA progress, responsive QA progress, production launch checks, launch blockers, feedback triage, feedback loop routing, real-user test runs, and the service-center boundary.
 
 ## Required environment
 

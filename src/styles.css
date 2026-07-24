@@ -1085,6 +1085,116 @@ a:focus-visible {
   color: #fff8ed;
 }
 
+.tester-run-panel {
+  background:
+    radial-gradient(circle at 0% 0%, rgba(255, 179, 107, 0.2), transparent 26rem),
+    #fff8ed;
+}
+
+.tester-run-stats {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 18px 0;
+}
+
+.tester-run-stats span {
+  background: #211b16;
+  border-radius: 18px;
+  color: rgba(255, 248, 237, 0.72);
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+}
+
+.tester-run-stats strong {
+  color: #ffcc8d;
+  font-size: 1.45rem;
+  letter-spacing: -0.05em;
+  line-height: 1;
+}
+
+.tester-run-list {
+  display: grid;
+  gap: 12px;
+}
+
+.tester-run-card {
+  background: #fffaf2;
+  border: 1px solid rgba(95, 61, 40, 0.16);
+  border-radius: 22px;
+  display: grid;
+  gap: 10px;
+  padding: 16px;
+}
+
+.tester-run-card > div {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.tester-run-card span,
+.tester-run-card small {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  padding: 7px 10px;
+  text-transform: uppercase;
+}
+
+.tester-run-card span {
+  background: #dff3d4;
+  color: #386d27;
+}
+
+.tester-run-card.confusing span {
+  background: #ffe0b6;
+  color: #7e321d;
+}
+
+.tester-run-card.blocked span {
+  background: #ffd8d4;
+  color: #8b281d;
+}
+
+.tester-run-card small {
+  background: #f1e5d9;
+  color: #4f3c2f;
+}
+
+.tester-run-card h3 {
+  margin: 0;
+}
+
+.tester-run-card p {
+  color: #725a48;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.tester-run-card footer {
+  align-items: center;
+  color: #8b6b55;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.tester-run-card footer button {
+  background: transparent;
+  border: 1px solid rgba(95, 61, 40, 0.18);
+  border-radius: 999px;
+  color: #4f3c2f;
+  cursor: pointer;
+  font-weight: 800;
+  padding: 8px 10px;
+}
+
 .inline-form {
   border-top: 1px solid rgba(95, 61, 40, 0.14);
   display: grid;
@@ -1683,7 +1793,8 @@ a:focus-visible {
   .launch-grid,
   .production-launch-grid,
   .feedback-loop-bar,
-  .feedback-triage-bar {
+  .feedback-triage-bar,
+  .tester-run-stats {
     grid-template-columns: 1fr;
   }
 

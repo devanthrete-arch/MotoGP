@@ -67,6 +67,7 @@ Service-center integration is intentionally kept separate under
 - [x] Added real web image upload with size/type checks and JPEG storage.
 - [x] Added product feedback capture and admin feedback inbox.
 - [x] Added local feedback triage states and loop-stage routing for Product owner → Design → Engineering → QA follow-through.
+- [x] Added a local real-user test-run log for scenario, outcome, friction, and next loop owner.
 - [x] Added browser/client error capture for staging QA.
 - [x] Added health endpoint with app version and service-center boundary status.
 - [x] Added Vercel deployment config, SPA fallback routing, and launch-readiness panel.
@@ -99,7 +100,7 @@ Service-center integration is intentionally kept separate under
 - [ ] Replace local city circles with hosted city pages and city follows.
 - [ ] Replace local ownership playbooks with hosted model playbook pages and richer evidence scoring.
 - [ ] Promote post quality scoring into hosted moderation/ranking once the backend path is selected.
-- [ ] Run real tester feedback through the product-owner → designer → backend → frontend → QA → real-user routing loop.
+- [ ] Run deployed real tester sessions through the product-owner → designer → backend → frontend → QA → real-user routing loop.
 - [ ] Add hosted persistence/API for follows, garage, timeline, and feedback.
 - [ ] Add basic notification/subscription flows after hosted follows exist.
 - [ ] Add richer garage profile fields and timeline analytics.

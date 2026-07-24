@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { FeedbackNote } from "./domain";
 import {
+  createTesterRun,
   normalizeFeedbackNotes,
   parseAutoflexBackup,
   readStoredJson,
@@ -157,6 +158,20 @@ describe("Autoflex storage safety", () => {
     expect(parseAutoflexBackup(JSON.stringify({ version: 2, data: {} }))).toBeNull();
   });
 
+  it("creates tester runs with a generated id and timestamp", () => {
+    const run = createTesterRun({
+      friction: "Install prompt was unclear.",
+      nextLoopStage: "Designer",
+      outcome: "Confusing",
+      scenario: "Fresh tester installs the app.",
+      testerName: "Riya",
+    });
+
+    expect(run.id).toContain("tester-run-");
+    expect(run.createdAt).toBeTruthy();
+    expect(run.nextLoopStage).toBe("Designer");
+  });
+
   it("parses a valid backup and migrates feedback status", () => {
     const backup = parseAutoflexBackup(
       JSON.stringify({
@@ -179,6 +194,17 @@ describe("Autoflex storage safety", () => {
           saved: ["nexon-diesel-clutch", 42],
           shortlist: [],
           subscriptionSettings: { browserAlerts: false, emailDigest: true, quietHours: true },
+          testerRuns: [
+            {
+              createdAt: "2026-07-22T09:00:00.000Z",
+              friction: "Could not find backup export.",
+              id: "run-one",
+              nextLoopStage: "Frontend engineer",
+              outcome: "Blocked",
+              scenario: "Tester tries data portability.",
+              testerName: "Owner",
+            },
+          ],
           timeline: [],
         },
         exportedAt: "2026-07-22T10:00:00.000Z",
@@ -192,6 +218,7 @@ describe("Autoflex storage safety", () => {
     expect(backup?.data.productionUrl).toBe("https://autoflex.example.vercel.app");
     expect(backup?.data.responsiveQa).toEqual(["phone-nav-feed"]);
     expect(backup?.data.saved).toEqual(["nexon-diesel-clutch"]);
+    expect(backup?.data.testerRuns[0]?.outcome).toBe("Blocked");
     expect(backup?.data.profile.displayName).toBe("Owner");
   });
 });

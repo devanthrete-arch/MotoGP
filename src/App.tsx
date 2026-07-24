@@ -10,9 +10,11 @@ import {
   responsiveQaItems,
   shortlistStatuses,
   starterRoutes,
+  testerRunOutcomes,
   timelineKinds,
   type DraftPost,
   type DraftShortlistItem,
+  type DraftTesterRun,
   type DraftTimelineEntry,
   type DraftVehicle,
   type FeedbackNote,
@@ -25,6 +27,7 @@ import {
   type ReportRecord,
   type ShortlistItem,
   type SubscriptionSettings,
+  type TesterRun,
   type TimelineEntry,
   type TimelineEntryKind,
 } from "./domain";
@@ -52,6 +55,7 @@ import {
   buildReturnNudges,
   buildShortlistComparisons,
   buildStarterRouteProgress,
+  buildTesterRunSummary,
   filterPostsByMode,
   formatMoney,
   groupByModel,
@@ -63,6 +67,7 @@ import {
   createPost,
   createReport,
   createShortlistItem,
+  createTesterRun,
   createTimelineEntry,
   createVehicle,
   loadFeedback,
@@ -78,6 +83,7 @@ import {
   loadSaved,
   loadShortlist,
   loadSubscriptionSettings,
+  loadTesterRuns,
   loadTimeline,
   parseAutoflexBackup,
   restoreAutoflexBackup,
@@ -94,6 +100,7 @@ import {
   saveSaved,
   saveShortlist,
   saveSubscriptionSettings,
+  saveTesterRuns,
   saveTimeline,
   updateFeedbackStatus,
   updateFeedbackLoopStage,
@@ -144,6 +151,14 @@ const initialShortlistDraft: DraftShortlistItem = {
   status: "Researching",
 };
 
+const initialTesterRunDraft: DraftTesterRun = {
+  friction: "",
+  nextLoopStage: "Product owner",
+  outcome: "Useful",
+  scenario: "",
+  testerName: "",
+};
+
 const garageRoles: Profile["garageRole"][] = ["Owner", "Buyer", "Enthusiast", "Mechanic"];
 
 const getInitialOnlineStatus = (): boolean => {
@@ -169,6 +184,7 @@ export function App() {
   const [garage, setGarage] = useState<GarageVehicle[]>(() => loadGarage());
   const [timeline, setTimeline] = useState<TimelineEntry[]>(() => loadTimeline());
   const [feedback, setFeedback] = useState<FeedbackNote[]>(() => loadFeedback());
+  const [testerRuns, setTesterRuns] = useState<TesterRun[]>(() => loadTesterRuns());
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<FeedMode>("latest");
   const [selectedLabel, setSelectedLabel] = useState<KnowledgeLabel | "All">("All");
@@ -180,6 +196,7 @@ export function App() {
     vehicleId: loadGarage()[0]?.id ?? "",
   }));
   const [shortlistDraft, setShortlistDraft] = useState<DraftShortlistItem>(initialShortlistDraft);
+  const [testerRunDraft, setTesterRunDraft] = useState<DraftTesterRun>(initialTesterRunDraft);
   const [commentDraft, setCommentDraft] = useState("");
   const [reportDraft, setReportDraft] = useState("");
   const [feedbackDraft, setFeedbackDraft] = useState("");
@@ -245,6 +262,7 @@ export function App() {
     () => buildProductionLaunchSummary(productionLaunchItems, productionLaunch),
     [productionLaunch],
   );
+  const testerRunSummary = useMemo(() => buildTesterRunSummary(testerRuns), [testerRuns]);
   const shortlistComparisons = useMemo(() => buildShortlistComparisons(shortlist, posts), [posts, shortlist]);
   const inspectionChecklists = useMemo(() => buildInspectionChecklists(shortlist, posts), [posts, shortlist]);
   const inspectionChecklistByItemId = useMemo(
@@ -309,6 +327,11 @@ export function App() {
   const persistFeedback = (nextFeedback: FeedbackNote[]) => {
     setFeedback(nextFeedback);
     saveFeedback(nextFeedback);
+  };
+
+  const persistTesterRuns = (nextTesterRuns: TesterRun[]) => {
+    setTesterRuns(nextTesterRuns);
+    saveTesterRuns(nextTesterRuns);
   };
 
   const persistShortlist = (nextShortlist: ShortlistItem[]) => {
@@ -379,6 +402,7 @@ export function App() {
         productionUrl,
         qaSummary: qaSessionSummary,
         responsiveQaSummary,
+        testerRunSummary,
       }),
     });
   };
@@ -509,6 +533,7 @@ export function App() {
     setReports(backup.data.reports);
     setResponsiveQa(new Set(backup.data.responsiveQa));
     setShortlist(backup.data.shortlist);
+    setTesterRuns(backup.data.testerRuns);
     setSelectedPost(backup.data.posts[0] ?? null);
     setTimelineDraft({
       ...initialTimelineDraft,
@@ -600,6 +625,26 @@ export function App() {
     if (!feedbackDraft.trim()) return;
     setFeedback(addFeedback(feedbackDraft.trim()));
     setFeedbackDraft("");
+  };
+
+  const submitTesterRun = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!testerRunDraft.scenario.trim()) return;
+    const run = createTesterRun({
+      ...testerRunDraft,
+      friction: testerRunDraft.friction.trim() || "No major friction captured.",
+      scenario: testerRunDraft.scenario.trim(),
+      testerName: testerRunDraft.testerName.trim() || profile.displayName.trim() || "Anonymous tester",
+    });
+    persistTesterRuns([run, ...testerRuns]);
+    setTesterRunDraft({
+      ...initialTesterRunDraft,
+      testerName: testerRunDraft.testerName,
+    });
+  };
+
+  const removeTesterRun = (runId: string) => {
+    persistTesterRuns(testerRuns.filter((run) => run.id !== runId));
   };
 
   const setFeedbackStatus = (feedbackId: string, status: FeedbackStatus) => {
@@ -1771,6 +1816,101 @@ export function App() {
           />
           <button className="primary-action" type="submit">
             Save feedback
+          </button>
+        </form>
+      </section>
+
+      <section className="panel split-panel tester-run-panel">
+        <div>
+          <p className="eyebrow">Real-user test runs</p>
+          <h2>Turn tester sessions into loop evidence.</h2>
+          <p>
+            Use this after each hands-on pass: what the tester tried, whether it worked, what slowed them down, and
+            who should pick it up next.
+          </p>
+          <div className="tester-run-stats" aria-label="Tester run summary">
+            <span>
+              <strong>{testerRunSummary.total}</strong>
+              runs
+            </span>
+            <span>
+              <strong>{testerRunSummary.useful}</strong>
+              useful
+            </span>
+            <span>
+              <strong>{testerRunSummary.confusing}</strong>
+              confusing
+            </span>
+            <span>
+              <strong>{testerRunSummary.blocked}</strong>
+              blocked
+            </span>
+          </div>
+          <div className="tester-run-list">
+            {testerRuns.length ? (
+              testerRuns.slice(0, 4).map((run) => (
+                <article className={`tester-run-card ${run.outcome.toLowerCase()}`} key={run.id}>
+                  <div>
+                    <span>{run.outcome}</span>
+                    <small>{run.nextLoopStage}</small>
+                  </div>
+                  <h3>{run.scenario}</h3>
+                  <p>{run.friction}</p>
+                  <footer>
+                    {run.testerName} · {new Date(run.createdAt).toLocaleDateString("en-IN")}
+                    <button type="button" onClick={() => removeTesterRun(run.id)}>
+                      Remove
+                    </button>
+                  </footer>
+                </article>
+              ))
+            ) : (
+              <div className="empty-state">No real-user test runs yet. Log the first hands-on pass after QA.</div>
+            )}
+          </div>
+        </div>
+        <form className="composer" onSubmit={submitTesterRun}>
+          <input
+            value={testerRunDraft.testerName}
+            onChange={(event) => setTesterRunDraft({ ...testerRunDraft, testerName: event.target.value })}
+            placeholder="Tester name, optional"
+          />
+          <input
+            required
+            value={testerRunDraft.scenario}
+            onChange={(event) => setTesterRunDraft({ ...testerRunDraft, scenario: event.target.value })}
+            placeholder="Scenario, e.g. Buyer checks Nexon diesel fixes on mobile"
+          />
+          <select
+            value={testerRunDraft.outcome}
+            onChange={(event) => setTesterRunDraft({ ...testerRunDraft, outcome: event.target.value as DraftTesterRun["outcome"] })}
+          >
+            {testerRunOutcomes.map((outcome) => (
+              <option key={outcome} value={outcome}>
+                {outcome}
+              </option>
+            ))}
+          </select>
+          <textarea
+            rows={5}
+            value={testerRunDraft.friction}
+            onChange={(event) => setTesterRunDraft({ ...testerRunDraft, friction: event.target.value })}
+            placeholder="What helped, confused, blocked, or felt missing?"
+          />
+          <select
+            value={testerRunDraft.nextLoopStage}
+            onChange={(event) =>
+              setTesterRunDraft({ ...testerRunDraft, nextLoopStage: event.target.value as DraftTesterRun["nextLoopStage"] })
+            }
+          >
+            {feedbackLoopStages.map((stage) => (
+              <option key={stage} value={stage}>
+                {stage}
+              </option>
+            ))}
+          </select>
+          <button className="primary-action" type="submit">
+            Save test run
           </button>
         </form>
       </section>
