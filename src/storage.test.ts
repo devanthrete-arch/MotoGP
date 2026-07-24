@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { FeedbackNote } from "./domain";
 import {
   normalizeFeedbackNotes,
+  parseAutoflexBackup,
   readStoredJson,
   safeJsonParse,
   type StorageLike,
@@ -73,5 +74,41 @@ describe("Autoflex storage safety", () => {
       { ...feedback[0], status: "Planned" },
       feedback[1],
     ]);
+  });
+
+  it("rejects invalid backup payloads", () => {
+    expect(parseAutoflexBackup("{not-json")).toBeNull();
+    expect(parseAutoflexBackup(JSON.stringify({ version: 2, data: {} }))).toBeNull();
+  });
+
+  it("parses a valid backup and migrates feedback status", () => {
+    const backup = parseAutoflexBackup(
+      JSON.stringify({
+        data: {
+          feedback: [
+            {
+              createdAt: "2026-07-21T10:00:00.000Z",
+              id: "feedback-old",
+              message: "Carry my garage to another browser.",
+            },
+          ],
+          follows: { models: ["tata-nexon"], topics: [] },
+          garage: [],
+          posts: [],
+          profile: { city: "Pune", displayName: "Owner", garageRole: "Owner" },
+          reports: [],
+          saved: ["nexon-diesel-clutch", 42],
+          shortlist: [],
+          subscriptionSettings: { browserAlerts: false, emailDigest: true, quietHours: true },
+          timeline: [],
+        },
+        exportedAt: "2026-07-22T10:00:00.000Z",
+        version: 1,
+      }),
+    );
+
+    expect(backup?.data.feedback[0]?.status).toBe("New");
+    expect(backup?.data.saved).toEqual(["nexon-diesel-clutch"]);
+    expect(backup?.data.profile.displayName).toBe("Owner");
   });
 });

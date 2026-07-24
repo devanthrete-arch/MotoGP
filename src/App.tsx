@@ -47,6 +47,7 @@ import {
 } from "./insights";
 import {
   addFeedback,
+  buildAutoflexBackup,
   createPost,
   createReport,
   createShortlistItem,
@@ -62,6 +63,8 @@ import {
   loadShortlist,
   loadSubscriptionSettings,
   loadTimeline,
+  parseAutoflexBackup,
+  restoreAutoflexBackup,
   saveFeedback,
   saveFollows,
   saveGarage,
@@ -147,6 +150,7 @@ export function App() {
   const [commentDraft, setCommentDraft] = useState("");
   const [reportDraft, setReportDraft] = useState("");
   const [feedbackDraft, setFeedbackDraft] = useState("");
+  const [backupDraft, setBackupDraft] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [navMenuOpen, setNavMenuOpen] = useState(false);
 
@@ -360,6 +364,42 @@ export function App() {
     });
   };
 
+  const exportLocalBackup = () => {
+    const backup = JSON.stringify(buildAutoflexBackup(), null, 2);
+    void shareText({
+      title: "Autoflex local backup",
+      text: backup,
+    });
+  };
+
+  const importLocalBackup = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const backup = parseAutoflexBackup(backupDraft);
+    if (!backup) {
+      setActionMessage("Backup could not be read. Paste a valid Autoflex backup JSON.");
+      return;
+    }
+
+    restoreAutoflexBackup(backup);
+    setPosts(backup.data.posts);
+    setSaved(new Set(backup.data.saved));
+    setFeedback(backup.data.feedback);
+    setFollows(backup.data.follows);
+    setGarage(backup.data.garage);
+    setTimeline(backup.data.timeline);
+    setSubscriptionSettings(backup.data.subscriptionSettings);
+    setProfile(backup.data.profile);
+    setReports(backup.data.reports);
+    setShortlist(backup.data.shortlist);
+    setSelectedPost(backup.data.posts[0] ?? null);
+    setTimelineDraft({
+      ...initialTimelineDraft,
+      vehicleId: backup.data.garage[0]?.id ?? "",
+    });
+    setBackupDraft("");
+    setActionMessage("Backup restored on this browser.");
+  };
+
   const addShortlistItem = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!shortlistDraft.model.trim()) return;
@@ -485,6 +525,9 @@ export function App() {
             </a>
             <a href="#loop" onClick={() => setNavMenuOpen(false)}>
               Build loop
+            </a>
+            <a href="#backup" onClick={() => setNavMenuOpen(false)}>
+              Backup
             </a>
           </div>
         </nav>
@@ -1384,6 +1427,7 @@ export function App() {
           <p>Responsive layout keeps navigation, forms, cards, and action buttons usable on phone, tablet, and desktop.</p>
           <p>Subscription previews and garage insights are generated from typed pure functions.</p>
           <p>Service-center integration remains outside this MVP loop.</p>
+          <p>Local backup export/import carries tester data until hosted sync exists.</p>
         </div>
       </section>
 
@@ -1409,6 +1453,33 @@ export function App() {
             </article>
           ))}
         </div>
+      </section>
+
+      <section className="panel split-panel backup-panel" id="backup">
+        <div>
+          <p className="eyebrow">Data portability</p>
+          <h2>Carry the local MVP before hosted sync exists.</h2>
+          <p>
+            Until accounts and hosted persistence are wired, testers can export a full Autoflex backup and restore it
+            in another browser. This keeps garage notes, follows, feedback, reports, and shortlist work recoverable.
+          </p>
+          <button className="primary-action" type="button" onClick={exportLocalBackup}>
+            Export local backup
+          </button>
+        </div>
+        <form className="composer" onSubmit={importLocalBackup}>
+          <textarea
+            required
+            rows={7}
+            value={backupDraft}
+            onChange={(event) => setBackupDraft(event.target.value)}
+            placeholder="Paste Autoflex backup JSON here to restore this browser."
+          />
+          <p className="form-note">Restore replaces the local MVP data in this browser with the backup contents.</p>
+          <button className="save-button" type="submit">
+            Restore backup
+          </button>
+        </form>
       </section>
 
       <section className="panel split-panel">
