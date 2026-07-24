@@ -73,7 +73,7 @@ Service-center integration is intentionally kept separate under
 - [x] Added install-ready web app manifest, icon, theme metadata, and app shortcuts.
 - [x] Added online/offline status messaging for local-first tester sessions.
 - [x] Added a persisted QA session checklist for launch smoke passes.
-- [x] Added a shareable QA handoff report for Product → Design → Engineering → QA → Real User review.
+- [x] Added a shareable QA handoff report with tester identity for Product → Design → Engineering → QA → Real User review.
 - [x] Added local data backup export/import so testers can move MVP state before hosted sync exists.
 - [x] Added share buttons plus `/share/*` metadata landing pages for posts and model notebooks.
 - [x] Added richer starter seed content for tester onboarding.
@@ -161,8 +161,8 @@ installable app surface.
 The webapp also shows online/offline status so testers know local notes,
 garage entries, backups, and feedback still work when connectivity drops.
 The QA panel now keeps per-browser smoke-check progress and can share a handoff
-report so product, QA, and real-user passes can see what has actually been
-verified.
+report with the lightweight tester profile, so product, QA, and real-user
+passes can see who verified what.
 
 Run the web release gate before deploying:
 

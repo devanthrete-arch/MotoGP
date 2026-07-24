@@ -125,10 +125,18 @@ describe("Autoflex insights", () => {
         ready: 7,
         total: 8,
       },
+      profile: {
+        city: "Pune",
+        displayName: "QA Owner",
+        garageRole: "Owner",
+      },
       qaSummary: buildQaSessionSummary(qaSessionItems, new Set(["feed"])),
     });
 
     expect(report).toContain("# Autoflex QA handoff");
+    expect(report).toContain("Name: QA Owner");
+    expect(report).toContain("City: Pune");
+    expect(report).toContain("Role: Owner");
     expect(report).toContain("Checked: 1/");
     expect(report).toContain("Production Vercel URL: Needs production URL.");
     expect(report).toContain("Total tester notes: 4");

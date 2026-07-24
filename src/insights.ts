@@ -81,6 +81,7 @@ export type QaHandoffInput = {
   feedbackSummary: FeedbackTriageSummary;
   generatedAt: string;
   launchSummary: LaunchReadinessSummary;
+  profile: Profile;
   qaSummary: QaSessionSummary;
 };
 
@@ -275,6 +276,12 @@ export function buildQaHandoffMarkdown(input: QaHandoffInput): string {
     "# Autoflex QA handoff",
     "",
     `Generated: ${input.generatedAt}`,
+    "",
+    "## Tester identity",
+    "",
+    `Name: ${input.profile.displayName.trim() || "Anonymous garage member"}`,
+    `City: ${input.profile.city.trim() || "Not set"}`,
+    `Role: ${input.profile.garageRole}`,
     "",
     "## QA session",
     "",
