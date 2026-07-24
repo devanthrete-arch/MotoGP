@@ -41,6 +41,7 @@ import {
   buildNotificationPreview,
   buildOwnershipPlaybooks,
   buildPostSharePayload,
+  buildQaHandoffMarkdown,
   buildQaSessionSummary,
   buildReturnNudges,
   buildShortlistComparisons,
@@ -320,6 +321,18 @@ export function App() {
     else next.add(itemId);
     setQaSession(next);
     saveQaSession(next);
+  };
+
+  const shareQaHandoff = () => {
+    void shareText({
+      title: "Autoflex QA handoff",
+      text: buildQaHandoffMarkdown({
+        feedbackSummary: feedbackTriageSummary,
+        generatedAt: new Date().toISOString(),
+        launchSummary: launchReadinessSummary,
+        qaSummary: qaSessionSummary,
+      }),
+    });
   };
 
   const toggleFollowModel = (brand: string, model: string) => {
@@ -1503,6 +1516,11 @@ export function App() {
             </strong>
             checked
           </div>
+        </div>
+        <div className="qa-actions">
+          <button className="save-button" type="button" onClick={shareQaHandoff}>
+            Share QA handoff
+          </button>
         </div>
         <div className="qa-grid">
           {qaSessionItems.map((item) => (

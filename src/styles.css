@@ -456,6 +456,12 @@ h3 {
   color: #ffcc8d;
 }
 
+.qa-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin: -10px 0 16px;
+}
+
 .qa-grid label {
   align-items: flex-start;
   background: #211b16;
@@ -1527,7 +1533,8 @@ a:focus-visible {
 
   .filters,
   .preference-toggles,
-  .moderation-stats {
+  .moderation-stats,
+  .qa-actions {
     justify-content: flex-start;
   }
 

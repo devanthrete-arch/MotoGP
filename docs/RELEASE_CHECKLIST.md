@@ -21,6 +21,7 @@
 17. Confirm `/manifest.json` loads, references `/icon.svg`, uses standalone display, and exposes shortcuts for write, garage, and model notebooks.
 18. Toggle the browser offline and confirm the connection strip explains that local posts, garage notes, backups, and feedback still work.
 19. Tick and untick QA checklist items, refresh, and confirm checked smoke-pass items persist locally.
+20. Share the QA handoff report and confirm it includes QA progress, launch blockers, feedback triage, and the service-center boundary.
 
 ## Required environment
 

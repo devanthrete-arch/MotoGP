@@ -16,6 +16,7 @@ import {
   buildNotificationPreview,
   buildOwnershipPlaybooks,
   buildPostSharePayload,
+  buildQaHandoffMarkdown,
   buildQaSessionSummary,
   buildReturnNudges,
   buildShortlistComparisons,
@@ -101,6 +102,37 @@ describe("Autoflex insights", () => {
       total: qaSessionItems.length,
     });
     expect(summary.remaining.map((item) => item.id)).not.toContain("feed");
+  });
+
+  it("builds a QA handoff report for the product loop", () => {
+    const report = buildQaHandoffMarkdown({
+      feedbackSummary: {
+        New: 2,
+        Planned: 1,
+        Reviewing: 0,
+        Shipped: 1,
+      },
+      generatedAt: "2026-07-22T12:00:00.000Z",
+      launchSummary: {
+        blocked: [
+          {
+            area: "Deploy",
+            detail: "Needs production URL.",
+            label: "Production Vercel URL",
+            ready: false,
+          },
+        ],
+        ready: 7,
+        total: 8,
+      },
+      qaSummary: buildQaSessionSummary(qaSessionItems, new Set(["feed"])),
+    });
+
+    expect(report).toContain("# Autoflex QA handoff");
+    expect(report).toContain("Checked: 1/");
+    expect(report).toContain("Production Vercel URL: Needs production URL.");
+    expect(report).toContain("Total tester notes: 4");
+    expect(report).toContain("Service-center integration remains outside this MVP loop");
   });
 
   it("creates notification previews without requiring a backend", () => {
