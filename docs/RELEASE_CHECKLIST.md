@@ -5,14 +5,17 @@
 1. Run `npm run build`.
 2. Run `npm run dev` and open `http://localhost:8080`.
 3. Run `npm run test`.
-4. Confirm the feed, filters, saved posts, following mode, city circles, ownership playbooks, post detail quality meter, buyer shortlist, buyer inspection checklists, profile form, comments, reports, moderator queue, write form, subscriptions, model notebooks, post sharing, notebook sharing, garage export, garage timeline, garage reminders, garage running-cost ledger, garage insights, build loop, and feedback lane work.
-5. Confirm the service-center integration boundary is visible and still treated as a separate workstream.
-6. Deploy the TypeScript webapp through Vercel.
-7. Confirm return-user nudges appear after following a model/topic, saving a note, or adding a garage vehicle.
-8. Check responsive layout at phone, tablet, and desktop widths; confirm nav, forms, feed detail, shortlist cards, inspection checklists, and action buttons remain readable and tappable.
-9. Confirm blocked, unavailable, or corrupt browser storage falls back safely without breaking the page.
-10. Confirm app-level crash recovery shows a reload/try-again path instead of a blank page.
-11. Submit tester feedback, move it through New/Reviewing/Planned/Shipped, and confirm triage counts update.
+4. Run `npm run release:check`.
+5. Confirm the feed, filters, saved posts, following mode, city circles, ownership playbooks, post detail quality meter, buyer shortlist, buyer inspection checklists, profile form, comments, reports, moderator queue, write form, subscriptions, model notebooks, post sharing, notebook sharing, garage export, garage timeline, garage reminders, garage running-cost ledger, garage insights, build loop, launch-readiness panel, and feedback lane work.
+6. Confirm the service-center integration boundary is visible and still treated as a separate workstream.
+7. Deploy the TypeScript webapp through Vercel.
+8. Confirm direct refresh on deep paths falls back to the app instead of a Vercel 404.
+9. Confirm production responses include `X-Content-Type-Options`, `Referrer-Policy`, and `Permissions-Policy`.
+10. Confirm return-user nudges appear after following a model/topic, saving a note, or adding a garage vehicle.
+11. Check responsive layout at phone, tablet, and desktop widths; confirm nav, forms, feed detail, shortlist cards, inspection checklists, and action buttons remain readable and tappable.
+12. Confirm blocked, unavailable, or corrupt browser storage falls back safely without breaking the page.
+13. Confirm app-level crash recovery shows a reload/try-again path instead of a blank page.
+14. Submit tester feedback, move it through New/Reviewing/Planned/Shipped, and confirm triage counts update.
 
 ## Required environment
 

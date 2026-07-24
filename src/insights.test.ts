@@ -9,6 +9,7 @@ import {
   buildGarageReminders,
   buildInspectionChecklists,
   buildCityCircles,
+  buildLaunchReadinessSummary,
   buildModelSharePayload,
   buildModerationSummary,
   buildNotificationPreview,
@@ -190,6 +191,29 @@ describe("Autoflex insights", () => {
       Reviewing: 0,
       Shipped: 1,
     });
+  });
+
+  it("summarizes launch readiness and keeps blockers visible", () => {
+    const summary = buildLaunchReadinessSummary([
+      {
+        area: "Deploy",
+        detail: "Build can be deployed.",
+        label: "Deploy path",
+        ready: true,
+      },
+      {
+        area: "Trust",
+        detail: "Needs final admin token.",
+        label: "Admin hardening",
+        ready: false,
+      },
+    ]);
+
+    expect(summary).toMatchObject({
+      ready: 1,
+      total: 2,
+    });
+    expect(summary.blocked[0]?.label).toBe("Admin hardening");
   });
 
   it("builds share text for posts and model notebooks", () => {

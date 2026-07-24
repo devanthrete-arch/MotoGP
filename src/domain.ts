@@ -103,6 +103,13 @@ export type BuildLoopItem = {
   currentDecision: string;
 };
 
+export type LaunchReadinessItem = {
+  area: "Deploy" | "Responsive QA" | "Data safety" | "Trust" | "Feedback" | "Boundary";
+  label: string;
+  detail: string;
+  ready: boolean;
+};
+
 export type ModelNotebook = {
   key: string;
   brand: string;
@@ -272,5 +279,50 @@ export const buildLoop: BuildLoopItem[] = [
     role: "Real user",
     question: "Would this help me decide, fix, or remember something?",
     currentDecision: "The MVP prioritizes reviews, issues, fixes, cost notes, and travelogues over vanity metrics.",
+  },
+];
+
+export const launchReadinessItems: LaunchReadinessItem[] = [
+  {
+    area: "Deploy",
+    detail: "Vercel config, SPA fallback, and release command exist for repeatable deploy checks.",
+    label: "Vercel web deploy path",
+    ready: true,
+  },
+  {
+    area: "Deploy",
+    detail: "Needs the first production Vercel URL, deep-link refresh check, and header check before public sharing.",
+    label: "Production Vercel URL",
+    ready: false,
+  },
+  {
+    area: "Responsive QA",
+    detail: "Navigation, cards, forms, and action rows have phone/tablet/desktop breakpoints.",
+    label: "Responsive shell",
+    ready: true,
+  },
+  {
+    area: "Data safety",
+    detail: "Local storage failures and app render crashes have safe fallbacks.",
+    label: "Browser-safe local MVP",
+    ready: true,
+  },
+  {
+    area: "Trust",
+    detail: "Reports, moderation queue, community rules, and owner blocking are available for tester abuse handling.",
+    label: "Trust-and-safety loop",
+    ready: true,
+  },
+  {
+    area: "Feedback",
+    detail: "Tester notes can move from New to Reviewing, Planned, and Shipped.",
+    label: "Real-user feedback triage",
+    ready: true,
+  },
+  {
+    area: "Boundary",
+    detail: "Service-center endpoints remain reserved for the separate owning team.",
+    label: "Service-center boundary",
+    ready: true,
   },
 ];
