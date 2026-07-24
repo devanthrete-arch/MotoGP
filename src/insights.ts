@@ -8,6 +8,7 @@ import type {
   ModelNotebook,
   OwnerPost,
   Profile,
+  QaSessionItem,
   ReportRecord,
   ShortlistItem,
   StarterRoute,
@@ -68,6 +69,12 @@ export type ConnectionStatusCopy = {
   label: string;
   detail: string;
   tone: "online" | "offline";
+};
+
+export type QaSessionSummary = {
+  checked: number;
+  total: number;
+  remaining: QaSessionItem[];
 };
 
 export type SharePayload = {
@@ -241,6 +248,14 @@ export function buildConnectionStatusCopy(isOnline: boolean): ConnectionStatusCo
     detail: "Offline mode: posts, garage notes, backups, and feedback still work locally. Sharing and future hosted sync can wait.",
     label: "Offline",
     tone: "offline",
+  };
+}
+
+export function buildQaSessionSummary(items: QaSessionItem[], checkedIds: Set<string>): QaSessionSummary {
+  return {
+    checked: items.filter((item) => checkedIds.has(item.id)).length,
+    remaining: items.filter((item) => !checkedIds.has(item.id)),
+    total: items.length,
   };
 }
 

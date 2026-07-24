@@ -27,6 +27,7 @@ const subscriptionKey = "autoflex.web.subscription.v1";
 const profileKey = "autoflex.web.profile.v1";
 const reportsKey = "autoflex.web.reports.v1";
 const shortlistKey = "autoflex.web.shortlist.v1";
+const qaSessionKey = "autoflex.web.qa-session.v1";
 
 export type StorageLike = Pick<Storage, "getItem" | "setItem">;
 
@@ -183,6 +184,12 @@ export const loadSaved = (): Set<string> => new Set(readStoredJson<string[]>(sav
 
 export const saveSaved = (saved: Set<string>): void => {
   writeStoredJson(savedKey, [...saved]);
+};
+
+export const loadQaSession = (): Set<string> => new Set(readStoredJson<string[]>(qaSessionKey, []));
+
+export const saveQaSession = (checkedIds: Set<string>): void => {
+  writeStoredJson(qaSessionKey, [...checkedIds]);
 };
 
 export const normalizeFeedbackNotes = (notes: StoredFeedbackNote[]): FeedbackNote[] =>

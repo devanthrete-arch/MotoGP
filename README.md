@@ -72,6 +72,7 @@ Service-center integration is intentionally kept separate under
 - [x] Added Vercel deployment config, SPA fallback routing, and launch-readiness panel.
 - [x] Added install-ready web app manifest, icon, theme metadata, and app shortcuts.
 - [x] Added online/offline status messaging for local-first tester sessions.
+- [x] Added a persisted QA session checklist for launch smoke passes.
 - [x] Added local data backup export/import so testers can move MVP state before hosted sync exists.
 - [x] Added share buttons plus `/share/*` metadata landing pages for posts and model notebooks.
 - [x] Added richer starter seed content for tester onboarding.
@@ -82,7 +83,7 @@ Service-center integration is intentionally kept separate under
 
 - [x] Merged the TypeScript web MVP feature PRs through post quality meter into `master`.
 - [ ] Deploy the TypeScript webapp on Vercel.
-- [ ] Run a visual responsive QA pass on the deployed Vercel URL, including the starter route and install prompt.
+- [ ] Run a visual responsive QA pass on the deployed Vercel URL, including the starter route, QA checklist, and install prompt.
 - [ ] Run an offline-mode smoke check in the deployed browser.
 - [ ] Decide whether the first hosted backend is TypeScript/Fastify or the existing Ktor API.
 - [ ] Add durable hosted persistence after the TypeScript web surface is validated.
@@ -158,6 +159,8 @@ Chrome/Android and supporting desktop browsers can present Autoflex as an
 installable app surface.
 The webapp also shows online/offline status so testers know local notes,
 garage entries, backups, and feedback still work when connectivity drops.
+The QA panel now keeps per-browser smoke-check progress so product, QA, and
+real-user passes can see what has actually been verified.
 
 Run the web release gate before deploying:
 

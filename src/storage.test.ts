@@ -39,6 +39,19 @@ describe("Autoflex storage safety", () => {
     expect(() => writeStoredJson("profile", { displayName: "Owner" }, storage)).not.toThrow();
   });
 
+  it("persists checked QA session ids through the storage adapter", () => {
+    let stored = "";
+    const storage: StorageLike = {
+      getItem: () => stored,
+      setItem: (_key, value) => {
+        stored = value;
+      },
+    };
+
+    writeStoredJson("autoflex.web.qa-session.v1", ["feed", "offline"], storage);
+    expect(readStoredJson<string[]>("autoflex.web.qa-session.v1", [], storage)).toEqual(["feed", "offline"]);
+  });
+
   it("migrates old feedback notes into the triage lane", () => {
     const notes = normalizeFeedbackNotes([
       {

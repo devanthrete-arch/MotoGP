@@ -6,7 +6,7 @@
 2. Run `npm run dev` and open `http://localhost:8080`.
 3. Run `npm run test`.
 4. Run `npm run release:check`.
-5. Confirm the feed, filters, saved posts, following mode, starter route, city circles, ownership playbooks, post detail quality meter, buyer shortlist, buyer inspection checklists, profile form, comments, reports, moderator queue, write form, subscriptions, model notebooks, post sharing, notebook sharing, garage export, local backup/restore, garage timeline, garage reminders, garage running-cost ledger, garage insights, build loop, launch-readiness panel, install metadata, connection status, and feedback lane work.
+5. Confirm the feed, filters, saved posts, following mode, starter route, city circles, ownership playbooks, post detail quality meter, buyer shortlist, buyer inspection checklists, profile form, comments, reports, moderator queue, write form, subscriptions, model notebooks, post sharing, notebook sharing, garage export, local backup/restore, garage timeline, garage reminders, garage running-cost ledger, garage insights, build loop, launch-readiness panel, install metadata, connection status, QA checklist, and feedback lane work.
 6. Confirm the service-center integration boundary is visible and still treated as a separate workstream.
 7. Deploy the TypeScript webapp through Vercel.
 8. Confirm direct refresh on deep paths falls back to the app instead of a Vercel 404.
@@ -20,6 +20,7 @@
 16. On a fresh browser/profile, confirm the starter route shows pending first actions and marks profile, follows, garage, saved/shortlist, and feedback steps complete as testers use them.
 17. Confirm `/manifest.json` loads, references `/icon.svg`, uses standalone display, and exposes shortcuts for write, garage, and model notebooks.
 18. Toggle the browser offline and confirm the connection strip explains that local posts, garage notes, backups, and feedback still work.
+19. Tick and untick QA checklist items, refresh, and confirm checked smoke-pass items persist locally.
 
 ## Required environment
 

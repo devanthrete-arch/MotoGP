@@ -4,6 +4,7 @@ import {
   feedbackStatuses,
   knowledgeLabels,
   launchReadinessItems,
+  qaSessionItems,
   shortlistStatuses,
   starterRoutes,
   timelineKinds,
@@ -40,6 +41,7 @@ import {
   buildNotificationPreview,
   buildOwnershipPlaybooks,
   buildPostSharePayload,
+  buildQaSessionSummary,
   buildReturnNudges,
   buildShortlistComparisons,
   buildStarterRouteProgress,
@@ -61,6 +63,7 @@ import {
   loadGarage,
   loadProfile,
   loadPosts,
+  loadQaSession,
   loadReports,
   loadSaved,
   loadShortlist,
@@ -72,6 +75,7 @@ import {
   saveFollows,
   saveGarage,
   savePosts,
+  saveQaSession,
   saveProfile,
   saveReports,
   saveSaved,
@@ -142,6 +146,7 @@ export function App() {
   const [reports, setReports] = useState<ReportRecord[]>(() => loadReports());
   const [shortlist, setShortlist] = useState<ShortlistItem[]>(() => loadShortlist());
   const [saved, setSaved] = useState<Set<string>>(() => loadSaved());
+  const [qaSession, setQaSession] = useState<Set<string>>(() => loadQaSession());
   const [follows, setFollows] = useState<FollowState>(() => loadFollows());
   const [subscriptionSettings, setSubscriptionSettings] = useState<SubscriptionSettings>(() => loadSubscriptionSettings());
   const [garage, setGarage] = useState<GarageVehicle[]>(() => loadGarage());
@@ -202,6 +207,7 @@ export function App() {
   );
   const completedStarterSteps = starterProgress.filter((step) => step.complete).length;
   const connectionStatus = useMemo(() => buildConnectionStatusCopy(isOnline), [isOnline]);
+  const qaSessionSummary = useMemo(() => buildQaSessionSummary(qaSessionItems, qaSession), [qaSession]);
 
   const notificationPreview = useMemo(
     () => buildNotificationPreview({ follows, posts, preference: subscriptionSettings }),
@@ -306,6 +312,14 @@ export function App() {
     else next.add(postId);
     setSaved(next);
     saveSaved(next);
+  };
+
+  const toggleQaSessionItem = (itemId: string) => {
+    const next = new Set(qaSession);
+    if (next.has(itemId)) next.delete(itemId);
+    else next.add(itemId);
+    setQaSession(next);
+    saveQaSession(next);
   };
 
   const toggleFollowModel = (brand: string, model: string) => {
@@ -1478,25 +1492,25 @@ export function App() {
       </section>
 
       <section className="panel qa-panel">
-        <div>
-          <p className="eyebrow">Tested / QA</p>
-          <h2>Smoke checks for this slice.</h2>
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Tested / QA</p>
+            <h2>Smoke checks for this session.</h2>
+          </div>
+          <div className="qa-score">
+            <strong>
+              {qaSessionSummary.checked}/{qaSessionSummary.total}
+            </strong>
+            checked
+          </div>
         </div>
         <div className="qa-grid">
-          <p>Feed supports latest, helpful, saved, and following modes.</p>
-          <p>Followed models/topics create return-user nudges.</p>
-          <p>Garage vehicles and timeline entries persist locally.</p>
-          <p>Garage reminders surface upcoming service, insurance, and tyre checks from local timeline notes.</p>
-          <p>Garage running-cost ledger summarizes spend, cost/km, and latest timeline event from local notes.</p>
-          <p>Comments, reports, profiles, and moderator actions persist locally.</p>
-          <p>Post, model notebook, and garage export sharing uses native share with clipboard fallback.</p>
-          <p>City circles group local owner notes and garage vehicles by market context.</p>
-          <p>Post detail quality meter nudges variant, city, odometer, cost, and outcome context.</p>
-          <p>Buyer inspection checklists convert shortlist evidence into test-drive and used-car checks.</p>
-          <p>Responsive layout keeps navigation, forms, cards, and action buttons usable on phone, tablet, and desktop.</p>
-          <p>Subscription previews and garage insights are generated from typed pure functions.</p>
-          <p>Service-center integration remains outside this MVP loop.</p>
-          <p>Local backup export/import carries tester data until hosted sync exists.</p>
+          {qaSessionItems.map((item) => (
+            <label className={qaSession.has(item.id) ? "checked" : ""} key={item.id}>
+              <input checked={qaSession.has(item.id)} onChange={() => toggleQaSessionItem(item.id)} type="checkbox" />
+              <span>{item.label}</span>
+            </label>
+          ))}
         </div>
       </section>
 
