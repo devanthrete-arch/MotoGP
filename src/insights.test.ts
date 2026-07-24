@@ -3,6 +3,7 @@ import { seedGarage, seedPosts, seedTimeline, starterRoutes } from "./domain";
 import {
   assessPostQuality,
   buildFeedbackTriageSummary,
+  buildConnectionStatusCopy,
   buildGarageCostLedger,
   buildGarageInsights,
   buildGarageExportMarkdown,
@@ -77,6 +78,18 @@ describe("Autoflex insights", () => {
 
     expect(progress.filter((step) => step.complete).map((step) => step.id)).toEqual(["profile", "follow", "save"]);
     expect(progress.find((step) => step.id === "garage")?.complete).toBe(false);
+  });
+
+  it("explains what still works when the browser is offline", () => {
+    expect(buildConnectionStatusCopy(false)).toMatchObject({
+      label: "Offline",
+      tone: "offline",
+    });
+    expect(buildConnectionStatusCopy(false).detail).toContain("garage notes");
+    expect(buildConnectionStatusCopy(true)).toMatchObject({
+      label: "Online",
+      tone: "online",
+    });
   });
 
   it("creates notification previews without requiring a backend", () => {

@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   buildLoop,
   feedbackStatuses,
@@ -27,6 +27,7 @@ import {
 import {
   assessPostQuality,
   buildCityCircles,
+  buildConnectionStatusCopy,
   buildFeedbackTriageSummary,
   buildGarageCostLedger,
   buildGarageInsights,
@@ -127,6 +128,14 @@ const initialShortlistDraft: DraftShortlistItem = {
 
 const garageRoles: Profile["garageRole"][] = ["Owner", "Buyer", "Enthusiast", "Mechanic"];
 
+const getInitialOnlineStatus = (): boolean => {
+  try {
+    return typeof navigator === "undefined" ? true : navigator.onLine;
+  } catch {
+    return true;
+  }
+};
+
 export function App() {
   const [posts, setPosts] = useState<OwnerPost[]>(() => loadPosts());
   const [profile, setProfile] = useState<Profile>(() => loadProfile());
@@ -155,6 +164,7 @@ export function App() {
   const [backupDraft, setBackupDraft] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [navMenuOpen, setNavMenuOpen] = useState(false);
+  const [isOnline, setIsOnline] = useState(getInitialOnlineStatus);
 
   const notebooks = useMemo(() => groupByModel(posts), [posts]);
   const followedModelSet = useMemo(() => new Set(follows.models), [follows.models]);
@@ -191,6 +201,7 @@ export function App() {
     [feedback.length, follows, garage, profile, saved.size, shortlist.length],
   );
   const completedStarterSteps = starterProgress.filter((step) => step.complete).length;
+  const connectionStatus = useMemo(() => buildConnectionStatusCopy(isOnline), [isOnline]);
 
   const notificationPreview = useMemo(
     () => buildNotificationPreview({ follows, posts, preference: subscriptionSettings }),
@@ -227,6 +238,19 @@ export function App() {
     }),
     [follows.models.length, follows.topics.length, garage.length, moderationSummary.openReports, notebooks.length, posts, shortlist.length],
   );
+
+  useEffect(() => {
+    const updateOnline = () => setIsOnline(true);
+    const updateOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", updateOnline);
+    window.addEventListener("offline", updateOffline);
+
+    return () => {
+      window.removeEventListener("online", updateOnline);
+      window.removeEventListener("offline", updateOffline);
+    };
+  }, []);
 
   const persistPosts = (nextPosts: OwnerPost[]) => {
     setPosts(nextPosts);
@@ -600,6 +624,11 @@ export function App() {
           {actionMessage}
         </div>
       ) : null}
+
+      <section className={`connection-strip ${connectionStatus.tone}`} aria-label="Connection status">
+        <strong>{connectionStatus.label}</strong>
+        <span>{connectionStatus.detail}</span>
+      </section>
 
       <section className="panel dashboard-panel" aria-label="Return user dashboard">
         <div>
