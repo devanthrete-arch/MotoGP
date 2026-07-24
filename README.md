@@ -28,6 +28,7 @@ Service-center integration is intentionally kept separate under
 - [x] Added the build-loop surface: Product owner → Designer → Backend engineer → Frontend engineer → Tested / QA → Real user.
 - [x] Added followed models/topics and a following feed for return-user behavior.
 - [x] Added return-user nudges based on follows, saved notes, and garage mileage.
+- [x] Added a first-run starter route so testers know the first useful actions to take.
 - [x] Added a local-first garage with vehicles and ownership timeline entries.
 - [x] Added garage reminders for upcoming service, insurance, and tyre checks.
 - [x] Added garage running-cost ledger with spend totals, cost/km, and latest timeline event.
@@ -79,7 +80,7 @@ Service-center integration is intentionally kept separate under
 
 - [x] Merged the TypeScript web MVP feature PRs through post quality meter into `master`.
 - [ ] Deploy the TypeScript webapp on Vercel.
-- [ ] Run a visual responsive QA pass on the deployed Vercel URL.
+- [ ] Run a visual responsive QA pass on the deployed Vercel URL, including the starter route.
 - [ ] Decide whether the first hosted backend is TypeScript/Fastify or the existing Ktor API.
 - [ ] Add durable hosted persistence after the TypeScript web surface is validated.
 - [ ] Replace local backup/restore with hosted account sync once persistence exists.
@@ -138,7 +139,9 @@ The current TypeScript MVP is local-first so it can move quickly on Vercel while
 the hosted backend decision is finalized. It includes owner posts, saved notes,
 followed models/topics, a following feed, garage vehicles, timeline entries,
 model notebooks, subscription previews, garage insights, feedback capture, and
-QA/user loop panels. It also has lightweight local profiles, comments, reports,
+QA/user loop panels. The starter route shows first-time testers how to set a
+profile, follow a model, create a garage baseline, keep a useful note, and leave
+feedback. It also has lightweight local profiles, comments, reports,
 shareable notes/notebooks, garage export, local backup/restore, and a moderator queue so
 trust-and-safety can be tested before backend wiring. Buyers can also keep a
 local shortlist, compare models against available ownership notes, and generate

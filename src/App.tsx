@@ -5,6 +5,7 @@ import {
   knowledgeLabels,
   launchReadinessItems,
   shortlistStatuses,
+  starterRoutes,
   timelineKinds,
   type DraftPost,
   type DraftShortlistItem,
@@ -40,6 +41,7 @@ import {
   buildPostSharePayload,
   buildReturnNudges,
   buildShortlistComparisons,
+  buildStarterRouteProgress,
   filterPostsByMode,
   formatMoney,
   groupByModel,
@@ -175,6 +177,20 @@ export function App() {
     () => buildReturnNudges({ followedModelSet, followedTopicSet, garage, posts, savedCount: saved.size }),
     [followedModelSet, followedTopicSet, garage, posts, saved.size],
   );
+  const starterProgress = useMemo(
+    () =>
+      buildStarterRouteProgress({
+        feedbackCount: feedback.length,
+        follows,
+        garage,
+        profile,
+        routes: starterRoutes,
+        savedCount: saved.size,
+        shortlistCount: shortlist.length,
+      }),
+    [feedback.length, follows, garage, profile, saved.size, shortlist.length],
+  );
+  const completedStarterSteps = starterProgress.filter((step) => step.complete).length;
 
   const notificationPreview = useMemo(
     () => buildNotificationPreview({ follows, posts, preference: subscriptionSettings }),
@@ -596,6 +612,30 @@ export function App() {
           ) : (
             <p>Follow a model, save a note, or add a vehicle to unlock a more personal garage dashboard.</p>
           )}
+        </div>
+      </section>
+
+      <section className="panel starter-panel" aria-label="First visit starter route">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Starter route</p>
+            <h2>Five moves to make Autoflex useful on day one.</h2>
+          </div>
+          <div className="starter-score">
+            <strong>
+              {completedStarterSteps}/{starterProgress.length}
+            </strong>
+            done
+          </div>
+        </div>
+        <div className="starter-grid">
+          {starterProgress.map((step) => (
+            <a className={`starter-card ${step.complete ? "complete" : ""}`} href={step.href} key={step.id}>
+              <span>{step.complete ? "Done" : "Next"}</span>
+              <h3>{step.title}</h3>
+              <p>{step.detail}</p>
+            </a>
+          ))}
         </div>
       </section>
 

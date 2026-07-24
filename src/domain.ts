@@ -70,6 +70,13 @@ export type Profile = {
   garageRole: "Owner" | "Buyer" | "Enthusiast" | "Mechanic";
 };
 
+export type StarterRoute = {
+  id: "profile" | "follow" | "garage" | "save" | "feedback";
+  title: string;
+  detail: string;
+  href: string;
+};
+
 export type ReportStatus = "Open" | "Dismissed" | "Removed";
 
 export type ReportRecord = {
@@ -126,6 +133,39 @@ export type DraftTimelineEntry = Omit<TimelineEntry, "id">;
 export const shortlistStatuses: ShortlistStatus[] = ["Researching", "Test drive", "Negotiating", "Rejected", "Bought"];
 
 export const feedbackStatuses: FeedbackStatus[] = ["New", "Reviewing", "Planned", "Shipped"];
+
+export const starterRoutes: StarterRoute[] = [
+  {
+    detail: "Add a display name, city, and role so comments and reports feel human.",
+    href: "#profile",
+    id: "profile",
+    title: "Set your garage identity",
+  },
+  {
+    detail: "Follow one model or topic so the feed starts bringing useful notes back to you.",
+    href: "#notebooks",
+    id: "follow",
+    title: "Follow a model notebook",
+  },
+  {
+    detail: "Add a vehicle and one timeline note to unlock service reminders and cost context.",
+    href: "#garage",
+    id: "garage",
+    title: "Create your garage baseline",
+  },
+  {
+    detail: "Save one ownership note or shortlist a model before you leave.",
+    href: "#feed",
+    id: "save",
+    title: "Keep one useful note",
+  },
+  {
+    detail: "Tell the product loop what confused you, helped you, or felt missing.",
+    href: "#feedback",
+    id: "feedback",
+    title: "Leave tester feedback",
+  },
+];
 
 export const knowledgeLabels: KnowledgeLabel[] = [
   "Review",

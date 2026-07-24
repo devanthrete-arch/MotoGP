@@ -325,6 +325,75 @@ h3 {
   padding-bottom: 34px;
 }
 
+.starter-panel {
+  padding-top: 34px;
+}
+
+.starter-score {
+  background: #211b16;
+  border-radius: 999px;
+  color: rgba(255, 248, 237, 0.78);
+  display: inline-flex;
+  font-weight: 900;
+  gap: 8px;
+  padding: 10px 14px;
+}
+
+.starter-score strong {
+  color: #ffcc8d;
+}
+
+.starter-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.starter-card {
+  background:
+    linear-gradient(180deg, #fffaf2, #f8ead8),
+    repeating-linear-gradient(90deg, transparent 0 28px, rgba(95, 61, 40, 0.05) 28px 29px);
+  border: 1px solid rgba(95, 61, 40, 0.16);
+  border-radius: 24px;
+  display: grid;
+  gap: 10px;
+  min-height: 100%;
+  padding: 18px;
+}
+
+.starter-card span {
+  background: #ffe0b6;
+  border-radius: 999px;
+  color: #7e321d;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 900;
+  justify-self: start;
+  letter-spacing: 0.12em;
+  padding: 7px 10px;
+  text-transform: uppercase;
+}
+
+.starter-card.complete {
+  background: #fffaf2;
+  border-color: rgba(56, 109, 39, 0.26);
+}
+
+.starter-card.complete span {
+  background: #dff3d4;
+  color: #386d27;
+}
+
+.starter-card h3,
+.starter-card p {
+  margin: 0;
+}
+
+.starter-card p {
+  color: #725a48;
+  line-height: 1.55;
+}
+
 .nudge-grid,
 .qa-grid {
   display: grid;
@@ -1335,6 +1404,7 @@ a:focus-visible {
   .loop-grid,
   .dashboard-panel,
   .nudge-grid,
+  .starter-grid,
   .qa-grid,
   .garage-grid,
   .shortlist-grid,

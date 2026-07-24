@@ -7,8 +7,10 @@ import type {
   LaunchReadinessItem,
   ModelNotebook,
   OwnerPost,
+  Profile,
   ReportRecord,
   ShortlistItem,
+  StarterRoute,
   TimelineEntry,
 } from "./domain";
 
@@ -56,6 +58,10 @@ export type LaunchReadinessSummary = {
   ready: number;
   total: number;
   blocked: LaunchReadinessItem[];
+};
+
+export type StarterRouteProgress = StarterRoute & {
+  complete: boolean;
 };
 
 export type SharePayload = {
@@ -191,6 +197,29 @@ export function buildReturnNudges(input: {
     input.savedCount ? `${input.savedCount} saved note${input.savedCount === 1 ? "" : "s"} waiting in your garage shelf.` : null,
     serviceSoon ? `${serviceSoon.nickname || serviceSoon.model} is close to the next 10k km service checkpoint.` : null,
   ].filter((nudge): nudge is string => Boolean(nudge));
+}
+
+export function buildStarterRouteProgress(input: {
+  feedbackCount: number;
+  follows: FollowState;
+  garage: GarageVehicle[];
+  profile: Pick<Profile, "city" | "displayName">;
+  routes: StarterRoute[];
+  savedCount: number;
+  shortlistCount: number;
+}): StarterRouteProgress[] {
+  const completedById: Record<StarterRoute["id"], boolean> = {
+    feedback: input.feedbackCount > 0,
+    follow: input.follows.models.length + input.follows.topics.length > 0,
+    garage: input.garage.length > 0,
+    profile: Boolean(input.profile.displayName.trim() && input.profile.city.trim()),
+    save: input.savedCount + input.shortlistCount > 0,
+  };
+
+  return input.routes.map((route) => ({
+    ...route,
+    complete: completedById[route.id],
+  }));
 }
 
 export function buildNotificationPreview(input: {

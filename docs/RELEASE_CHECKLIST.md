@@ -6,7 +6,7 @@
 2. Run `npm run dev` and open `http://localhost:8080`.
 3. Run `npm run test`.
 4. Run `npm run release:check`.
-5. Confirm the feed, filters, saved posts, following mode, city circles, ownership playbooks, post detail quality meter, buyer shortlist, buyer inspection checklists, profile form, comments, reports, moderator queue, write form, subscriptions, model notebooks, post sharing, notebook sharing, garage export, local backup/restore, garage timeline, garage reminders, garage running-cost ledger, garage insights, build loop, launch-readiness panel, and feedback lane work.
+5. Confirm the feed, filters, saved posts, following mode, starter route, city circles, ownership playbooks, post detail quality meter, buyer shortlist, buyer inspection checklists, profile form, comments, reports, moderator queue, write form, subscriptions, model notebooks, post sharing, notebook sharing, garage export, local backup/restore, garage timeline, garage reminders, garage running-cost ledger, garage insights, build loop, launch-readiness panel, and feedback lane work.
 6. Confirm the service-center integration boundary is visible and still treated as a separate workstream.
 7. Deploy the TypeScript webapp through Vercel.
 8. Confirm direct refresh on deep paths falls back to the app instead of a Vercel 404.
@@ -17,6 +17,7 @@
 13. Confirm app-level crash recovery shows a reload/try-again path instead of a blank page.
 14. Submit tester feedback, move it through New/Reviewing/Planned/Shipped, and confirm triage counts update.
 15. Export a local backup, restore it in a fresh browser/profile, and confirm posts, follows, garage, feedback, reports, and shortlist data return.
+16. On a fresh browser/profile, confirm the starter route shows pending first actions and marks profile, follows, garage, saved/shortlist, and feedback steps complete as testers use them.
 
 ## Required environment
 
