@@ -432,6 +432,13 @@ h3 {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
+.responsive-qa-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 16px;
+}
+
 .nudge-grid p,
 .notification-grid p {
   background: #211b16;
@@ -486,6 +493,72 @@ h3 {
   accent-color: #ffb36b;
   flex: 0 0 auto;
   margin-top: 4px;
+}
+
+.responsive-qa-head {
+  align-items: end;
+  border-top: 1px solid rgba(255, 248, 237, 0.16);
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  margin-top: 24px;
+  padding-top: 22px;
+}
+
+.responsive-qa-head h3 {
+  color: #fff8ed;
+  font-size: clamp(1.4rem, 2vw, 2.15rem);
+  letter-spacing: -0.05em;
+  margin: 0;
+}
+
+.responsive-qa-head span {
+  background: rgba(255, 177, 104, 0.15);
+  border: 1px solid rgba(255, 177, 104, 0.34);
+  border-radius: 999px;
+  color: #ffcc8d;
+  font-weight: 900;
+  padding: 10px 14px;
+  white-space: nowrap;
+}
+
+.responsive-qa-grid label {
+  background: rgba(255, 248, 237, 0.06);
+  border: 1px solid rgba(255, 248, 237, 0.14);
+  border-radius: 22px;
+  color: rgba(255, 248, 237, 0.78);
+  cursor: pointer;
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+}
+
+.responsive-qa-grid label.checked {
+  background: rgba(255, 177, 104, 0.14);
+  border-color: rgba(255, 177, 104, 0.54);
+}
+
+.responsive-qa-grid input {
+  accent-color: #ffb36b;
+  inline-size: 18px;
+}
+
+.responsive-qa-grid span {
+  color: #ffcc8d;
+  font-size: 0.74rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.responsive-qa-grid strong {
+  color: #fff8ed;
+  font-size: 1rem;
+}
+
+.responsive-qa-grid small {
+  color: rgba(255, 248, 237, 0.68);
+  line-height: 1.55;
 }
 
 .preference-toggles {
@@ -1512,6 +1585,7 @@ a:focus-visible {
   .nudge-grid,
   .starter-grid,
   .qa-grid,
+  .responsive-qa-grid,
   .garage-grid,
   .shortlist-grid,
   .comparison-grid,
@@ -1531,6 +1605,7 @@ a:focus-visible {
 
   .nav,
   .section-head,
+  .responsive-qa-head,
   .service-boundary,
   .connection-strip {
     align-items: stretch;

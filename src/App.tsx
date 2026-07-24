@@ -6,6 +6,7 @@ import {
   knowledgeLabels,
   launchReadinessItems,
   qaSessionItems,
+  responsiveQaItems,
   shortlistStatuses,
   starterRoutes,
   timelineKinds,
@@ -45,6 +46,7 @@ import {
   buildPostSharePayload,
   buildQaHandoffMarkdown,
   buildQaSessionSummary,
+  buildResponsiveQaSummary,
   buildReturnNudges,
   buildShortlistComparisons,
   buildStarterRouteProgress,
@@ -67,6 +69,7 @@ import {
   loadProfile,
   loadPosts,
   loadQaSession,
+  loadResponsiveQa,
   loadReports,
   loadSaved,
   loadShortlist,
@@ -79,6 +82,7 @@ import {
   saveGarage,
   savePosts,
   saveQaSession,
+  saveResponsiveQa,
   saveProfile,
   saveReports,
   saveSaved,
@@ -151,6 +155,7 @@ export function App() {
   const [shortlist, setShortlist] = useState<ShortlistItem[]>(() => loadShortlist());
   const [saved, setSaved] = useState<Set<string>>(() => loadSaved());
   const [qaSession, setQaSession] = useState<Set<string>>(() => loadQaSession());
+  const [responsiveQa, setResponsiveQa] = useState<Set<string>>(() => loadResponsiveQa());
   const [follows, setFollows] = useState<FollowState>(() => loadFollows());
   const [subscriptionSettings, setSubscriptionSettings] = useState<SubscriptionSettings>(() => loadSubscriptionSettings());
   const [garage, setGarage] = useState<GarageVehicle[]>(() => loadGarage());
@@ -212,6 +217,7 @@ export function App() {
   const completedStarterSteps = starterProgress.filter((step) => step.complete).length;
   const connectionStatus = useMemo(() => buildConnectionStatusCopy(isOnline), [isOnline]);
   const qaSessionSummary = useMemo(() => buildQaSessionSummary(qaSessionItems, qaSession), [qaSession]);
+  const responsiveQaSummary = useMemo(() => buildResponsiveQaSummary(responsiveQaItems, responsiveQa), [responsiveQa]);
 
   const notificationPreview = useMemo(
     () => buildNotificationPreview({ follows, posts, preference: subscriptionSettings }),
@@ -327,6 +333,14 @@ export function App() {
     saveQaSession(next);
   };
 
+  const toggleResponsiveQaItem = (itemId: string) => {
+    const next = new Set(responsiveQa);
+    if (next.has(itemId)) next.delete(itemId);
+    else next.add(itemId);
+    setResponsiveQa(next);
+    saveResponsiveQa(next);
+  };
+
   const shareQaHandoff = () => {
     void shareText({
       title: "Autoflex QA handoff",
@@ -337,6 +351,7 @@ export function App() {
         launchSummary: launchReadinessSummary,
         profile,
         qaSummary: qaSessionSummary,
+        responsiveQaSummary,
       }),
     });
   };
@@ -463,6 +478,7 @@ export function App() {
     setSubscriptionSettings(backup.data.subscriptionSettings);
     setProfile(backup.data.profile);
     setReports(backup.data.reports);
+    setResponsiveQa(new Set(backup.data.responsiveQa));
     setShortlist(backup.data.shortlist);
     setSelectedPost(backup.data.posts[0] ?? null);
     setTimelineDraft({
@@ -1537,6 +1553,25 @@ export function App() {
             <label className={qaSession.has(item.id) ? "checked" : ""} key={item.id}>
               <input checked={qaSession.has(item.id)} onChange={() => toggleQaSessionItem(item.id)} type="checkbox" />
               <span>{item.label}</span>
+            </label>
+          ))}
+        </div>
+        <div className="responsive-qa-head">
+          <div>
+            <p className="eyebrow">Responsive QA matrix</p>
+            <h3>Phone, tablet, and desktop passes.</h3>
+          </div>
+          <span>
+            {responsiveQaSummary.checked}/{responsiveQaSummary.total} checked
+          </span>
+        </div>
+        <div className="responsive-qa-grid">
+          {responsiveQaItems.map((item) => (
+            <label className={responsiveQa.has(item.id) ? "checked" : ""} key={item.id}>
+              <input checked={responsiveQa.has(item.id)} onChange={() => toggleResponsiveQaItem(item.id)} type="checkbox" />
+              <span>{item.breakpoint}</span>
+              <strong>{item.surface}</strong>
+              <small>{item.label}</small>
             </label>
           ))}
         </div>

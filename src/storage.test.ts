@@ -53,6 +53,22 @@ describe("Autoflex storage safety", () => {
     expect(readStoredJson<string[]>("autoflex.web.qa-session.v1", [], storage)).toEqual(["feed", "offline"]);
   });
 
+  it("persists responsive QA check ids through the storage adapter", () => {
+    let stored = "";
+    const storage: StorageLike = {
+      getItem: () => stored,
+      setItem: (_key, value) => {
+        stored = value;
+      },
+    };
+
+    writeStoredJson("autoflex.web.responsive-qa.v1", ["phone-nav-feed", "desktop-data-tools"], storage);
+    expect(readStoredJson<string[]>("autoflex.web.responsive-qa.v1", [], storage)).toEqual([
+      "phone-nav-feed",
+      "desktop-data-tools",
+    ]);
+  });
+
   it("migrates old feedback notes into the triage lane", () => {
     const notes = normalizeFeedbackNotes([
       {
@@ -138,6 +154,7 @@ describe("Autoflex storage safety", () => {
           posts: [],
           profile: { city: "Pune", displayName: "Owner", garageRole: "Owner" },
           reports: [],
+          responsiveQa: ["phone-nav-feed", 42],
           saved: ["nexon-diesel-clutch", 42],
           shortlist: [],
           subscriptionSettings: { browserAlerts: false, emailDigest: true, quietHours: true },
@@ -150,6 +167,7 @@ describe("Autoflex storage safety", () => {
 
     expect(backup?.data.feedback[0]?.status).toBe("New");
     expect(backup?.data.feedback[0]?.loopStage).toBe("Real user");
+    expect(backup?.data.responsiveQa).toEqual(["phone-nav-feed"]);
     expect(backup?.data.saved).toEqual(["nexon-diesel-clutch"]);
     expect(backup?.data.profile.displayName).toBe("Owner");
   });

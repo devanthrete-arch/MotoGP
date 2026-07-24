@@ -29,6 +29,7 @@ const profileKey = "autoflex.web.profile.v1";
 const reportsKey = "autoflex.web.reports.v1";
 const shortlistKey = "autoflex.web.shortlist.v1";
 const qaSessionKey = "autoflex.web.qa-session.v1";
+const responsiveQaKey = "autoflex.web.responsive-qa.v1";
 
 export type StorageLike = Pick<Storage, "getItem" | "setItem">;
 
@@ -46,6 +47,7 @@ export type AutoflexBackup = {
     posts: OwnerPost[];
     profile: Profile;
     reports: ReportRecord[];
+    responsiveQa: string[];
     saved: string[];
     shortlist: ShortlistItem[];
     subscriptionSettings: SubscriptionSettings;
@@ -102,6 +104,7 @@ export const buildAutoflexBackup = (exportedAt = new Date().toISOString()): Auto
     posts: loadPosts(),
     profile: loadProfile(),
     reports: loadReports(),
+    responsiveQa: [...loadResponsiveQa()],
     saved: [...loadSaved()],
     shortlist: loadShortlist(),
     subscriptionSettings: loadSubscriptionSettings(),
@@ -136,6 +139,9 @@ export const parseAutoflexBackup = (raw: string): AutoflexBackup | null => {
             garageRole: "Owner",
           },
       reports: Array.isArray(parsed.data.reports) ? (parsed.data.reports as ReportRecord[]) : [],
+      responsiveQa: Array.isArray(parsed.data.responsiveQa)
+        ? parsed.data.responsiveQa.filter((item): item is string => typeof item === "string")
+        : [],
       saved: Array.isArray(parsed.data.saved) ? parsed.data.saved.filter((item): item is string => typeof item === "string") : [],
       shortlist: Array.isArray(parsed.data.shortlist) ? (parsed.data.shortlist as ShortlistItem[]) : [],
       subscriptionSettings: isRecord(parsed.data.subscriptionSettings)
@@ -159,6 +165,7 @@ export const restoreAutoflexBackup = (backup: AutoflexBackup): void => {
   savePosts(backup.data.posts);
   saveProfile(backup.data.profile);
   saveReports(backup.data.reports);
+  saveResponsiveQa(new Set(backup.data.responsiveQa));
   saveSaved(new Set(backup.data.saved));
   saveShortlist(backup.data.shortlist);
   saveSubscriptionSettings(backup.data.subscriptionSettings);
@@ -193,6 +200,12 @@ export const loadQaSession = (): Set<string> => new Set(readStoredJson<string[]>
 
 export const saveQaSession = (checkedIds: Set<string>): void => {
   writeStoredJson(qaSessionKey, [...checkedIds]);
+};
+
+export const loadResponsiveQa = (): Set<string> => new Set(readStoredJson<string[]>(responsiveQaKey, []));
+
+export const saveResponsiveQa = (checkedIds: Set<string>): void => {
+  writeStoredJson(responsiveQaKey, [...checkedIds]);
 };
 
 export const normalizeFeedbackNotes = (notes: StoredFeedbackNote[]): FeedbackNote[] =>
