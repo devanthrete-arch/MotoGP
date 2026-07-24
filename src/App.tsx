@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   buildLoop,
+  feedbackLoopStages,
   feedbackStatuses,
   knowledgeLabels,
   launchReadinessItems,
@@ -30,6 +31,7 @@ import {
   buildCityCircles,
   buildConnectionStatusCopy,
   buildFeedbackTriageSummary,
+  buildFeedbackLoopSummary,
   buildGarageCostLedger,
   buildGarageInsights,
   buildGarageExportMarkdown,
@@ -84,6 +86,7 @@ import {
   saveSubscriptionSettings,
   saveTimeline,
   updateFeedbackStatus,
+  updateFeedbackLoopStage,
 } from "./storage";
 
 type FeedMode = "latest" | "helpful" | "saved" | "following";
@@ -222,6 +225,7 @@ export function App() {
   const ownershipPlaybooks = useMemo(() => buildOwnershipPlaybooks(posts), [posts]);
   const moderationSummary = useMemo(() => buildModerationSummary(reports), [reports]);
   const feedbackTriageSummary = useMemo(() => buildFeedbackTriageSummary(feedback), [feedback]);
+  const feedbackLoopSummary = useMemo(() => buildFeedbackLoopSummary(feedback), [feedback]);
   const launchReadinessSummary = useMemo(() => buildLaunchReadinessSummary(launchReadinessItems), []);
   const shortlistComparisons = useMemo(() => buildShortlistComparisons(shortlist, posts), [posts, shortlist]);
   const inspectionChecklists = useMemo(() => buildInspectionChecklists(shortlist, posts), [posts, shortlist]);
@@ -328,6 +332,7 @@ export function App() {
       title: "Autoflex QA handoff",
       text: buildQaHandoffMarkdown({
         feedbackSummary: feedbackTriageSummary,
+        feedbackLoopSummary,
         generatedAt: new Date().toISOString(),
         launchSummary: launchReadinessSummary,
         profile,
@@ -554,6 +559,10 @@ export function App() {
 
   const setFeedbackStatus = (feedbackId: string, status: FeedbackStatus) => {
     persistFeedback(updateFeedbackStatus(feedback, feedbackId, status));
+  };
+
+  const setFeedbackLoopStage = (feedbackId: string, loopStage: FeedbackNote["loopStage"]) => {
+    persistFeedback(updateFeedbackLoopStage(feedback, feedbackId, loopStage));
   };
 
   return (
@@ -1600,12 +1609,23 @@ export function App() {
               </span>
             ))}
           </div>
+          <div className="feedback-loop-bar" aria-label="Feedback loop routing summary">
+            {feedbackLoopStages.map((stage) => (
+              <span key={stage}>
+                <strong>{feedbackLoopSummary[stage]}</strong>
+                {stage}
+              </span>
+            ))}
+          </div>
           <div className="feedback-list">
             {feedback.length ? (
               feedback.slice(0, 4).map((note) => (
                 <article className={`feedback-card ${note.status.toLowerCase()}`} key={note.id}>
                   <div>
-                    <span>{note.status}</span>
+                    <div className="feedback-badges">
+                      <span>{note.status}</span>
+                      <span className="loop-stage">{note.loopStage}</span>
+                    </div>
                     <time dateTime={note.createdAt}>{new Date(note.createdAt).toLocaleDateString("en-IN")}</time>
                   </div>
                   <p>{note.message}</p>
@@ -1618,6 +1638,18 @@ export function App() {
                         onClick={() => setFeedbackStatus(note.id, status)}
                       >
                         {status}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="feedback-status-row" aria-label={`Route feedback ${note.id} to the product loop`}>
+                    {feedbackLoopStages.map((stage) => (
+                      <button
+                        aria-pressed={note.loopStage === stage}
+                        key={stage}
+                        type="button"
+                        onClick={() => setFeedbackLoopStage(note.id, stage)}
+                      >
+                        {stage}
                       </button>
                     ))}
                   </div>

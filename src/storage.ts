@@ -1,4 +1,5 @@
 import type {
+  BuildRole,
   DraftPost,
   DraftReport,
   DraftShortlistItem,
@@ -31,7 +32,9 @@ const qaSessionKey = "autoflex.web.qa-session.v1";
 
 export type StorageLike = Pick<Storage, "getItem" | "setItem">;
 
-type StoredFeedbackNote = FeedbackNote | Omit<FeedbackNote, "status">;
+type StoredFeedbackNote = FeedbackNote | Omit<FeedbackNote, "loopStage"> | Omit<FeedbackNote, "status" | "loopStage">;
+
+const feedbackLoopStageFallback: BuildRole = "Real user";
 
 export type AutoflexBackup = {
   version: 1;
@@ -195,6 +198,7 @@ export const saveQaSession = (checkedIds: Set<string>): void => {
 export const normalizeFeedbackNotes = (notes: StoredFeedbackNote[]): FeedbackNote[] =>
   notes
     .map((note) => ({
+      loopStage: feedbackLoopStageFallback,
       status: "New" as const,
       ...note,
     }))
@@ -210,6 +214,7 @@ export const addFeedback = (message: string): FeedbackNote[] => {
   const next = [
     {
       id: `feedback-${Date.now()}`,
+      loopStage: feedbackLoopStageFallback,
       message,
       status: "New" as const,
       createdAt: new Date().toISOString(),
@@ -225,6 +230,12 @@ export const updateFeedbackStatus = (
   feedbackId: string,
   status: FeedbackStatus,
 ): FeedbackNote[] => feedback.map((note) => (note.id === feedbackId ? { ...note, status } : note));
+
+export const updateFeedbackLoopStage = (
+  feedback: FeedbackNote[],
+  feedbackId: string,
+  loopStage: BuildRole,
+): FeedbackNote[] => feedback.map((note) => (note.id === feedbackId ? { ...note, loopStage } : note));
 
 export const loadFollows = (): FollowState =>
   readStoredJson<FollowState>(followKey, { models: [], topics: [] });
