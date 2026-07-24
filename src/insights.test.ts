@@ -218,6 +218,12 @@ describe("Autoflex insights", () => {
         ready: true,
       },
       {
+        area: "Install",
+        detail: "Manifest is available.",
+        label: "Install shell",
+        ready: true,
+      },
+      {
         area: "Trust",
         detail: "Needs final admin token.",
         label: "Admin hardening",
@@ -226,8 +232,8 @@ describe("Autoflex insights", () => {
     ]);
 
     expect(summary).toMatchObject({
-      ready: 1,
-      total: 2,
+      ready: 2,
+      total: 3,
     });
     expect(summary.blocked[0]?.label).toBe("Admin hardening");
   });
