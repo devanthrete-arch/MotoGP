@@ -23,8 +23,11 @@ export type OwnerPost = {
 export type FeedbackNote = {
   id: string;
   message: string;
+  status: FeedbackStatus;
   createdAt: string;
 };
+
+export type FeedbackStatus = "New" | "Reviewing" | "Planned" | "Shipped";
 
 export type GarageVehicle = {
   id: string;
@@ -114,6 +117,8 @@ export type DraftVehicle = Omit<GarageVehicle, "id">;
 export type DraftTimelineEntry = Omit<TimelineEntry, "id">;
 
 export const shortlistStatuses: ShortlistStatus[] = ["Researching", "Test drive", "Negotiating", "Rejected", "Bought"];
+
+export const feedbackStatuses: FeedbackStatus[] = ["New", "Reviewing", "Planned", "Shipped"];
 
 export const knowledgeLabels: KnowledgeLabel[] = [
   "Review",

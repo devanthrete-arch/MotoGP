@@ -65,6 +65,7 @@ Service-center integration is intentionally kept separate under
 - [x] Added community rules and privacy/deletion notes.
 - [x] Added real web image upload with size/type checks and JPEG storage.
 - [x] Added product feedback capture and admin feedback inbox.
+- [x] Added local feedback triage states for Product owner → Design → Engineering → QA loop follow-through.
 - [x] Added browser/client error capture for staging QA.
 - [x] Added health endpoint with app version and service-center boundary status.
 - [x] Added share buttons plus `/share/*` metadata landing pages for posts and model notebooks.

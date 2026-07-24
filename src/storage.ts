@@ -5,6 +5,7 @@ import type {
   DraftTimelineEntry,
   DraftVehicle,
   FeedbackNote,
+  FeedbackStatus,
   FollowState,
   GarageVehicle,
   OwnerPost,
@@ -28,6 +29,8 @@ const reportsKey = "autoflex.web.reports.v1";
 const shortlistKey = "autoflex.web.shortlist.v1";
 
 export type StorageLike = Pick<Storage, "getItem" | "setItem">;
+
+type StoredFeedbackNote = FeedbackNote | Omit<FeedbackNote, "status">;
 
 export const safeJsonParse = <T,>(value: string | null, fallback: T): T => {
   if (!value) return fallback;
@@ -91,20 +94,39 @@ export const saveSaved = (saved: Set<string>): void => {
   writeStoredJson(savedKey, [...saved]);
 };
 
-export const loadFeedback = (): FeedbackNote[] => readStoredJson<FeedbackNote[]>(feedbackKey, []);
+export const normalizeFeedbackNotes = (notes: StoredFeedbackNote[]): FeedbackNote[] =>
+  notes
+    .map((note) => ({
+      status: "New" as const,
+      ...note,
+    }))
+    .sort((first, second) => Date.parse(second.createdAt) - Date.parse(first.createdAt));
+
+export const loadFeedback = (): FeedbackNote[] => normalizeFeedbackNotes(readStoredJson<StoredFeedbackNote[]>(feedbackKey, []));
+
+export const saveFeedback = (feedback: FeedbackNote[]): void => {
+  writeStoredJson(feedbackKey, feedback);
+};
 
 export const addFeedback = (message: string): FeedbackNote[] => {
   const next = [
     {
       id: `feedback-${Date.now()}`,
       message,
+      status: "New" as const,
       createdAt: new Date().toISOString(),
     },
     ...loadFeedback(),
   ];
-  writeStoredJson(feedbackKey, next);
+  saveFeedback(next);
   return next;
 };
+
+export const updateFeedbackStatus = (
+  feedback: FeedbackNote[],
+  feedbackId: string,
+  status: FeedbackStatus,
+): FeedbackNote[] => feedback.map((note) => (note.id === feedbackId ? { ...note, status } : note));
 
 export const loadFollows = (): FollowState =>
   readStoredJson<FollowState>(followKey, { models: [], topics: [] });

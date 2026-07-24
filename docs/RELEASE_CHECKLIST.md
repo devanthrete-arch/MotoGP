@@ -12,6 +12,7 @@
 8. Check responsive layout at phone, tablet, and desktop widths; confirm nav, forms, feed detail, shortlist cards, inspection checklists, and action buttons remain readable and tappable.
 9. Confirm blocked, unavailable, or corrupt browser storage falls back safely without breaking the page.
 10. Confirm app-level crash recovery shows a reload/try-again path instead of a blank page.
+11. Submit tester feedback, move it through New/Reviewing/Planned/Shipped, and confirm triage counts update.
 
 ## Required environment
 
