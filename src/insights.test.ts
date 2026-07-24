@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { seedGarage, seedPosts, seedTimeline } from "./domain";
 import {
   assessPostQuality,
+  buildGarageCostLedger,
   buildGarageInsights,
   buildGarageExportMarkdown,
   buildInspectionChecklists,
@@ -76,6 +77,18 @@ describe("Autoflex insights", () => {
     expect(insights[0].detail).toContain("km to the next 10k service marker");
     expect(insights[1].detail).toContain("₹9,550");
     expect(insights[2].detail).toContain("1 related ownership note");
+  });
+
+  it("builds garage cost ledger from vehicle timeline", () => {
+    const ledger = buildGarageCostLedger(seedGarage, seedTimeline);
+
+    expect(ledger[0]).toMatchObject({
+      entryCount: 2,
+      highestLoggedOdometerKm: 42000,
+      totalSpend: 9550,
+    });
+    expect(ledger[0].costPerKm).toBeCloseTo(0.227);
+    expect(ledger[0].latestEntry?.id).toBe("timeline-nexon-service");
   });
 
   it("summarizes moderation queue and flags repeatedly reported posts", () => {

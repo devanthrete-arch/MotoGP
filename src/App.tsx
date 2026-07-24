@@ -23,6 +23,7 @@ import {
 import {
   assessPostQuality,
   buildCityCircles,
+  buildGarageCostLedger,
   buildGarageInsights,
   buildGarageExportMarkdown,
   buildInspectionChecklists,
@@ -168,6 +169,7 @@ export function App() {
   );
 
   const garageInsights = useMemo(() => buildGarageInsights(garage, timeline, posts), [garage, posts, timeline]);
+  const garageCostLedger = useMemo(() => buildGarageCostLedger(garage, timeline), [garage, timeline]);
   const cityCircles = useMemo(() => buildCityCircles(posts, garage), [garage, posts]);
   const ownershipPlaybooks = useMemo(() => buildOwnershipPlaybooks(posts), [posts]);
   const moderationSummary = useMemo(() => buildModerationSummary(reports), [reports]);
@@ -1167,6 +1169,34 @@ export function App() {
           ))}
         </div>
 
+        <div className="ledger-board" aria-label="Garage running cost ledger">
+          {garageCostLedger.map((ledger) => (
+            <article className="ledger-card" key={ledger.vehicle.id}>
+              <span>{ledger.vehicle.brand}</span>
+              <h3>{ledger.vehicle.nickname || ledger.vehicle.model}</h3>
+              <div className="ledger-stats">
+                <p>
+                  <strong>{formatMoney(ledger.totalSpend)}</strong>
+                  <small>Total logged</small>
+                </p>
+                <p>
+                  <strong>{ledger.costPerKm === null ? "—" : `${formatMoney(ledger.costPerKm, 2)}/km`}</strong>
+                  <small>Approx cost/km</small>
+                </p>
+                <p>
+                  <strong>{ledger.entryCount}</strong>
+                  <small>Timeline notes</small>
+                </p>
+              </div>
+              <p>
+                {ledger.latestEntry
+                  ? `Latest: ${ledger.latestEntry.kind.toLowerCase()} · ${ledger.latestEntry.title}`
+                  : "No timeline spend yet. Add service, repair, tyre, fuel, or insurance notes."}
+              </p>
+            </article>
+          ))}
+        </div>
+
         <div className="insight-grid">
           {garageInsights.map((insight) => (
             <article className={`insight-card ${insight.tone}`} key={insight.id}>
@@ -1279,6 +1309,7 @@ export function App() {
           <p>Feed supports latest, helpful, saved, and following modes.</p>
           <p>Followed models/topics create return-user nudges.</p>
           <p>Garage vehicles and timeline entries persist locally.</p>
+          <p>Garage running-cost ledger summarizes spend, cost/km, and latest timeline event from local notes.</p>
           <p>Comments, reports, profiles, and moderator actions persist locally.</p>
           <p>Post, model notebook, and garage export sharing uses native share with clipboard fallback.</p>
           <p>City circles group local owner notes and garage vehicles by market context.</p>

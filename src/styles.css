@@ -863,6 +863,66 @@ a:focus-visible {
   margin-top: 18px;
 }
 
+.ledger-board {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 18px;
+}
+
+.ledger-card {
+  background:
+    linear-gradient(180deg, #fffaf2, #f8ead8),
+    repeating-linear-gradient(0deg, transparent 0 28px, rgba(95, 61, 40, 0.05) 28px 29px);
+  border: 1px solid rgba(95, 61, 40, 0.16);
+  border-radius: 26px;
+  padding: 22px;
+}
+
+.ledger-card > span {
+  background: #211b16;
+  border-radius: 999px;
+  color: rgba(255, 248, 237, 0.84);
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  padding: 7px 10px;
+  text-transform: uppercase;
+}
+
+.ledger-stats {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 16px 0;
+}
+
+.ledger-stats p {
+  background: rgba(255, 250, 242, 0.78);
+  border: 1px solid rgba(95, 61, 40, 0.12);
+  border-radius: 16px;
+  margin: 0;
+  padding: 12px;
+}
+
+.ledger-stats strong,
+.ledger-stats small {
+  display: block;
+}
+
+.ledger-stats small {
+  color: #725a48;
+  font-size: 0.78rem;
+  margin-top: 4px;
+}
+
+.ledger-card > p {
+  color: #725a48;
+  line-height: 1.55;
+  margin: 0;
+}
+
 .insight-grid {
   margin-top: 18px;
 }
@@ -1028,6 +1088,7 @@ a:focus-visible {
   .shortlist-grid,
   .comparison-grid,
   .timeline-board,
+  .ledger-board,
   .notification-grid,
   .city-grid,
   .insight-grid,
@@ -1168,6 +1229,10 @@ a:focus-visible {
 
   .comparison-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ledger-stats {
+    grid-template-columns: 1fr;
   }
 
   .inspection-item {
