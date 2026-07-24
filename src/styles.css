@@ -80,6 +80,28 @@ a {
   color: #ffb36b;
 }
 
+.nav-toggle {
+  align-items: center;
+  background: rgba(255, 248, 237, 0.08);
+  border: 1px solid rgba(255, 248, 237, 0.24);
+  border-radius: 999px;
+  color: #fff8ed;
+  cursor: pointer;
+  display: none;
+  font-weight: 900;
+  gap: 7px;
+  justify-content: center;
+  padding: 10px 14px;
+}
+
+.nav-toggle span {
+  background: currentColor;
+  border-radius: 999px;
+  display: block;
+  height: 2px;
+  width: 15px;
+}
+
 .nav-actions {
   display: flex;
   flex-wrap: wrap;
@@ -132,11 +154,12 @@ p {
 }
 
 h1 {
-  font-size: clamp(3.2rem, 9vw, 7.6rem);
-  letter-spacing: -0.085em;
-  line-height: 0.86;
+  font-size: clamp(3rem, 7.8vw, 6.4rem);
+  letter-spacing: -0.055em;
+  line-height: 0.94;
   margin-bottom: 24px;
   max-width: 920px;
+  text-wrap: balance;
 }
 
 h2 {
@@ -192,50 +215,41 @@ h3 {
 .instrument-card {
   background: rgba(36, 25, 18, 0.64);
   border-color: rgba(255, 248, 237, 0.18);
-  padding: 28px;
-}
-
-.dial {
-  align-items: center;
-  aspect-ratio: 1;
-  border: 1px dashed rgba(255, 204, 141, 0.58);
-  border-radius: 999px;
   display: grid;
-  justify-items: center;
-  margin-bottom: 22px;
+  gap: 18px;
+  padding: 24px;
 }
 
-.dial span {
-  font-size: clamp(4rem, 12vw, 7rem);
-  font-weight: 950;
-  letter-spacing: -0.1em;
-  line-height: 0.85;
-}
-
-.dial small {
-  color: rgba(255, 248, 237, 0.68);
-  margin-top: -34px;
+.instrument-kicker {
+  color: #ffcc8d;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  margin: 0;
   text-transform: uppercase;
 }
 
-.instrument-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
+.instrument-metrics {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.instrument-track {
-  background: rgba(255, 248, 237, 0.16);
-  border-radius: 999px;
-  height: 10px;
-  margin: 18px 0;
-  overflow: hidden;
+.instrument-metrics span {
+  background: rgba(255, 248, 237, 0.08);
+  border: 1px solid rgba(255, 248, 237, 0.12);
+  border-radius: 18px;
+  color: rgba(255, 248, 237, 0.7);
+  display: grid;
+  gap: 6px;
+  padding: 14px;
 }
 
-.instrument-track span {
-  background: #ffb36b;
-  display: block;
-  height: 100%;
+.instrument-metrics strong {
+  color: #fff8ed;
+  font-size: clamp(1.8rem, 5vw, 3rem);
+  letter-spacing: -0.06em;
+  line-height: 0.9;
 }
 
 .instrument-card p {
@@ -863,6 +877,55 @@ a:focus-visible {
   margin-top: 18px;
 }
 
+.reminder-board {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 18px;
+}
+
+.reminder-card {
+  background: #fffaf2;
+  border: 1px solid rgba(95, 61, 40, 0.16);
+  border-radius: 24px;
+  padding: 20px;
+}
+
+.reminder-card > span {
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  padding: 7px 10px;
+  text-transform: uppercase;
+}
+
+.reminder-card.soon > span {
+  background: #ffd8d4;
+  color: #8b281d;
+}
+
+.reminder-card.plan > span {
+  background: #ffe0b6;
+  color: #7e321d;
+}
+
+.reminder-card.watch > span {
+  background: #dce9ff;
+  color: #254c86;
+}
+
+.reminder-card h3 {
+  margin: 14px 0 8px;
+}
+
+.reminder-card p {
+  color: #725a48;
+  line-height: 1.55;
+  margin: 0;
+}
+
 .ledger-board {
   display: grid;
   gap: 16px;
@@ -1088,6 +1151,7 @@ a:focus-visible {
   .shortlist-grid,
   .comparison-grid,
   .timeline-board,
+  .reminder-board,
   .ledger-board,
   .notification-grid,
   .city-grid,
@@ -1111,6 +1175,10 @@ a:focus-visible {
 
   .nav-actions {
     justify-content: flex-start;
+  }
+
+  .nav-actions a {
+    flex: 1 1 180px;
   }
 
   .hero-grid {
@@ -1158,12 +1226,26 @@ a:focus-visible {
 
   .brand {
     justify-content: center;
-    width: 100%;
+  }
+
+  .nav {
+    align-items: center;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .nav-toggle {
+    display: inline-flex;
   }
 
   .nav-actions {
+    display: none;
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr;
+  }
+
+  .nav-actions.is-open {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .nav-actions a,
@@ -1221,10 +1303,13 @@ a:focus-visible {
     padding: 18px;
   }
 
-  .instrument-row,
   .post-card {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .instrument-metrics {
+    grid-template-columns: 1fr;
   }
 
   .comparison-stats {
@@ -1246,8 +1331,9 @@ a:focus-visible {
   }
 
   h1 {
-    font-size: clamp(2.8rem, 18vw, 3.4rem);
-    letter-spacing: -0.075em;
+    font-size: clamp(2.45rem, 12vw, 3.35rem);
+    letter-spacing: -0.045em;
+    line-height: 1;
   }
 
   h2 {

@@ -26,6 +26,7 @@ import {
   buildGarageCostLedger,
   buildGarageInsights,
   buildGarageExportMarkdown,
+  buildGarageReminders,
   buildInspectionChecklists,
   buildModelSharePayload,
   buildModerationSummary,
@@ -140,6 +141,7 @@ export function App() {
   const [reportDraft, setReportDraft] = useState("");
   const [feedbackDraft, setFeedbackDraft] = useState("");
   const [actionMessage, setActionMessage] = useState("");
+  const [navMenuOpen, setNavMenuOpen] = useState(false);
 
   const notebooks = useMemo(() => groupByModel(posts), [posts]);
   const followedModelSet = useMemo(() => new Set(follows.models), [follows.models]);
@@ -170,6 +172,7 @@ export function App() {
 
   const garageInsights = useMemo(() => buildGarageInsights(garage, timeline, posts), [garage, posts, timeline]);
   const garageCostLedger = useMemo(() => buildGarageCostLedger(garage, timeline), [garage, timeline]);
+  const garageReminders = useMemo(() => buildGarageReminders(garage, timeline), [garage, timeline]);
   const cityCircles = useMemo(() => buildCityCircles(posts, garage), [garage, posts]);
   const ownershipPlaybooks = useMemo(() => buildOwnershipPlaybooks(posts), [posts]);
   const moderationSummary = useMemo(() => buildModerationSummary(reports), [reports]);
@@ -431,26 +434,50 @@ export function App() {
     <main className="app-shell">
       <section className="hero">
         <nav className="nav" aria-label="Primary navigation">
-          <a className="brand" href="#top" aria-label="Autoflex home">
+          <a className="brand" href="#top" aria-label="Autoflex home" onClick={() => setNavMenuOpen(false)}>
             Auto<span>flex</span>
           </a>
-          <div className="nav-actions">
-            <a href="#feed">Feed</a>
-            <a href="#cities">Cities</a>
-            <a href="#playbooks">Playbooks</a>
-            <a href="#garage">Garage</a>
-            <a href="#notebooks">Model notebooks</a>
-            <a href="#loop">Build loop</a>
+          <button
+            aria-controls="primary-nav-links"
+            aria-expanded={navMenuOpen}
+            className="nav-toggle"
+            type="button"
+            onClick={() => setNavMenuOpen((isOpen) => !isOpen)}
+          >
+            <span />
+            <span />
+            <span />
+            Menu
+          </button>
+          <div className={`nav-actions ${navMenuOpen ? "is-open" : ""}`} id="primary-nav-links">
+            <a href="#feed" onClick={() => setNavMenuOpen(false)}>
+              Feed
+            </a>
+            <a href="#cities" onClick={() => setNavMenuOpen(false)}>
+              Cities
+            </a>
+            <a href="#playbooks" onClick={() => setNavMenuOpen(false)}>
+              Playbooks
+            </a>
+            <a href="#garage" onClick={() => setNavMenuOpen(false)}>
+              Garage
+            </a>
+            <a href="#notebooks" onClick={() => setNavMenuOpen(false)}>
+              Model notebooks
+            </a>
+            <a href="#loop" onClick={() => setNavMenuOpen(false)}>
+              Build loop
+            </a>
           </div>
         </nav>
 
         <div className="hero-grid" id="top">
           <div>
-            <p className="eyebrow">Team-BHP spirit, built for the next wave</p>
+            <p className="eyebrow">Deep ownership knowledge, built for the next wave</p>
             <h1>Owner notes that help people buy, fix, and actually live with cars.</h1>
             <p className="hero-copy">
-              Autoflex is a TypeScript web MVP for deep Indian auto discussions: real reviews, known issues, verified
-              fixes, cost notes, travelogues, garage timelines, and model notebooks. Less noise, more garage truth.
+              Autoflex brings real reviews, known issues, verified fixes, cost notes, travelogues, garage timelines, and
+              model notebooks into one ownership-first community. Less noise, more garage truth.
             </p>
             <div className="hero-actions">
               <a className="primary-action" href="#write">
@@ -462,19 +489,23 @@ export function App() {
             </div>
           </div>
 
-          <div className="instrument-card" aria-label="Autoflex MVP status">
-            <div className="dial">
-              <span>{stats.posts}</span>
-              <small>owner notes</small>
+          <div className="instrument-card" aria-label="Autoflex community pulse">
+            <p className="instrument-kicker">Community pulse</p>
+            <div className="instrument-metrics">
+              <span>
+                <strong>{stats.posts}</strong>
+                Owner notes
+              </span>
+              <span>
+                <strong>{stats.models}</strong>
+                Model notebooks
+              </span>
+              <span>
+                <strong>{stats.confirmations}</strong>
+                Fix confirmations
+              </span>
             </div>
-            <div className="instrument-row">
-              <span>{stats.models} model notebooks</span>
-              <strong>{stats.confirmations} fix confirmations</strong>
-            </div>
-            <div className="instrument-track">
-              <span style={{ width: `${Math.min(100, (stats.fixes + stats.follows + stats.garage) * 12)}%` }} />
-            </div>
-            <p>Current build is web-first TypeScript. Kotlin/Android remains a later conversion path.</p>
+            <p>Knowledge cards, garage records, buyer checks, and local circles are already feeding the ownership loop.</p>
           </div>
         </div>
       </section>
@@ -482,7 +513,7 @@ export function App() {
       <section className="service-boundary">
         <strong>Service-center integration boundary</strong>
         <span>
-          Endpoints stay separate for now because another team owns that contract. This web MVP focuses on community,
+          Endpoints stay separate for now because another team owns that contract. Autoflex focuses on community,
           ownership knowledge, garage retention, moderation, and return-user loops.
         </span>
       </section>
@@ -936,7 +967,7 @@ export function App() {
           <p className="eyebrow">Publish</p>
           <h2>Write like the next owner depends on it.</h2>
           <p>
-            The form pushes users toward context Team-BHP made valuable at its peak: variant, city, odometer, real
+            The form pushes users toward the context that makes ownership advice useful: variant, city, odometer, real
             symptoms, costs, and outcomes.
           </p>
           <div className={`quality-card ${draftQuality.grade.toLowerCase().replace(/\s+/g, "-")}`}>
@@ -1143,6 +1174,22 @@ export function App() {
           </form>
         </div>
 
+        <div className="reminder-board" aria-label="Garage reminders">
+          {garageReminders.length ? (
+            garageReminders.map((reminder) => (
+              <article className={`reminder-card ${reminder.urgency.toLowerCase()}`} key={reminder.id}>
+                <span>{reminder.urgency}</span>
+                <h3>{reminder.title}</h3>
+                <p>
+                  {reminder.vehicleName}: {reminder.detail}
+                </p>
+              </article>
+            ))
+          ) : (
+            <div className="empty-state">No garage reminders right now. Keep logging service, insurance, tyre, and repair notes.</div>
+          )}
+        </div>
+
         <div className="timeline-board">
           {garage.map((vehicle) => (
             <article className="vehicle-card" key={vehicle.id}>
@@ -1309,6 +1356,7 @@ export function App() {
           <p>Feed supports latest, helpful, saved, and following modes.</p>
           <p>Followed models/topics create return-user nudges.</p>
           <p>Garage vehicles and timeline entries persist locally.</p>
+          <p>Garage reminders surface upcoming service, insurance, and tyre checks from local timeline notes.</p>
           <p>Garage running-cost ledger summarizes spend, cost/km, and latest timeline event from local notes.</p>
           <p>Comments, reports, profiles, and moderator actions persist locally.</p>
           <p>Post, model notebook, and garage export sharing uses native share with clipboard fallback.</p>

@@ -5,6 +5,7 @@ import {
   buildGarageCostLedger,
   buildGarageInsights,
   buildGarageExportMarkdown,
+  buildGarageReminders,
   buildInspectionChecklists,
   buildCityCircles,
   buildModelSharePayload,
@@ -89,6 +90,36 @@ describe("Autoflex insights", () => {
     });
     expect(ledger[0].costPerKm).toBeCloseTo(0.227);
     expect(ledger[0].latestEntry?.id).toBe("timeline-nexon-service");
+  });
+
+  it("builds garage reminders from mileage and timeline gaps", () => {
+    const reminders = buildGarageReminders(
+      [{ ...seedGarage[0], odometerKm: 49550 }],
+      [
+        ...seedTimeline,
+        {
+          amount: 0,
+          happenedOn: "2025-07-01",
+          id: "timeline-nexon-tyres",
+          kind: "Tyres",
+          note: "Tyres changed before monsoon.",
+          odometerKm: 12000,
+          title: "Tyre set replaced",
+          vehicleId: "garage-nexon",
+        },
+      ],
+      new Date("2026-07-20T00:00:00.000Z"),
+    );
+
+    expect(reminders.map((reminder) => reminder.title)).toEqual([
+      "Plan the next service visit",
+      "Log insurance renewal details",
+      "Inspect tyre age and wear",
+    ]);
+    expect(reminders[0]).toMatchObject({
+      urgency: "Soon",
+      vehicleName: "Daily diesel",
+    });
   });
 
   it("summarizes moderation queue and flags repeatedly reported posts", () => {
