@@ -21,11 +21,15 @@ import {
   type TimelineEntryKind,
 } from "./domain";
 import {
+  assessPostQuality,
+  buildCityCircles,
   buildGarageInsights,
   buildGarageExportMarkdown,
+  buildInspectionChecklists,
   buildModelSharePayload,
   buildModerationSummary,
   buildNotificationPreview,
+  buildOwnershipPlaybooks,
   buildPostSharePayload,
   buildReturnNudges,
   buildShortlistComparisons,
@@ -164,8 +168,17 @@ export function App() {
   );
 
   const garageInsights = useMemo(() => buildGarageInsights(garage, timeline, posts), [garage, posts, timeline]);
+  const cityCircles = useMemo(() => buildCityCircles(posts, garage), [garage, posts]);
+  const ownershipPlaybooks = useMemo(() => buildOwnershipPlaybooks(posts), [posts]);
   const moderationSummary = useMemo(() => buildModerationSummary(reports), [reports]);
   const shortlistComparisons = useMemo(() => buildShortlistComparisons(shortlist, posts), [posts, shortlist]);
+  const inspectionChecklists = useMemo(() => buildInspectionChecklists(shortlist, posts), [posts, shortlist]);
+  const inspectionChecklistByItemId = useMemo(
+    () => new Map(inspectionChecklists.map((checklist) => [checklist.item.id, checklist])),
+    [inspectionChecklists],
+  );
+  const draftQuality = useMemo(() => assessPostQuality(draft), [draft]);
+  const selectedPostQuality = useMemo(() => (selectedPost ? assessPostQuality(selectedPost) : null), [selectedPost]);
 
   const stats = useMemo(
     () => ({
@@ -421,6 +434,8 @@ export function App() {
           </a>
           <div className="nav-actions">
             <a href="#feed">Feed</a>
+            <a href="#cities">Cities</a>
+            <a href="#playbooks">Playbooks</a>
             <a href="#garage">Garage</a>
             <a href="#notebooks">Model notebooks</a>
             <a href="#loop">Build loop</a>
@@ -573,6 +588,42 @@ export function App() {
         </div>
       </section>
 
+      <section className="panel" id="cities">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">City circles</p>
+            <h2>Local ownership signals matter.</h2>
+          </div>
+        </div>
+        <div className="city-grid">
+          {cityCircles.length ? (
+            cityCircles.map((circle) => (
+              <article className={`city-card ${circle.localSignal.toLowerCase()}`} key={circle.city}>
+                <span>{circle.localSignal}</span>
+                <h3>{circle.city}</h3>
+                <p>
+                  {circle.posts.length} owner notes · {circle.garageVehicles.length} garage vehicles
+                </p>
+                <div className="city-tags">
+                  {circle.topBrands.map((brand) => (
+                    <button key={brand} type="button" onClick={() => setQuery(brand)}>
+                      {brand}
+                    </button>
+                  ))}
+                  {circle.hotTopics.map((topic) => (
+                    <button key={topic} type="button" onClick={() => setSelectedLabel(topic)}>
+                      {topic}
+                    </button>
+                  ))}
+                </div>
+              </article>
+            ))
+          ) : (
+            <div className="empty-state">Add city details to posts or garage vehicles to start local circles.</div>
+          )}
+        </div>
+      </section>
+
       <section className="panel" id="feed">
         <div className="section-head">
           <div>
@@ -644,6 +695,17 @@ export function App() {
                   {selectedPost.city}
                 </p>
                 <p>{selectedPost.body}</p>
+                {selectedPostQuality ? (
+                  <div className={`quality-card ${selectedPostQuality.grade.toLowerCase().replace(/\s+/g, "-")}`}>
+                    <div className="quality-meter">
+                      <span style={{ width: `${(selectedPostQuality.score / selectedPostQuality.maxScore) * 100}%` }} />
+                    </div>
+                    <strong>
+                      {selectedPostQuality.grade} · {selectedPostQuality.score}/{selectedPostQuality.maxScore}
+                    </strong>
+                    <p>{selectedPostQuality.strengths[0] ?? "This note needs more ownership context."}</p>
+                  </div>
+                ) : null}
                 <div className="signal-row">
                   <button type="button" onClick={() => markHelpful(selectedPost.id)}>
                     Helpful · {selectedPost.helpful}
@@ -760,46 +822,110 @@ export function App() {
 
           <div className="comparison-grid">
             {shortlistComparisons.length ? (
-              shortlistComparisons.map((comparison) => (
-                <article className="comparison-card" key={comparison.item.id}>
-                  <span className={`confidence ${comparison.confidence.toLowerCase()}`}>{comparison.confidence} confidence</span>
-                  <h3>
-                    {comparison.item.brand} {comparison.item.model}
-                  </h3>
-                  <p>{formatMoney(comparison.item.budget)} target budget</p>
-                  <div className="comparison-stats">
-                    <span>{comparison.relatedNotes} notes</span>
-                    <span>{comparison.ownerReviews} reviews</span>
-                    <span>{comparison.knownIssues} issues</span>
-                    <span>{comparison.fixes} fixes</span>
-                  </div>
-                  <div className="form-row">
-                    <select
-                      value={comparison.item.status}
-                      onChange={(event) =>
-                        updateShortlistItem(comparison.item.id, { status: event.target.value as ShortlistItem["status"] })
-                      }
-                    >
-                      {shortlistStatuses.map((status) => (
-                        <option key={status}>{status}</option>
-                      ))}
-                    </select>
-                    <button className="save-button" type="button" onClick={() => removeShortlistItem(comparison.item.id)}>
-                      Remove
-                    </button>
-                  </div>
-                  <textarea
-                    rows={3}
-                    value={comparison.item.notes}
-                    onChange={(event) => updateShortlistItem(comparison.item.id, { notes: event.target.value })}
-                    placeholder="Decision notes"
-                  />
-                </article>
-              ))
+              shortlistComparisons.map((comparison) => {
+                const inspection = inspectionChecklistByItemId.get(comparison.item.id);
+                return (
+                  <article className="comparison-card" key={comparison.item.id}>
+                    {inspection ? (
+                      <div className="inspection-list">
+                        <strong>Inspection checklist</strong>
+                        {inspection.checklist.map((item) => (
+                          <div className={`inspection-item ${item.priority.toLowerCase()}`} key={item.id}>
+                            <span>{item.priority}</span>
+                            <div>
+                              <b>{item.title}</b>
+                              <p>{item.detail}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
+                    <span className={`confidence ${comparison.confidence.toLowerCase()}`}>{comparison.confidence} confidence</span>
+                    <h3>
+                      {comparison.item.brand} {comparison.item.model}
+                    </h3>
+                    <p>{formatMoney(comparison.item.budget)} target budget</p>
+                    <div className="comparison-stats">
+                      <span>{comparison.relatedNotes} notes</span>
+                      <span>{comparison.ownerReviews} reviews</span>
+                      <span>{comparison.knownIssues} issues</span>
+                      <span>{comparison.fixes} fixes</span>
+                    </div>
+                    <div className="form-row">
+                      <select
+                        value={comparison.item.status}
+                        onChange={(event) =>
+                          updateShortlistItem(comparison.item.id, { status: event.target.value as ShortlistItem["status"] })
+                        }
+                      >
+                        {shortlistStatuses.map((status) => (
+                          <option key={status}>{status}</option>
+                        ))}
+                      </select>
+                      <button className="save-button" type="button" onClick={() => removeShortlistItem(comparison.item.id)}>
+                        Remove
+                      </button>
+                    </div>
+                    <textarea
+                      rows={3}
+                      value={comparison.item.notes}
+                      onChange={(event) => updateShortlistItem(comparison.item.id, { notes: event.target.value })}
+                      placeholder="Decision notes"
+                    />
+                  </article>
+                );
+              })
             ) : (
               <div className="empty-state">Add a model manually or from an owner note to begin comparison.</div>
             )}
           </div>
+        </div>
+      </section>
+
+      <section className="panel playbook-panel" id="playbooks">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Ownership playbooks</p>
+            <h2>Turn scattered owner notes into “what should I check?” guidance.</h2>
+          </div>
+        </div>
+        <div className="playbook-grid">
+          {ownershipPlaybooks.map((playbook) => (
+            <article className="playbook-card" key={playbook.key}>
+              <div className="playbook-topline">
+                <span>{playbook.confidence}</span>
+                <strong>{playbook.evidenceCount} notes</strong>
+              </div>
+              <h3>
+                {playbook.brand} {playbook.model}
+              </h3>
+              <p>{playbook.headline}</p>
+              <div className="playbook-columns">
+                <div>
+                  <h4>Owner signals</h4>
+                  {playbook.ownerSignals.map((signal) => (
+                    <p key={signal}>{signal}</p>
+                  ))}
+                </div>
+                <div>
+                  <h4>Buyer checks</h4>
+                  {playbook.buyerChecks.map((check) => (
+                    <p key={check}>{check}</p>
+                  ))}
+                </div>
+              </div>
+              <button
+                className="save-button"
+                type="button"
+                onClick={() => {
+                  setQuery(`${playbook.brand} ${playbook.model}`);
+                  setMode("latest");
+                }}
+              >
+                Open matching notes
+              </button>
+            </article>
+          ))}
         </div>
       </section>
 
@@ -811,6 +937,19 @@ export function App() {
             The form pushes users toward context Team-BHP made valuable at its peak: variant, city, odometer, real
             symptoms, costs, and outcomes.
           </p>
+          <div className={`quality-card ${draftQuality.grade.toLowerCase().replace(/\s+/g, "-")}`}>
+            <div className="quality-meter" aria-label={`Draft detail quality ${draftQuality.score} of ${draftQuality.maxScore}`}>
+              <span style={{ width: `${(draftQuality.score / draftQuality.maxScore) * 100}%` }} />
+            </div>
+            <strong>
+              Detail meter: {draftQuality.grade} · {draftQuality.score}/{draftQuality.maxScore}
+            </strong>
+            <div className="quality-prompts">
+              {(draftQuality.missingPrompts.length ? draftQuality.missingPrompts : draftQuality.strengths).slice(0, 3).map((prompt) => (
+                <p key={prompt}>{prompt}</p>
+              ))}
+            </div>
+          </div>
         </div>
         <form className="composer" onSubmit={publishPost}>
           <input
@@ -1142,6 +1281,9 @@ export function App() {
           <p>Garage vehicles and timeline entries persist locally.</p>
           <p>Comments, reports, profiles, and moderator actions persist locally.</p>
           <p>Post, model notebook, and garage export sharing uses native share with clipboard fallback.</p>
+          <p>City circles group local owner notes and garage vehicles by market context.</p>
+          <p>Post detail quality meter nudges variant, city, odometer, cost, and outcome context.</p>
+          <p>Buyer inspection checklists convert shortlist evidence into test-drive and used-car checks.</p>
           <p>Subscription previews and garage insights are generated from typed pure functions.</p>
           <p>Service-center integration remains outside this MVP loop.</p>
         </div>

@@ -147,6 +147,12 @@ Completed slices:
   and travelogue. Model cards now surface issue/fix/cost counts.
 - Dedicated model notebook view with grouped known issues, fixes, cost notes,
   reviews, travelogues, and owner notes.
+- TypeScript ownership playbooks that turn model notebooks into buyer checks
+  and owner signals.
+- Post detail quality meter that nudges variant, city, odometer, cost, and
+  outcome context before publishing.
+- Buyer inspection checklists generated from shortlist models and matching
+  owner-note evidence.
 - Verified-fix signal: owners can mark a Fix post as "worked for me", with
   duplicate-safe counts surfaced in model notebooks.
 - Model-page quality signals: helpfulness, stale-info flags, and moderator
@@ -172,9 +178,10 @@ Next web MVP slices, in order:
 4. Replace local profile/comment/report storage with hosted account and moderation APIs.
 5. Replace local share/copy actions with hosted deep links and Open Graph metadata.
 6. Replace local buyer shortlist with hosted buyer workspace and cross-device sync.
-7. Replace local subscription previews with real hosted notification jobs.
-8. Add richer garage profile analytics and ownership timeline summaries beyond the current MVP insight cards.
-9. Android/Kotlin catch-up after web MVP validation.
+7. Replace local city circles with hosted city pages and city follows.
+8. Replace local subscription previews with real hosted notification jobs.
+9. Add richer garage profile analytics and ownership timeline summaries beyond the current MVP insight cards.
+10. Android/Kotlin catch-up after web MVP validation.
 
 Service-center integration stays outside this loop until the owning team hands
 over its contract. Current placeholder: `GET /api/service-centers/status`.
