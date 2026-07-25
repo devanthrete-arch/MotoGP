@@ -1,10 +1,12 @@
 import type {
+  BuildRole,
   DraftPost,
   DraftReport,
   DraftShortlistItem,
   DraftTimelineEntry,
   DraftVehicle,
   FeedbackNote,
+  FeedbackStatus,
   FollowState,
   GarageVehicle,
   OwnerPost,
@@ -12,6 +14,8 @@ import type {
   ReportRecord,
   ShortlistItem,
   SubscriptionSettings,
+  DraftTesterRun,
+  TesterRun,
   TimelineEntry,
 } from "./domain";
 import { seedGarage, seedPosts, seedTimeline } from "./domain";
@@ -26,8 +30,42 @@ const subscriptionKey = "autoflex.web.subscription.v1";
 const profileKey = "autoflex.web.profile.v1";
 const reportsKey = "autoflex.web.reports.v1";
 const shortlistKey = "autoflex.web.shortlist.v1";
+const qaSessionKey = "autoflex.web.qa-session.v1";
+const responsiveQaKey = "autoflex.web.responsive-qa.v1";
+const productionLaunchKey = "autoflex.web.production-launch.v1";
+const productionUrlKey = "autoflex.web.production-url.v1";
+const testerRunsKey = "autoflex.web.tester-runs.v1";
+const productionOpsKey = "autoflex.web.production-ops.v1";
 
-const safeJsonParse = <T,>(value: string | null, fallback: T): T => {
+export type StorageLike = Pick<Storage, "getItem" | "setItem">;
+
+type StoredFeedbackNote = FeedbackNote | Omit<FeedbackNote, "loopStage"> | Omit<FeedbackNote, "status" | "loopStage">;
+
+const feedbackLoopStageFallback: BuildRole = "Real user";
+
+export type AutoflexBackup = {
+  version: 1;
+  exportedAt: string;
+  data: {
+    feedback: FeedbackNote[];
+    follows: FollowState;
+    garage: GarageVehicle[];
+    posts: OwnerPost[];
+    profile: Profile;
+    productionLaunch: string[];
+    productionOps: string[];
+    productionUrl: string;
+    reports: ReportRecord[];
+    responsiveQa: string[];
+    saved: string[];
+    shortlist: ShortlistItem[];
+    subscriptionSettings: SubscriptionSettings;
+    testerRuns: TesterRun[];
+    timeline: TimelineEntry[];
+  };
+};
+
+export const safeJsonParse = <T,>(value: string | null, fallback: T): T => {
   if (!value) return fallback;
 
   try {
@@ -37,13 +75,136 @@ const safeJsonParse = <T,>(value: string | null, fallback: T): T => {
   }
 };
 
+const getBrowserStorage = (): StorageLike | null => {
+  try {
+    return globalThis.localStorage ?? null;
+  } catch {
+    return null;
+  }
+};
+
+export const readStoredJson = <T,>(key: string, fallback: T, storage: StorageLike | null = getBrowserStorage()): T => {
+  if (!storage) return fallback;
+
+  try {
+    return safeJsonParse<T>(storage.getItem(key), fallback);
+  } catch {
+    return fallback;
+  }
+};
+
+export const writeStoredJson = <T,>(key: string, value: T, storage: StorageLike | null = getBrowserStorage()): void => {
+  if (!storage) return;
+
+  try {
+    storage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Storage can be blocked, full, or unavailable in private browsing. Keep the in-memory UI alive.
+  }
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+export const buildAutoflexBackup = (exportedAt = new Date().toISOString()): AutoflexBackup => ({
+  data: {
+    feedback: loadFeedback(),
+    follows: loadFollows(),
+    garage: loadGarage(),
+    posts: loadPosts(),
+    profile: loadProfile(),
+    productionLaunch: [...loadProductionLaunch()],
+    productionOps: [...loadProductionOps()],
+    productionUrl: loadProductionUrl(),
+    reports: loadReports(),
+    responsiveQa: [...loadResponsiveQa()],
+    saved: [...loadSaved()],
+    shortlist: loadShortlist(),
+    subscriptionSettings: loadSubscriptionSettings(),
+    testerRuns: loadTesterRuns(),
+    timeline: loadTimeline(),
+  },
+  exportedAt,
+  version: 1,
+});
+
+export const parseAutoflexBackup = (raw: string): AutoflexBackup | null => {
+  const parsed = safeJsonParse<unknown>(raw, null);
+  if (!isRecord(parsed) || parsed.version !== 1 || typeof parsed.exportedAt !== "string" || !isRecord(parsed.data)) {
+    return null;
+  }
+
+  return {
+    data: {
+      feedback: normalizeFeedbackNotes(Array.isArray(parsed.data.feedback) ? (parsed.data.feedback as StoredFeedbackNote[]) : []),
+      follows: isRecord(parsed.data.follows)
+        ? (parsed.data.follows as FollowState)
+        : {
+            models: [],
+            topics: [],
+          },
+      garage: Array.isArray(parsed.data.garage) ? (parsed.data.garage as GarageVehicle[]) : [],
+      posts: Array.isArray(parsed.data.posts) ? (parsed.data.posts as OwnerPost[]) : [],
+      profile: isRecord(parsed.data.profile)
+        ? (parsed.data.profile as Profile)
+        : {
+            city: "",
+            displayName: "",
+            garageRole: "Owner",
+          },
+      productionLaunch: Array.isArray(parsed.data.productionLaunch)
+        ? parsed.data.productionLaunch.filter((item): item is string => typeof item === "string")
+        : [],
+      productionOps: Array.isArray(parsed.data.productionOps)
+        ? parsed.data.productionOps.filter((item): item is string => typeof item === "string")
+        : [],
+      productionUrl: typeof parsed.data.productionUrl === "string" ? parsed.data.productionUrl : "",
+      reports: Array.isArray(parsed.data.reports) ? (parsed.data.reports as ReportRecord[]) : [],
+      responsiveQa: Array.isArray(parsed.data.responsiveQa)
+        ? parsed.data.responsiveQa.filter((item): item is string => typeof item === "string")
+        : [],
+      saved: Array.isArray(parsed.data.saved) ? parsed.data.saved.filter((item): item is string => typeof item === "string") : [],
+      shortlist: Array.isArray(parsed.data.shortlist) ? (parsed.data.shortlist as ShortlistItem[]) : [],
+      subscriptionSettings: isRecord(parsed.data.subscriptionSettings)
+        ? (parsed.data.subscriptionSettings as SubscriptionSettings)
+        : {
+            browserAlerts: false,
+            emailDigest: true,
+            quietHours: true,
+          },
+      testerRuns: Array.isArray(parsed.data.testerRuns) ? (parsed.data.testerRuns as TesterRun[]) : [],
+      timeline: Array.isArray(parsed.data.timeline) ? (parsed.data.timeline as TimelineEntry[]) : [],
+    },
+    exportedAt: parsed.exportedAt,
+    version: 1,
+  };
+};
+
+export const restoreAutoflexBackup = (backup: AutoflexBackup): void => {
+  saveFeedback(backup.data.feedback);
+  saveFollows(backup.data.follows);
+  saveGarage(backup.data.garage);
+  savePosts(backup.data.posts);
+  saveProfile(backup.data.profile);
+  saveProductionLaunch(new Set(backup.data.productionLaunch));
+  saveProductionOps(new Set(backup.data.productionOps));
+  saveProductionUrl(backup.data.productionUrl);
+  saveReports(backup.data.reports);
+  saveResponsiveQa(new Set(backup.data.responsiveQa));
+  saveSaved(new Set(backup.data.saved));
+  saveShortlist(backup.data.shortlist);
+  saveSubscriptionSettings(backup.data.subscriptionSettings);
+  saveTesterRuns(backup.data.testerRuns);
+  saveTimeline(backup.data.timeline);
+};
+
 export const loadPosts = (): OwnerPost[] => {
-  const posts = safeJsonParse<OwnerPost[]>(localStorage.getItem(postsKey), seedPosts);
+  const posts = readStoredJson<OwnerPost[]>(postsKey, seedPosts);
   return posts.sort((first, second) => Date.parse(second.createdAt) - Date.parse(first.createdAt));
 };
 
 export const savePosts = (posts: OwnerPost[]): void => {
-  localStorage.setItem(postsKey, JSON.stringify(posts));
+  writeStoredJson(postsKey, posts);
 };
 
 export const createPost = (draft: DraftPost): OwnerPost => ({
@@ -55,38 +216,108 @@ export const createPost = (draft: DraftPost): OwnerPost => ({
   comments: [],
 });
 
-export const loadSaved = (): Set<string> => new Set(safeJsonParse<string[]>(localStorage.getItem(savedKey), []));
+export const loadSaved = (): Set<string> => new Set(readStoredJson<string[]>(savedKey, []));
 
 export const saveSaved = (saved: Set<string>): void => {
-  localStorage.setItem(savedKey, JSON.stringify([...saved]));
+  writeStoredJson(savedKey, [...saved]);
 };
 
-export const loadFeedback = (): FeedbackNote[] => safeJsonParse<FeedbackNote[]>(localStorage.getItem(feedbackKey), []);
+export const loadQaSession = (): Set<string> => new Set(readStoredJson<string[]>(qaSessionKey, []));
+
+export const saveQaSession = (checkedIds: Set<string>): void => {
+  writeStoredJson(qaSessionKey, [...checkedIds]);
+};
+
+export const loadResponsiveQa = (): Set<string> => new Set(readStoredJson<string[]>(responsiveQaKey, []));
+
+export const saveResponsiveQa = (checkedIds: Set<string>): void => {
+  writeStoredJson(responsiveQaKey, [...checkedIds]);
+};
+
+export const loadProductionLaunch = (): Set<string> => new Set(readStoredJson<string[]>(productionLaunchKey, []));
+
+export const saveProductionLaunch = (checkedIds: Set<string>): void => {
+  writeStoredJson(productionLaunchKey, [...checkedIds]);
+};
+
+export const loadProductionOps = (): Set<string> => new Set(readStoredJson<string[]>(productionOpsKey, []));
+
+export const saveProductionOps = (checkedIds: Set<string>): void => {
+  writeStoredJson(productionOpsKey, [...checkedIds]);
+};
+
+export const loadProductionUrl = (): string => readStoredJson<string>(productionUrlKey, "");
+
+export const saveProductionUrl = (url: string): void => {
+  writeStoredJson(productionUrlKey, url);
+};
+
+export const loadTesterRuns = (): TesterRun[] =>
+  readStoredJson<TesterRun[]>(testerRunsKey, []).sort((first, second) => Date.parse(second.createdAt) - Date.parse(first.createdAt));
+
+export const saveTesterRuns = (runs: TesterRun[]): void => {
+  writeStoredJson(testerRunsKey, runs);
+};
+
+export const createTesterRun = (draft: DraftTesterRun): TesterRun => ({
+  ...draft,
+  id: `tester-run-${Date.now()}`,
+  createdAt: new Date().toISOString(),
+});
+
+export const normalizeFeedbackNotes = (notes: StoredFeedbackNote[]): FeedbackNote[] =>
+  notes
+    .map((note) => ({
+      loopStage: feedbackLoopStageFallback,
+      status: "New" as const,
+      ...note,
+    }))
+    .sort((first, second) => Date.parse(second.createdAt) - Date.parse(first.createdAt));
+
+export const loadFeedback = (): FeedbackNote[] => normalizeFeedbackNotes(readStoredJson<StoredFeedbackNote[]>(feedbackKey, []));
+
+export const saveFeedback = (feedback: FeedbackNote[]): void => {
+  writeStoredJson(feedbackKey, feedback);
+};
 
 export const addFeedback = (message: string): FeedbackNote[] => {
   const next = [
     {
       id: `feedback-${Date.now()}`,
+      loopStage: feedbackLoopStageFallback,
       message,
+      status: "New" as const,
       createdAt: new Date().toISOString(),
     },
     ...loadFeedback(),
   ];
-  localStorage.setItem(feedbackKey, JSON.stringify(next));
+  saveFeedback(next);
   return next;
 };
 
+export const updateFeedbackStatus = (
+  feedback: FeedbackNote[],
+  feedbackId: string,
+  status: FeedbackStatus,
+): FeedbackNote[] => feedback.map((note) => (note.id === feedbackId ? { ...note, status } : note));
+
+export const updateFeedbackLoopStage = (
+  feedback: FeedbackNote[],
+  feedbackId: string,
+  loopStage: BuildRole,
+): FeedbackNote[] => feedback.map((note) => (note.id === feedbackId ? { ...note, loopStage } : note));
+
 export const loadFollows = (): FollowState =>
-  safeJsonParse<FollowState>(localStorage.getItem(followKey), { models: [], topics: [] });
+  readStoredJson<FollowState>(followKey, { models: [], topics: [] });
 
 export const saveFollows = (follows: FollowState): void => {
-  localStorage.setItem(followKey, JSON.stringify(follows));
+  writeStoredJson(followKey, follows);
 };
 
-export const loadGarage = (): GarageVehicle[] => safeJsonParse<GarageVehicle[]>(localStorage.getItem(garageKey), seedGarage);
+export const loadGarage = (): GarageVehicle[] => readStoredJson<GarageVehicle[]>(garageKey, seedGarage);
 
 export const saveGarage = (garage: GarageVehicle[]): void => {
-  localStorage.setItem(garageKey, JSON.stringify(garage));
+  writeStoredJson(garageKey, garage);
 };
 
 export const createVehicle = (draft: DraftVehicle): GarageVehicle => ({
@@ -95,12 +326,12 @@ export const createVehicle = (draft: DraftVehicle): GarageVehicle => ({
 });
 
 export const loadTimeline = (): TimelineEntry[] =>
-  safeJsonParse<TimelineEntry[]>(localStorage.getItem(timelineKey), seedTimeline).sort(
+  readStoredJson<TimelineEntry[]>(timelineKey, seedTimeline).sort(
     (first, second) => Date.parse(second.happenedOn) - Date.parse(first.happenedOn),
   );
 
 export const saveTimeline = (entries: TimelineEntry[]): void => {
-  localStorage.setItem(timelineKey, JSON.stringify(entries));
+  writeStoredJson(timelineKey, entries);
 };
 
 export const createTimelineEntry = (draft: DraftTimelineEntry): TimelineEntry => ({
@@ -109,31 +340,31 @@ export const createTimelineEntry = (draft: DraftTimelineEntry): TimelineEntry =>
 });
 
 export const loadSubscriptionSettings = (): SubscriptionSettings =>
-  safeJsonParse<SubscriptionSettings>(localStorage.getItem(subscriptionKey), {
+  readStoredJson<SubscriptionSettings>(subscriptionKey, {
     emailDigest: true,
     browserAlerts: false,
     quietHours: true,
   });
 
 export const saveSubscriptionSettings = (settings: SubscriptionSettings): void => {
-  localStorage.setItem(subscriptionKey, JSON.stringify(settings));
+  writeStoredJson(subscriptionKey, settings);
 };
 
 export const loadProfile = (): Profile =>
-  safeJsonParse<Profile>(localStorage.getItem(profileKey), {
+  readStoredJson<Profile>(profileKey, {
     city: "",
     displayName: "",
     garageRole: "Owner",
   });
 
 export const saveProfile = (profile: Profile): void => {
-  localStorage.setItem(profileKey, JSON.stringify(profile));
+  writeStoredJson(profileKey, profile);
 };
 
-export const loadReports = (): ReportRecord[] => safeJsonParse<ReportRecord[]>(localStorage.getItem(reportsKey), []);
+export const loadReports = (): ReportRecord[] => readStoredJson<ReportRecord[]>(reportsKey, []);
 
 export const saveReports = (reports: ReportRecord[]): void => {
-  localStorage.setItem(reportsKey, JSON.stringify(reports));
+  writeStoredJson(reportsKey, reports);
 };
 
 export const createReport = (draft: DraftReport): ReportRecord => ({
@@ -143,10 +374,10 @@ export const createReport = (draft: DraftReport): ReportRecord => ({
   createdAt: new Date().toISOString(),
 });
 
-export const loadShortlist = (): ShortlistItem[] => safeJsonParse<ShortlistItem[]>(localStorage.getItem(shortlistKey), []);
+export const loadShortlist = (): ShortlistItem[] => readStoredJson<ShortlistItem[]>(shortlistKey, []);
 
 export const saveShortlist = (items: ShortlistItem[]): void => {
-  localStorage.setItem(shortlistKey, JSON.stringify(items));
+  writeStoredJson(shortlistKey, items);
 };
 
 export const createShortlistItem = (draft: DraftShortlistItem): ShortlistItem => ({

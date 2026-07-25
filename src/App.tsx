@@ -1,14 +1,15 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   buildLoop,
   knowledgeLabels,
+  privacyReadinessItems,
   shortlistStatuses,
+  starterRoutes,
   timelineKinds,
   type DraftPost,
   type DraftShortlistItem,
   type DraftTimelineEntry,
   type DraftVehicle,
-  type FeedbackNote,
   type FollowState,
   type GarageVehicle,
   type KnowledgeLabel,
@@ -23,29 +24,32 @@ import {
 import {
   assessPostQuality,
   buildCityCircles,
+  buildConnectionStatusCopy,
+  buildGarageCostLedger,
   buildGarageInsights,
   buildGarageExportMarkdown,
+  buildGarageReminders,
   buildInspectionChecklists,
   buildModelSharePayload,
   buildModerationSummary,
   buildNotificationPreview,
   buildOwnershipPlaybooks,
   buildPostSharePayload,
+  buildPrivacyReadinessSummary,
   buildReturnNudges,
   buildShortlistComparisons,
+  buildStarterRouteProgress,
   filterPostsByMode,
   formatMoney,
   groupByModel,
   modelKeyFor,
 } from "./insights";
 import {
-  addFeedback,
   createPost,
   createReport,
   createShortlistItem,
   createTimelineEntry,
   createVehicle,
-  loadFeedback,
   loadFollows,
   loadGarage,
   loadProfile,
@@ -113,6 +117,14 @@ const initialShortlistDraft: DraftShortlistItem = {
 
 const garageRoles: Profile["garageRole"][] = ["Owner", "Buyer", "Enthusiast", "Mechanic"];
 
+const getInitialOnlineStatus = (): boolean => {
+  try {
+    return typeof navigator === "undefined" ? true : navigator.onLine;
+  } catch {
+    return true;
+  }
+};
+
 export function App() {
   const [posts, setPosts] = useState<OwnerPost[]>(() => loadPosts());
   const [profile, setProfile] = useState<Profile>(() => loadProfile());
@@ -123,7 +135,6 @@ export function App() {
   const [subscriptionSettings, setSubscriptionSettings] = useState<SubscriptionSettings>(() => loadSubscriptionSettings());
   const [garage, setGarage] = useState<GarageVehicle[]>(() => loadGarage());
   const [timeline, setTimeline] = useState<TimelineEntry[]>(() => loadTimeline());
-  const [feedback, setFeedback] = useState<FeedbackNote[]>(() => loadFeedback());
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<FeedMode>("latest");
   const [selectedLabel, setSelectedLabel] = useState<KnowledgeLabel | "All">("All");
@@ -137,8 +148,9 @@ export function App() {
   const [shortlistDraft, setShortlistDraft] = useState<DraftShortlistItem>(initialShortlistDraft);
   const [commentDraft, setCommentDraft] = useState("");
   const [reportDraft, setReportDraft] = useState("");
-  const [feedbackDraft, setFeedbackDraft] = useState("");
   const [actionMessage, setActionMessage] = useState("");
+  const [navMenuOpen, setNavMenuOpen] = useState(false);
+  const [isOnline, setIsOnline] = useState(getInitialOnlineStatus);
 
   const notebooks = useMemo(() => groupByModel(posts), [posts]);
   const followedModelSet = useMemo(() => new Set(follows.models), [follows.models]);
@@ -161,6 +173,20 @@ export function App() {
     () => buildReturnNudges({ followedModelSet, followedTopicSet, garage, posts, savedCount: saved.size }),
     [followedModelSet, followedTopicSet, garage, posts, saved.size],
   );
+  const starterProgress = useMemo(
+    () =>
+      buildStarterRouteProgress({
+        follows,
+        garage,
+        profile,
+        routes: starterRoutes,
+        savedCount: saved.size,
+        shortlistCount: shortlist.length,
+      }),
+    [follows, garage, profile, saved.size, shortlist.length],
+  );
+  const completedStarterSteps = starterProgress.filter((step) => step.complete).length;
+  const connectionStatus = useMemo(() => buildConnectionStatusCopy(isOnline), [isOnline]);
 
   const notificationPreview = useMemo(
     () => buildNotificationPreview({ follows, posts, preference: subscriptionSettings }),
@@ -168,9 +194,12 @@ export function App() {
   );
 
   const garageInsights = useMemo(() => buildGarageInsights(garage, timeline, posts), [garage, posts, timeline]);
+  const garageCostLedger = useMemo(() => buildGarageCostLedger(garage, timeline), [garage, timeline]);
+  const garageReminders = useMemo(() => buildGarageReminders(garage, timeline), [garage, timeline]);
   const cityCircles = useMemo(() => buildCityCircles(posts, garage), [garage, posts]);
   const ownershipPlaybooks = useMemo(() => buildOwnershipPlaybooks(posts), [posts]);
   const moderationSummary = useMemo(() => buildModerationSummary(reports), [reports]);
+  const privacySummary = useMemo(() => buildPrivacyReadinessSummary(privacyReadinessItems), []);
   const shortlistComparisons = useMemo(() => buildShortlistComparisons(shortlist, posts), [posts, shortlist]);
   const inspectionChecklists = useMemo(() => buildInspectionChecklists(shortlist, posts), [posts, shortlist]);
   const inspectionChecklistByItemId = useMemo(
@@ -193,6 +222,19 @@ export function App() {
     }),
     [follows.models.length, follows.topics.length, garage.length, moderationSummary.openReports, notebooks.length, posts, shortlist.length],
   );
+
+  useEffect(() => {
+    const updateOnline = () => setIsOnline(true);
+    const updateOffline = () => setIsOnline(false);
+
+    window.addEventListener("online", updateOnline);
+    window.addEventListener("offline", updateOffline);
+
+    return () => {
+      window.removeEventListener("online", updateOnline);
+      window.removeEventListener("offline", updateOffline);
+    };
+  }, []);
 
   const persistPosts = (nextPosts: OwnerPost[]) => {
     setPosts(nextPosts);
@@ -418,37 +460,54 @@ export function App() {
     });
   };
 
-  const submitFeedback = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!feedbackDraft.trim()) return;
-    setFeedback(addFeedback(feedbackDraft.trim()));
-    setFeedbackDraft("");
-  };
-
   return (
     <main className="app-shell">
       <section className="hero">
         <nav className="nav" aria-label="Primary navigation">
-          <a className="brand" href="#top" aria-label="Autoflex home">
+          <a className="brand" href="#top" aria-label="Autoflex home" onClick={() => setNavMenuOpen(false)}>
             Auto<span>flex</span>
           </a>
-          <div className="nav-actions">
-            <a href="#feed">Feed</a>
-            <a href="#cities">Cities</a>
-            <a href="#playbooks">Playbooks</a>
-            <a href="#garage">Garage</a>
-            <a href="#notebooks">Model notebooks</a>
-            <a href="#loop">Build loop</a>
+          <button
+            aria-controls="primary-nav-links"
+            aria-expanded={navMenuOpen}
+            className="nav-toggle"
+            type="button"
+            onClick={() => setNavMenuOpen((isOpen) => !isOpen)}
+          >
+            <span />
+            <span />
+            <span />
+            Menu
+          </button>
+          <div className={`nav-actions ${navMenuOpen ? "is-open" : ""}`} id="primary-nav-links">
+            <a href="#feed" onClick={() => setNavMenuOpen(false)}>
+              Feed
+            </a>
+            <a href="#cities" onClick={() => setNavMenuOpen(false)}>
+              Cities
+            </a>
+            <a href="#playbooks" onClick={() => setNavMenuOpen(false)}>
+              Playbooks
+            </a>
+            <a href="#garage" onClick={() => setNavMenuOpen(false)}>
+              Garage
+            </a>
+            <a href="#notebooks" onClick={() => setNavMenuOpen(false)}>
+              Model notebooks
+            </a>
+            <a href="#loop" onClick={() => setNavMenuOpen(false)}>
+              Build loop
+            </a>
           </div>
         </nav>
 
         <div className="hero-grid" id="top">
           <div>
-            <p className="eyebrow">Team-BHP spirit, built for the next wave</p>
+            <p className="eyebrow">Deep ownership knowledge, built for the next wave</p>
             <h1>Owner notes that help people buy, fix, and actually live with cars.</h1>
             <p className="hero-copy">
-              Autoflex is a TypeScript web MVP for deep Indian auto discussions: real reviews, known issues, verified
-              fixes, cost notes, travelogues, garage timelines, and model notebooks. Less noise, more garage truth.
+              Autoflex brings real reviews, known issues, verified fixes, cost notes, travelogues, garage timelines, and
+              model notebooks into one ownership-first community. Less noise, more garage truth.
             </p>
             <div className="hero-actions">
               <a className="primary-action" href="#write">
@@ -460,19 +519,23 @@ export function App() {
             </div>
           </div>
 
-          <div className="instrument-card" aria-label="Autoflex MVP status">
-            <div className="dial">
-              <span>{stats.posts}</span>
-              <small>owner notes</small>
+          <div className="instrument-card" aria-label="Autoflex community pulse">
+            <p className="instrument-kicker">Community pulse</p>
+            <div className="instrument-metrics">
+              <span>
+                <strong>{stats.posts}</strong>
+                Owner notes
+              </span>
+              <span>
+                <strong>{stats.models}</strong>
+                Model notebooks
+              </span>
+              <span>
+                <strong>{stats.confirmations}</strong>
+                Fix confirmations
+              </span>
             </div>
-            <div className="instrument-row">
-              <span>{stats.models} model notebooks</span>
-              <strong>{stats.confirmations} fix confirmations</strong>
-            </div>
-            <div className="instrument-track">
-              <span style={{ width: `${Math.min(100, (stats.fixes + stats.follows + stats.garage) * 12)}%` }} />
-            </div>
-            <p>Current build is web-first TypeScript. Kotlin/Android remains a later conversion path.</p>
+            <p>Knowledge cards, garage records, buyer checks, and local circles are already feeding the ownership loop.</p>
           </div>
         </div>
       </section>
@@ -480,7 +543,7 @@ export function App() {
       <section className="service-boundary">
         <strong>Service-center integration boundary</strong>
         <span>
-          Endpoints stay separate for now because another team owns that contract. This web MVP focuses on community,
+          Endpoints stay separate for now because another team owns that contract. Autoflex focuses on community,
           ownership knowledge, garage retention, moderation, and return-user loops.
         </span>
       </section>
@@ -490,6 +553,11 @@ export function App() {
           {actionMessage}
         </div>
       ) : null}
+
+      <section className={`connection-strip ${connectionStatus.tone}`} aria-label="Connection status">
+        <strong>{connectionStatus.label}</strong>
+        <span>{connectionStatus.detail}</span>
+      </section>
 
       <section className="panel dashboard-panel" aria-label="Return user dashboard">
         <div>
@@ -502,6 +570,30 @@ export function App() {
           ) : (
             <p>Follow a model, save a note, or add a vehicle to unlock a more personal garage dashboard.</p>
           )}
+        </div>
+      </section>
+
+      <section className="panel starter-panel" aria-label="First visit starter route">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Starter route</p>
+            <h2>Five moves to make Autoflex useful on day one.</h2>
+          </div>
+          <div className="starter-score">
+            <strong>
+              {completedStarterSteps}/{starterProgress.length}
+            </strong>
+            done
+          </div>
+        </div>
+        <div className="starter-grid">
+          {starterProgress.map((step) => (
+            <a className={`starter-card ${step.complete ? "complete" : ""}`} href={step.href} key={step.id}>
+              <span>{step.complete ? "Done" : "Next"}</span>
+              <h3>{step.title}</h3>
+              <p>{step.detail}</p>
+            </a>
+          ))}
         </div>
       </section>
 
@@ -542,13 +634,40 @@ export function App() {
         </form>
       </section>
 
-      <section className="panel notification-panel" id="notifications">
+      <section className="panel privacy-panel" id="privacy">
         <div className="section-head">
           <div>
-            <p className="eyebrow">Subscriptions</p>
-            <h2>Useful alerts, not another noisy inbox.</h2>
+            <p className="eyebrow">Privacy readiness</p>
+            <h2>Be explicit about what the MVP stores.</h2>
           </div>
-          <div className="preference-toggles" aria-label="Notification preferences">
+          <div className="privacy-stats" aria-label="Privacy readiness summary">
+            <span>{privacySummary["Stored for MVP"]} stored</span>
+            <span>{privacySummary["Not collected"]} not collected</span>
+            <span>{privacySummary["Deletion baseline"]} deletion</span>
+          </div>
+        </div>
+        <div className="privacy-grid">
+          {privacyReadinessItems.map((item) => (
+            <article className={item.stance.toLowerCase().replaceAll(" ", "-")} key={item.id}>
+              <span>{item.stance}</span>
+              <h3>{item.label}</h3>
+              <p>{item.detail}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel notification-panel" id="notifications">
+        <div className="notification-layout">
+          <div className="notification-copy">
+            <p className="eyebrow">Subscriptions</p>
+            <h2>Choose the updates you actually want.</h2>
+            <p>
+              Keep this lightweight for the MVP: weekly ownership summaries, optional browser alerts, and quiet hours
+              when notification jobs are added.
+            </p>
+          </div>
+          <div className="preference-card" aria-label="Notification preferences">
             <label>
               <input
                 checked={subscriptionSettings.emailDigest}
@@ -557,7 +676,10 @@ export function App() {
                 }
                 type="checkbox"
               />
-              Weekly digest
+              <span>
+                <strong>Weekly digest</strong>
+                <small>One roundup for followed models and topics.</small>
+              </span>
             </label>
             <label>
               <input
@@ -567,7 +689,10 @@ export function App() {
                 }
                 type="checkbox"
               />
-              Browser alerts
+              <span>
+                <strong>Browser alerts</strong>
+                <small>Reserved for important updates after hosted notifications exist.</small>
+              </span>
             </label>
             <label>
               <input
@@ -577,7 +702,10 @@ export function App() {
                 }
                 type="checkbox"
               />
-              Quiet hours
+              <span>
+                <strong>Quiet hours</strong>
+                <small>Keep alerts muted outside useful ownership hours.</small>
+              </span>
             </label>
           </div>
         </div>
@@ -934,7 +1062,7 @@ export function App() {
           <p className="eyebrow">Publish</p>
           <h2>Write like the next owner depends on it.</h2>
           <p>
-            The form pushes users toward context Team-BHP made valuable at its peak: variant, city, odometer, real
+            The form pushes users toward the context that makes ownership advice useful: variant, city, odometer, real
             symptoms, costs, and outcomes.
           </p>
           <div className={`quality-card ${draftQuality.grade.toLowerCase().replace(/\s+/g, "-")}`}>
@@ -1141,6 +1269,22 @@ export function App() {
           </form>
         </div>
 
+        <div className="reminder-board" aria-label="Garage reminders">
+          {garageReminders.length ? (
+            garageReminders.map((reminder) => (
+              <article className={`reminder-card ${reminder.urgency.toLowerCase()}`} key={reminder.id}>
+                <span>{reminder.urgency}</span>
+                <h3>{reminder.title}</h3>
+                <p>
+                  {reminder.vehicleName}: {reminder.detail}
+                </p>
+              </article>
+            ))
+          ) : (
+            <div className="empty-state">No garage reminders right now. Keep logging service, insurance, tyre, and repair notes.</div>
+          )}
+        </div>
+
         <div className="timeline-board">
           {garage.map((vehicle) => (
             <article className="vehicle-card" key={vehicle.id}>
@@ -1163,6 +1307,34 @@ export function App() {
                     <p>{entry.note}</p>
                   </div>
                 ))}
+            </article>
+          ))}
+        </div>
+
+        <div className="ledger-board" aria-label="Garage running cost ledger">
+          {garageCostLedger.map((ledger) => (
+            <article className="ledger-card" key={ledger.vehicle.id}>
+              <span>{ledger.vehicle.brand}</span>
+              <h3>{ledger.vehicle.nickname || ledger.vehicle.model}</h3>
+              <div className="ledger-stats">
+                <p>
+                  <strong>{formatMoney(ledger.totalSpend)}</strong>
+                  <small>Total logged</small>
+                </p>
+                <p>
+                  <strong>{ledger.costPerKm === null ? "—" : `${formatMoney(ledger.costPerKm, 2)}/km`}</strong>
+                  <small>Approx cost/km</small>
+                </p>
+                <p>
+                  <strong>{ledger.entryCount}</strong>
+                  <small>Timeline notes</small>
+                </p>
+              </div>
+              <p>
+                {ledger.latestEntry
+                  ? `Latest: ${ledger.latestEntry.kind.toLowerCase()} · ${ledger.latestEntry.title}`
+                  : "No timeline spend yet. Add service, repair, tyre, fuel, or insurance notes."}
+              </p>
             </article>
           ))}
         </div>
@@ -1270,52 +1442,6 @@ export function App() {
         </div>
       </section>
 
-      <section className="panel qa-panel">
-        <div>
-          <p className="eyebrow">Tested / QA</p>
-          <h2>Smoke checks for this slice.</h2>
-        </div>
-        <div className="qa-grid">
-          <p>Feed supports latest, helpful, saved, and following modes.</p>
-          <p>Followed models/topics create return-user nudges.</p>
-          <p>Garage vehicles and timeline entries persist locally.</p>
-          <p>Comments, reports, profiles, and moderator actions persist locally.</p>
-          <p>Post, model notebook, and garage export sharing uses native share with clipboard fallback.</p>
-          <p>City circles group local owner notes and garage vehicles by market context.</p>
-          <p>Post detail quality meter nudges variant, city, odometer, cost, and outcome context.</p>
-          <p>Buyer inspection checklists convert shortlist evidence into test-drive and used-car checks.</p>
-          <p>Subscription previews and garage insights are generated from typed pure functions.</p>
-          <p>Service-center integration remains outside this MVP loop.</p>
-        </div>
-      </section>
-
-      <section className="panel split-panel">
-        <div>
-          <p className="eyebrow">Real user perspective</p>
-          <h2>Capture what testers trip over.</h2>
-          <p>
-            This local feedback lane is the first version of the product-owner inbox. It keeps the MVP loop honest
-            until a hosted backend is wired.
-          </p>
-          <div className="feedback-list">
-            {feedback.slice(0, 3).map((note) => (
-              <p key={note.id}>{note.message}</p>
-            ))}
-          </div>
-        </div>
-        <form className="composer" onSubmit={submitFeedback}>
-          <textarea
-            required
-            rows={6}
-            value={feedbackDraft}
-            onChange={(event) => setFeedbackDraft(event.target.value)}
-            placeholder="What felt useful, missing, confusing, or worth building next?"
-          />
-          <button className="primary-action" type="submit">
-            Save feedback
-          </button>
-        </form>
-      </section>
     </main>
   );
 }

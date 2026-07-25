@@ -1,11 +1,24 @@
 import type {
+  BuildRole,
+  FeedbackNote,
+  FeedbackStatus,
   FollowState,
   GarageVehicle,
+  HostedApiReadinessItem,
   KnowledgeLabel,
+  LaunchReadinessItem,
   ModelNotebook,
   OwnerPost,
+  Profile,
+  PrivacyReadinessItem,
+  ProductionOpsItem,
+  ProductionLaunchItem,
+  QaSessionItem,
   ReportRecord,
+  ResponsiveQaItem,
   ShortlistItem,
+  StarterRoute,
+  TesterRun,
   TimelineEntry,
 } from "./domain";
 
@@ -22,11 +35,106 @@ export type GarageInsight = {
   tone: "service" | "cost" | "community";
 };
 
+export type GarageCostLedger = {
+  vehicle: GarageVehicle;
+  totalSpend: number;
+  entryCount: number;
+  costPerKm: number | null;
+  latestEntry: TimelineEntry | null;
+  highestLoggedOdometerKm: number;
+};
+
+export type GarageReminder = {
+  id: string;
+  vehicleId: string;
+  vehicleName: string;
+  title: string;
+  detail: string;
+  urgency: "Soon" | "Plan" | "Watch";
+};
+
 export type ModerationSummary = {
   openReports: number;
   dismissedReports: number;
   removedReports: number;
   riskyPostIds: string[];
+};
+
+export type FeedbackTriageSummary = Record<FeedbackStatus, number>;
+
+export type FeedbackLoopSummary = Record<BuildRole, number>;
+
+export type LaunchReadinessSummary = {
+  ready: number;
+  total: number;
+  blocked: LaunchReadinessItem[];
+};
+
+export type StarterRouteProgress = StarterRoute & {
+  complete: boolean;
+};
+
+export type ConnectionStatusCopy = {
+  label: string;
+  detail: string;
+  tone: "online" | "offline";
+};
+
+export type QaSessionSummary = {
+  checked: number;
+  total: number;
+  remaining: QaSessionItem[];
+};
+
+export type ResponsiveQaSummary = {
+  checked: number;
+  total: number;
+  remaining: ResponsiveQaItem[];
+};
+
+export type ProductionLaunchSummary = {
+  checked: number;
+  total: number;
+  remaining: ProductionLaunchItem[];
+};
+
+export type ProductionOpsSummary = {
+  checked: number;
+  total: number;
+  remaining: ProductionOpsItem[];
+};
+
+export type PrivacyReadinessSummary = Record<PrivacyReadinessItem["stance"], number>;
+
+export type TesterRunSummary = {
+  total: number;
+  useful: number;
+  confusing: number;
+  blocked: number;
+  openFriction: TesterRun[];
+};
+
+export type HostedApiReadinessSummary = {
+  launchBlockers: number;
+  beta: number;
+  later: number;
+  serviceCenterBoundaries: number;
+};
+
+export type QaHandoffInput = {
+  feedbackLoopSummary: FeedbackLoopSummary;
+  feedbackSummary: FeedbackTriageSummary;
+  generatedAt: string;
+  hostedApiSummary: HostedApiReadinessSummary;
+  launchSummary: LaunchReadinessSummary;
+  profile: Profile;
+  privacySummary: PrivacyReadinessSummary;
+  productionLaunchSummary: ProductionLaunchSummary;
+  productionOpsSummary: ProductionOpsSummary;
+  productionUrl: string;
+  qaSummary: QaSessionSummary;
+  responsiveQaSummary: ResponsiveQaSummary;
+  testerRunSummary: TesterRunSummary;
 };
 
 export type SharePayload = {
@@ -164,6 +272,232 @@ export function buildReturnNudges(input: {
   ].filter((nudge): nudge is string => Boolean(nudge));
 }
 
+export function buildStarterRouteProgress(input: {
+  follows: FollowState;
+  garage: GarageVehicle[];
+  profile: Pick<Profile, "city" | "displayName">;
+  routes: StarterRoute[];
+  savedCount: number;
+  shortlistCount: number;
+}): StarterRouteProgress[] {
+  const completedById: Record<StarterRoute["id"], boolean> = {
+    follow: input.follows.models.length + input.follows.topics.length > 0,
+    garage: input.garage.length > 0,
+    profile: Boolean(input.profile.displayName.trim() && input.profile.city.trim()),
+    save: input.savedCount + input.shortlistCount > 0,
+  };
+
+  return input.routes.map((route) => ({
+    ...route,
+    complete: completedById[route.id],
+  }));
+}
+
+export function buildConnectionStatusCopy(isOnline: boolean): ConnectionStatusCopy {
+  if (isOnline) {
+    return {
+      detail: "Online for sharing, deploy checks, and future hosted sync. Local garage work still saves in this browser.",
+      label: "Online",
+      tone: "online",
+    };
+  }
+
+  return {
+    detail: "Offline mode: posts, garage notes, backups, and feedback still work locally. Sharing and future hosted sync can wait.",
+    label: "Offline",
+    tone: "offline",
+  };
+}
+
+export function buildQaSessionSummary(items: QaSessionItem[], checkedIds: Set<string>): QaSessionSummary {
+  return {
+    checked: items.filter((item) => checkedIds.has(item.id)).length,
+    remaining: items.filter((item) => !checkedIds.has(item.id)),
+    total: items.length,
+  };
+}
+
+export function buildResponsiveQaSummary(items: ResponsiveQaItem[], checkedIds: Set<string>): ResponsiveQaSummary {
+  return {
+    checked: items.filter((item) => checkedIds.has(item.id)).length,
+    remaining: items.filter((item) => !checkedIds.has(item.id)),
+    total: items.length,
+  };
+}
+
+export function buildProductionLaunchSummary(
+  items: ProductionLaunchItem[],
+  checkedIds: Set<string>,
+): ProductionLaunchSummary {
+  return {
+    checked: items.filter((item) => checkedIds.has(item.id)).length,
+    remaining: items.filter((item) => !checkedIds.has(item.id)),
+    total: items.length,
+  };
+}
+
+export function buildProductionOpsSummary(items: ProductionOpsItem[], checkedIds: Set<string>): ProductionOpsSummary {
+  return {
+    checked: items.filter((item) => checkedIds.has(item.id)).length,
+    remaining: items.filter((item) => !checkedIds.has(item.id)),
+    total: items.length,
+  };
+}
+
+export function buildPrivacyReadinessSummary(items: PrivacyReadinessItem[]): PrivacyReadinessSummary {
+  return items.reduce<PrivacyReadinessSummary>(
+    (summary, item) => ({
+      ...summary,
+      [item.stance]: summary[item.stance] + 1,
+    }),
+    {
+      "Deletion baseline": 0,
+      "Not collected": 0,
+      "Stored for MVP": 0,
+    },
+  );
+}
+
+export function buildTesterRunSummary(runs: TesterRun[]): TesterRunSummary {
+  return {
+    blocked: runs.filter((run) => run.outcome === "Blocked").length,
+    confusing: runs.filter((run) => run.outcome === "Confusing").length,
+    openFriction: runs.filter((run) => run.outcome !== "Useful").slice(0, 5),
+    total: runs.length,
+    useful: runs.filter((run) => run.outcome === "Useful").length,
+  };
+}
+
+export function buildHostedApiReadinessSummary(items: HostedApiReadinessItem[]): HostedApiReadinessSummary {
+  return {
+    beta: items.filter((item) => item.priority === "Beta").length,
+    later: items.filter((item) => item.priority === "Later").length,
+    launchBlockers: items.filter((item) => item.priority === "Launch blocker").length,
+    serviceCenterBoundaries: items.filter((item) => item.serviceCenterBoundary).length,
+  };
+}
+
+export function buildQaHandoffMarkdown(input: QaHandoffInput): string {
+  const feedbackTotal = Object.values(input.feedbackSummary).reduce((total, count) => total + count, 0);
+  const remainingQa = input.qaSummary.remaining.map((item) => `- ${item.label}`).join("\n") || "- None";
+  const remainingResponsiveQa =
+    input.responsiveQaSummary.remaining.map((item) => `- ${item.breakpoint} / ${item.surface}: ${item.label}`).join("\n") ||
+    "- None";
+  const launchBlockers = input.launchSummary.blocked.map((item) => `- ${item.label}: ${item.detail}`).join("\n") || "- None";
+  const productionLaunchRemaining =
+    input.productionLaunchSummary.remaining.map((item) => `- ${item.label}: ${item.detail}`).join("\n") || "- None";
+  const productionOpsRemaining =
+    input.productionOpsSummary.remaining.map((item) => `- ${item.label}: ${item.detail}`).join("\n") || "- None";
+  const testerFriction =
+    input.testerRunSummary.openFriction
+      .map((run) => `- ${run.outcome} / ${run.nextLoopStage}: ${run.scenario} — ${run.friction}`)
+      .join("\n") || "- None";
+  const loopRouting = Object.entries(input.feedbackLoopSummary)
+    .map(([stage, count]) => `- ${stage}: ${count}`)
+    .join("\n");
+
+  return [
+    "# Autoflex QA handoff",
+    "",
+    `Generated: ${input.generatedAt}`,
+    "",
+    "## Tester identity",
+    "",
+    `Name: ${input.profile.displayName.trim() || "Anonymous garage member"}`,
+    `City: ${input.profile.city.trim() || "Not set"}`,
+    `Role: ${input.profile.garageRole}`,
+    "",
+    "## QA session",
+    "",
+    `Checked: ${input.qaSummary.checked}/${input.qaSummary.total}`,
+    "",
+    "Remaining smoke checks:",
+    remainingQa,
+    "",
+    "## Responsive QA",
+    "",
+    `Checked: ${input.responsiveQaSummary.checked}/${input.responsiveQaSummary.total}`,
+    "",
+    "Remaining responsive checks:",
+    remainingResponsiveQa,
+    "",
+    "## Launch readiness",
+    "",
+    `Ready: ${input.launchSummary.ready}/${input.launchSummary.total}`,
+    `Production URL: ${input.productionUrl.trim() || "Not set"}`,
+    "",
+    "Open blockers:",
+    launchBlockers,
+    "",
+    "Production launch checks:",
+    `Checked: ${input.productionLaunchSummary.checked}/${input.productionLaunchSummary.total}`,
+    "",
+    "Remaining production checks:",
+    productionLaunchRemaining,
+    "",
+    "Production operations:",
+    `Checked: ${input.productionOpsSummary.checked}/${input.productionOpsSummary.total}`,
+    "",
+    "Remaining operations checks:",
+    productionOpsRemaining,
+    "",
+    "## Feedback triage",
+    "",
+    `Total tester notes: ${feedbackTotal}`,
+    `New: ${input.feedbackSummary.New}`,
+    `Reviewing: ${input.feedbackSummary.Reviewing}`,
+    `Planned: ${input.feedbackSummary.Planned}`,
+    `Shipped: ${input.feedbackSummary.Shipped}`,
+    "",
+    "Loop routing:",
+    loopRouting,
+    "",
+    "## Real-user test runs",
+    "",
+    `Runs: ${input.testerRunSummary.total}`,
+    `Useful: ${input.testerRunSummary.useful}`,
+    `Confusing: ${input.testerRunSummary.confusing}`,
+    `Blocked: ${input.testerRunSummary.blocked}`,
+    "",
+    "Open tester friction:",
+    testerFriction,
+    "",
+    "## Hosted API readiness",
+    "",
+    `Launch blockers: ${input.hostedApiSummary.launchBlockers}`,
+    `Beta items: ${input.hostedApiSummary.beta}`,
+    `Later items: ${input.hostedApiSummary.later}`,
+    `Service-center boundaries: ${input.hostedApiSummary.serviceCenterBoundaries}`,
+    "",
+    "## Privacy readiness",
+    "",
+    `Stored for MVP: ${input.privacySummary["Stored for MVP"]}`,
+    `Not collected: ${input.privacySummary["Not collected"]}`,
+    `Deletion baseline: ${input.privacySummary["Deletion baseline"]}`,
+    "",
+    "## Service-center boundary",
+    "",
+    "Service-center integration remains outside this MVP loop until the owning team provides its contract.",
+  ].join("\n");
+}
+
+export function buildFeedbackLoopSummary(feedback: FeedbackNote[]): FeedbackLoopSummary {
+  return feedback.reduce<FeedbackLoopSummary>(
+    (summary, note) => ({
+      ...summary,
+      [note.loopStage]: summary[note.loopStage] + 1,
+    }),
+    {
+      "Backend engineer": 0,
+      Designer: 0,
+      "Frontend engineer": 0,
+      "Product owner": 0,
+      "Real user": 0,
+      "Tested / QA": 0,
+    },
+  );
+}
+
 export function buildNotificationPreview(input: {
   follows: FollowState;
   posts: OwnerPost[];
@@ -221,6 +555,105 @@ export function buildGarageInsights(garage: GarageVehicle[], timeline: TimelineE
   });
 }
 
+export function buildGarageCostLedger(garage: GarageVehicle[], timeline: TimelineEntry[]): GarageCostLedger[] {
+  return garage
+    .map((vehicle) => {
+      const entries = timeline
+        .filter((entry) => entry.vehicleId === vehicle.id)
+        .sort((first, second) => Date.parse(second.happenedOn) - Date.parse(first.happenedOn));
+      const totalSpend = entries.reduce((total, entry) => total + entry.amount, 0);
+      const highestLoggedOdometerKm = entries.reduce((highest, entry) => Math.max(highest, entry.odometerKm), vehicle.odometerKm);
+      const usableKm = Math.max(vehicle.odometerKm, highestLoggedOdometerKm);
+
+      return {
+        costPerKm: usableKm > 0 && totalSpend > 0 ? totalSpend / usableKm : null,
+        entryCount: entries.length,
+        highestLoggedOdometerKm,
+        latestEntry: entries[0] ?? null,
+        totalSpend,
+        vehicle,
+      };
+    })
+    .sort((first, second) => second.totalSpend - first.totalSpend || first.vehicle.nickname.localeCompare(second.vehicle.nickname));
+}
+
+export function buildGarageReminders(garage: GarageVehicle[], timeline: TimelineEntry[], today = new Date()): GarageReminder[] {
+  return garage.flatMap((vehicle) => {
+    const entries = timeline.filter((entry) => entry.vehicleId === vehicle.id);
+    const vehicleName = vehicle.nickname || `${vehicle.brand} ${vehicle.model}`;
+    const nextServiceKm = Math.ceil((vehicle.odometerKm + 1) / 10000) * 10000;
+    const kmToService = Math.max(0, nextServiceKm - vehicle.odometerKm);
+    const latestInsurance = latestEntryOfKind(entries, "Insurance");
+    const latestTyres = latestEntryOfKind(entries, "Tyres");
+
+    return [
+      kmToService <= 1500
+        ? {
+            detail: `${kmToService.toLocaleString("en-IN")} km left before the ${nextServiceKm.toLocaleString("en-IN")} km checkpoint.`,
+            id: `${vehicle.id}-service-reminder`,
+            title: "Plan the next service visit",
+            urgency: kmToService <= 500 ? ("Soon" as const) : ("Plan" as const),
+            vehicleId: vehicle.id,
+            vehicleName,
+          }
+        : null,
+      latestInsurance
+        ? insuranceReminder(vehicle, vehicleName, latestInsurance, today)
+        : {
+            detail: "No insurance note is logged yet. Add renewal date, premium, and claim details when available.",
+            id: `${vehicle.id}-insurance-missing`,
+            title: "Log insurance renewal details",
+            urgency: "Plan" as const,
+            vehicleId: vehicle.id,
+            vehicleName,
+          },
+      latestTyres && vehicle.odometerKm - latestTyres.odometerKm >= 35000
+        ? {
+            detail: `${(vehicle.odometerKm - latestTyres.odometerKm).toLocaleString("en-IN")} km since the last tyre note.`,
+            id: `${vehicle.id}-tyre-watch`,
+            title: "Inspect tyre age and wear",
+            urgency: "Watch" as const,
+            vehicleId: vehicle.id,
+            vehicleName,
+          }
+        : null,
+    ].filter((reminder): reminder is GarageReminder => Boolean(reminder));
+  });
+}
+
+function latestEntryOfKind(entries: TimelineEntry[], kind: TimelineEntry["kind"]): TimelineEntry | null {
+  return (
+    entries
+      .filter((entry) => entry.kind === kind)
+      .sort((first, second) => Date.parse(second.happenedOn) - Date.parse(first.happenedOn))[0] ?? null
+  );
+}
+
+function insuranceReminder(
+  vehicle: GarageVehicle,
+  vehicleName: string,
+  latestInsurance: TimelineEntry,
+  today: Date,
+): GarageReminder | null {
+  const renewalDate = new Date(latestInsurance.happenedOn);
+  renewalDate.setFullYear(renewalDate.getFullYear() + 1);
+  const daysToRenewal = Math.ceil((renewalDate.getTime() - today.getTime()) / 86_400_000);
+
+  if (daysToRenewal > 45) return null;
+
+  return {
+    detail:
+      daysToRenewal >= 0
+        ? `${daysToRenewal} day${daysToRenewal === 1 ? "" : "s"} left before the logged insurance renewal window.`
+        : `${Math.abs(daysToRenewal)} day${daysToRenewal === -1 ? "" : "s"} past the logged insurance renewal window.`,
+    id: `${vehicle.id}-insurance-renewal`,
+    title: "Review insurance renewal",
+    urgency: daysToRenewal <= 15 ? "Soon" : "Plan",
+    vehicleId: vehicle.id,
+    vehicleName,
+  };
+}
+
 export function buildModerationSummary(reports: ReportRecord[]): ModerationSummary {
   const openReports = reports.filter((report) => report.status === "Open");
   const reportCounts = openReports.reduce<Map<string, number>>((counts, report) => {
@@ -233,6 +666,31 @@ export function buildModerationSummary(reports: ReportRecord[]): ModerationSumma
     dismissedReports: reports.filter((report) => report.status === "Dismissed").length,
     removedReports: reports.filter((report) => report.status === "Removed").length,
     riskyPostIds: [...reportCounts.entries()].filter(([, count]) => count >= 2).map(([postId]) => postId),
+  };
+}
+
+export function buildFeedbackTriageSummary(feedback: FeedbackNote[]): FeedbackTriageSummary {
+  return feedback.reduce<FeedbackTriageSummary>(
+    (summary, note) => ({
+      ...summary,
+      [note.status]: summary[note.status] + 1,
+    }),
+    {
+      New: 0,
+      Planned: 0,
+      Reviewing: 0,
+      Shipped: 0,
+    },
+  );
+}
+
+export function buildLaunchReadinessSummary(items: LaunchReadinessItem[]): LaunchReadinessSummary {
+  const blocked = items.filter((item) => !item.ready);
+
+  return {
+    blocked,
+    ready: items.length - blocked.length,
+    total: items.length,
   };
 }
 
@@ -517,7 +975,7 @@ function topValues(values: string[], limit: number): string[] {
     .map(([value]) => value);
 }
 
-export function formatMoney(amount: number): string {
+export function formatMoney(amount: number, maximumFractionDigits = 0): string {
   if (!amount) return "No cost logged";
-  return new Intl.NumberFormat("en-IN", { currency: "INR", maximumFractionDigits: 0, style: "currency" }).format(amount);
+  return new Intl.NumberFormat("en-IN", { currency: "INR", maximumFractionDigits, style: "currency" }).format(amount);
 }

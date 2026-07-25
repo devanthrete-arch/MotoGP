@@ -1,0 +1,40 @@
+{
+  "name": "Autoflex",
+  "short_name": "Autoflex",
+  "description": "Ownership-first auto community for reviews, fixes, costs, model notebooks, and garage notes.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#241912",
+  "theme_color": "#4b2418",
+  "orientation": "portrait-primary",
+  "categories": ["autos", "lifestyle", "productivity"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Write note",
+      "short_name": "Write",
+      "description": "Add an ownership note.",
+      "url": "/#write"
+    },
+    {
+      "name": "Garage",
+      "short_name": "Garage",
+      "description": "Open your local garage.",
+      "url": "/#garage"
+    },
+    {
+      "name": "Model notebooks",
+      "short_name": "Models",
+      "description": "Browse owner knowledge by model.",
+      "url": "/#notebooks"
+    }
+  ]
+}
