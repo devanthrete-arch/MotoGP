@@ -36,12 +36,16 @@ the customer-facing homepage.
    - Confirm local saved notes, garage/timeline entries, shortlist, and reports
      still work in the browser.
 3. Build the TypeScript/Fastify hosted API foundation.
-   - Add routes for profiles, posts, comments, reports, moderation, follows,
-     garage vehicles, timeline entries, shortlist, and feedback ingestion.
+   - Status: first foundation exists in `server-ts`.
+   - Routes now cover profiles, posts, comments, reports, moderation, follows,
+     saved posts, garage vehicles, timeline entries, shortlist, inspections,
+     and feedback ingestion.
    - Keep service-center routes/contracts out of this API until handed over.
 4. Add durable hosted persistence.
-   - Start with core community data: posts, comments, reports, profiles, saves,
-     follows, garage, timeline, shortlist, and inspection sessions.
+   - This is now the next backend build step.
+   - Start with core community data behind the existing Fastify routes: posts,
+     comments, reports, profiles, saves, follows, garage, timeline, shortlist,
+     and inspection sessions.
 5. Replace local-only flows gradually.
    - Account-backed saves and follows.
    - Hosted buyer workspace.

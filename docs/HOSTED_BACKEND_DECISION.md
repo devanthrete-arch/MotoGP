@@ -26,3 +26,42 @@ contracts into the community MVP API until the owning team provides its contract
 3. Buyer shortlist and inspection sessions.
 4. Hosted share/deep-link metadata for posts and model notebooks.
 5. Notification preferences and delivery jobs after hosted follows exist.
+
+## Current implementation
+
+The repo now includes `server-ts`, a Fastify API foundation with in-memory
+repositories and tests for:
+
+- `GET /health`
+- `GET /api/profiles/:profileId`
+- `PUT /api/profiles/:profileId`
+- `GET /api/posts`
+- `POST /api/posts`
+- `GET /api/posts/:postId/comments`
+- `POST /api/posts/:postId/comments`
+- `POST /api/reports`
+- `GET /api/moderation/reports`
+- `PATCH /api/moderation/reports/:reportId`
+- `GET /api/follows/:profileId`
+- `PUT /api/follows/:profileId`
+- `GET /api/saves/:profileId`
+- `PUT /api/saves/:profileId`
+- `GET /api/garage/vehicles`
+- `POST /api/garage/vehicles`
+- `GET /api/garage/timeline`
+- `POST /api/garage/timeline`
+- `GET /api/shortlist`
+- `POST /api/shortlist`
+- `GET /api/inspections`
+- `POST /api/inspections`
+- `GET /api/feedback`
+- `POST /api/feedback`
+
+`/api/service-centers/*` intentionally returns a boundary response until the
+separate owning team provides its contract.
+
+## Next backend step
+
+Replace the in-memory repositories with durable hosted persistence. Start with
+posts, comments, reports, profiles, saves, follows, garage vehicles, timeline
+entries, shortlist items, and inspection sessions.

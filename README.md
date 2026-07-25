@@ -79,6 +79,8 @@ Service-center integration is intentionally kept separate under
 - [x] Added Docker staging packaging and staging deployment docs.
 - [x] Kept service-center endpoints separate from the community product surface.
 - [x] Decided the first hosted backend path: TypeScript/Fastify for the web MVP, with Kotlin/Ktor retained for the later Android/native path.
+- [x] Added the first TypeScript/Fastify API foundation for profiles, posts, comments, reports, moderation, follows, saved posts, garage vehicles, timeline entries, shortlist items, inspection sessions, and feedback ingestion.
+- [x] Added API tests that verify core hosted routes and confirm service-center routes remain reserved for the separate owning team.
 
 ### Yet to be done
 
@@ -86,10 +88,10 @@ Service-center integration is intentionally kept separate under
 - [ ] Deploy the TypeScript webapp on Vercel and record the production URL in the launch panel.
 - [ ] Run a visual responsive QA pass on the deployed Vercel URL, including the starter route, QA checklist, responsive QA matrix, and install prompt.
 - [ ] Run an offline-mode smoke check in the deployed browser.
-- [ ] Add durable hosted persistence after the TypeScript web surface is validated.
+- [ ] Add durable hosted persistence behind the TypeScript/Fastify routes after the deployed web surface is validated.
 - [ ] Replace local backup/restore with hosted account sync once persistence exists.
 - [ ] Replace local subscription previews with real hosted notification jobs after accounts/persistence exist.
-- [ ] Replace local profile/report/comment storage with hosted account and moderation APIs.
+- [ ] Wire the webapp to the hosted profile/report/comment/moderation APIs after durable persistence exists.
 - [ ] Replace share/copy fallbacks with hosted deep links and Open Graph metadata after deployment.
 - [ ] Replace local shortlist with hosted buyer workspace and cross-device sync.
 - [ ] Replace local inspection checklists with hosted buyer inspection sessions and saved outcomes.
@@ -97,7 +99,7 @@ Service-center integration is intentionally kept separate under
 - [ ] Replace local ownership playbooks with hosted model playbook pages and richer evidence scoring.
 - [ ] Promote post quality scoring into hosted moderation/ranking once the backend path is selected.
 - [ ] Run deployed real tester sessions through the product-owner → designer → backend → frontend → QA → real-user routing loop.
-- [ ] Add hosted persistence/API for follows, garage, timeline, and feedback.
+- [ ] Wire the webapp to hosted follows, saves, garage, timeline, shortlist, inspection, and feedback APIs.
 - [ ] Add basic notification/subscription flows after hosted follows exist.
 - [ ] Add richer garage profile fields and timeline analytics.
 - [ ] Replace local garage cost ledger with hosted running-cost analytics and cross-device history.
@@ -110,6 +112,7 @@ Service-center integration is intentionally kept separate under
 ## Project layout
 
 - `src` — active TypeScript webapp MVP
+- `server-ts` — first TypeScript/Fastify hosted API foundation for the web MVP
 - `index.html`, `vite.config.ts`, `package.json` — Vercel-ready web build
 - `server-kotlin/src/main/resources/web` — previous Kotlin-served webapp retained for reference/conversion
 - `server-kotlin` — Ktor REST API and SQLite database
@@ -128,6 +131,19 @@ Service-center integration is intentionally kept separate under
 
 - Node.js 20+ for the TypeScript webapp
 - JDK 17
+
+## TypeScript API
+
+Run the local API foundation with:
+
+```bash
+npm run api:dev
+```
+
+It starts a Fastify server on port `3001` by default. Current routes are
+in-memory contracts for profiles, posts, comments, reports, moderation, follows,
+saved posts, garage vehicles, timeline entries, shortlist items, inspection
+sessions, and feedback. Durable persistence is the next backend step.
 - Android Studio with Android SDK 36 only when building the Android app
 
 ## Run locally
