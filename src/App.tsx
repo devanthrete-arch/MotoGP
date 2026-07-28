@@ -709,7 +709,6 @@ export function App() {
             <strong>{garage.length ? `${garage.length} garage record${garage.length === 1 ? "" : "s"}` : "Garage not started"}</strong>
           </div>
           <button aria-label="Open Profile" className="account-button" type="button" onClick={(event) => openProfile(event.currentTarget)}>
-            <span aria-hidden="true">{profile.displayName.trim().slice(0, 1).toUpperCase() || "A"}</span>
             <strong>Profile</strong>
           </button>
         </nav>
@@ -830,15 +829,11 @@ export function App() {
           {activeScreen === "shortlist" && shortlist.length && !shortlistFormOpen ? <button className="primary-action workspace-task-action" type="button" onClick={openShortlistComposer}><span aria-hidden="true">+</span>Add candidate</button> : null}
           {activeScreen === "garage" && currentVehicle && garageForm === null ? <button className="primary-action workspace-task-action" type="button" onClick={openGarageRecordComposer}><span aria-hidden="true">+</span>Add service record</button> : null}
           {activeScreen === "community" && !postComposerOpen && !postDetailOpen ? <button className="primary-action workspace-task-action" type="button" onClick={openPostComposer}><span aria-hidden="true">✎</span>Write a note</button> : null}
-          {activeScreen === "account" ? (
-            <span className="workspace-account-button" aria-label="Profile">
-              {profile.displayName.trim().slice(0, 1).toUpperCase() || "A"}
-            </span>
-          ) : (
+          {activeScreen !== "account" ? (
             <button className="workspace-account-button" type="button" aria-label="Open Profile" onClick={(event) => openProfile(event.currentTarget)}>
-              {profile.displayName.trim().slice(0, 1).toUpperCase() || "A"}
+              Profile
             </button>
-          )}
+          ) : null}
         </div>
       </section>
 
