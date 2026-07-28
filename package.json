@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "api:dev": "tsx server-ts/index.ts",
+    "api:start": "tsx server-ts/index.ts",
     "dev": "vite --host 0.0.0.0 --port 8080",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0 --port 8080",
