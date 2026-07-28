@@ -43,3 +43,23 @@ The visual system is more intentional than a generic dashboard, but the brown/or
 ## Remaining risks
 
 This is a documentation-only handoff. The findings above remain open in the application; passing the current test/build checks does not establish hosted persistence, moderation authorization, payload safety, or durable sharing.
+
+## Frontend PR #2 review
+
+Reviewed `https://github.com/devanthrete-arch/MotoGP/pull/2` at commit `c45d26c` against `codex/frontend-features-motogp`.
+
+### Findings
+
+1. **Major: the decision board silently hides shortlist models after four.** The new board renders `shortlistDecisionLanes.slice(0, 4)` with no count, overflow affordance, or link to the remaining comparison cards. A buyer with five or more candidates can therefore miss an urgent risk or evidence gap even though the underlying shortlist still contains it. Render all lanes responsively, or provide an explicit “show all” state and preserve the priority ordering. See [src/App.tsx](../src/App.tsx:916).
+
+2. **Moderate accessibility: lane priority is color-only.** High/medium/low priority is encoded by the left-border colors in CSS, but the lane markup exposes only the decision label, model, signal, and action. The cockpit’s “buyer alerts” count also does not explain which lanes are urgent. Add a visible priority label or equivalent text so urgency survives color-blind viewing and screen-reader use. See [src/App.tsx](../src/App.tsx:917) and [src/styles.css](../src/styles.css:1962).
+
+### Assessment
+
+The PR improves practical buyer clarity: it turns raw shortlist status and model-note counts into a next action such as gathering evidence, inspecting risk, or booking a test drive. The new pure helper is easy to test, and the PR adds focused coverage for ordering, evidence gaps, and archived decisions. The cockpit and ledger styling feel more domain-specific without introducing an obvious keyboard or responsive regression in static review; the new grids collapse at the existing mobile breakpoints.
+
+### PR verification
+
+- `npm run test` on `c45d26c`: passed, 5 files and 48 tests.
+- `npm run build` on `c45d26c`: passed.
+- `git diff --check`: passed.
