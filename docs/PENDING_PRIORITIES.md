@@ -17,17 +17,17 @@ parity until the web MVP proves the community loop.
 4. **Lock the first hosted backend path.** Decision: use a TypeScript/Fastify
    API first for the web MVP, while keeping the Ktor/Android path preserved for
    later conversion. Status: done; first Fastify route foundation exists in
-   `server-ts`.
-5. **Add durable hosted persistence.** Start with follows, garage, timeline,
-   feedback, profile, reports, comments, and saved posts after the deployed web
-   surface is validated.
+   `server-ts` with optional JSON-backed beta persistence.
+5. **Choose production hosted persistence.** Use the JSON-backed API path for
+   beta validation, then replace it with the selected production database before
+   public scale.
 
 ## Full priority order
 
 1. Deploy TypeScript webapp on Vercel and record the production URL.
 2. Run visual responsive QA on the deployed URL.
 3. Run offline-mode smoke check on the deployed URL.
-4. Add durable hosted persistence behind the existing TypeScript/Fastify API routes.
+4. Choose and implement the production database behind the existing TypeScript/Fastify API routes.
 5. Wire the webapp to hosted profile, reports, comments, moderation, follows, saves, garage, timeline, shortlist, inspections, and feedback APIs.
 6. Replace local backup/restore with hosted account sync.
 7. Replace saved posts with hosted account-backed saves.

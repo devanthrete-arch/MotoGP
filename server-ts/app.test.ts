@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { buildAutoflexApi } from "./app";
+import { mkdtemp } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 
 describe("Autoflex Fastify API foundation", () => {
   it("exposes health without claiming service-center ownership", async () => {
@@ -11,7 +14,12 @@ describe("Autoflex Fastify API foundation", () => {
       serviceCenterBoundary: "reserved",
       status: "ok",
       storage: "memory",
+      version: "dev",
     });
+
+    const apiResponse = await app.inject({ method: "GET", url: "/api/health" });
+    expect(apiResponse.statusCode).toBe(200);
+    expect(apiResponse.json()).toMatchObject({ status: "ok" });
 
     await app.close();
   });
@@ -50,6 +58,24 @@ describe("Autoflex Fastify API foundation", () => {
 
     expect(commentResponse.statusCode).toBe(201);
     expect(commentResponse.json().comments[0]).toContain("A buyer:");
+
+    await app.close();
+  });
+
+  it("rejects profile roles outside the hosted profile contract", async () => {
+    const app = await buildAutoflexApi();
+    const response = await app.inject({
+      method: "PUT",
+      payload: {
+        city: "Pune",
+        displayName: "Launch tester",
+        garageRole: "Service center",
+      },
+      url: "/api/profiles/tester",
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().message).toContain("garageRole");
 
     await app.close();
   });
@@ -141,7 +167,15 @@ describe("Autoflex Fastify API foundation", () => {
     const report = reportResponse.json();
     expect(reportResponse.statusCode).toBe(201);
 
+    const blockedModerationResponse = await app.inject({
+      method: "PATCH",
+      payload: { status: "Dismissed" },
+      url: `/api/moderation/reports/${report.id}`,
+    });
+    expect(blockedModerationResponse.statusCode).toBe(401);
+
     const moderationResponse = await app.inject({
+      headers: { "x-admin-token": "dev-admin" },
       method: "PATCH",
       payload: { status: "Dismissed" },
       url: `/api/moderation/reports/${report.id}`,
@@ -160,7 +194,47 @@ describe("Autoflex Fastify API foundation", () => {
     });
     expect(feedbackResponse.statusCode).toBe(201);
 
+    const feedbackListResponse = await app.inject({
+      headers: { authorization: "Bearer dev-admin" },
+      method: "GET",
+      url: "/api/feedback",
+    });
+    expect(feedbackListResponse.statusCode).toBe(200);
+    expect(feedbackListResponse.json().feedback[0].surface).toBe("shortlist");
+
     await app.close();
+  });
+
+  it("persists hosted API data when API_DATA_PATH is configured", async () => {
+    const dataPath = join(await mkdtemp(join(tmpdir(), "autoflex-api-")), "store.json");
+    const firstApp = await buildAutoflexApi({ dataPath });
+    const createResponse = await firstApp.inject({
+      method: "POST",
+      payload: {
+        author: "Owner",
+        body: "The clutch pedal felt notchy until the cable was adjusted.",
+        brand: "Tata",
+        city: "Pune",
+        label: "Fix",
+        model: "Punch",
+        odometerKm: 22000,
+        title: "Punch clutch cable adjustment note",
+        topic: "Repairs",
+        variant: "Adventure",
+      },
+      url: "/api/posts",
+    });
+    const created = createResponse.json();
+    await firstApp.close();
+
+    const secondApp = await buildAutoflexApi({ dataPath });
+    const postsResponse = await secondApp.inject({ method: "GET", url: "/api/posts" });
+
+    expect(postsResponse.statusCode).toBe(200);
+    expect(postsResponse.json().posts.some((post: { id: string }) => post.id === created.id)).toBe(true);
+    expect((await secondApp.inject({ method: "GET", url: "/api/health" })).json().storage).toBe("file");
+
+    await secondApp.close();
   });
 
   it("does not expose service-center routes before that contract exists", async () => {
