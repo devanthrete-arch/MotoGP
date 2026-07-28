@@ -470,6 +470,7 @@ export function App() {
           <button
             aria-controls="primary-nav-links"
             aria-expanded={navMenuOpen}
+            aria-label="Toggle navigation menu"
             className="nav-toggle"
             type="button"
             onClick={() => setNavMenuOpen((isOpen) => !isOpen)}
@@ -608,17 +609,20 @@ export function App() {
         </div>
         <form className="composer" onSubmit={(event) => event.preventDefault()}>
           <input
+            aria-label="Display name"
             value={profile.displayName}
             onChange={(event) => persistProfile({ ...profile, displayName: event.target.value })}
             placeholder="Display name"
           />
           <div className="form-row">
             <input
+              aria-label="City"
               value={profile.city}
               onChange={(event) => persistProfile({ ...profile, city: event.target.value })}
               placeholder="City"
             />
             <select
+              aria-label="Garage role"
               value={profile.garageRole}
               onChange={(event) => persistProfile({ ...profile, garageRole: event.target.value as Profile["garageRole"] })}
             >
@@ -760,18 +764,23 @@ export function App() {
           </div>
           <div className="filters" aria-label="Feed filters">
             <input
+              aria-label="Search owner notes"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search brand, model, city, issue..."
               type="search"
             />
-            <select value={selectedLabel} onChange={(event) => setSelectedLabel(event.target.value as KnowledgeLabel | "All")}>
+            <select
+              aria-label="Knowledge label filter"
+              value={selectedLabel}
+              onChange={(event) => setSelectedLabel(event.target.value as KnowledgeLabel | "All")}
+            >
               <option>All</option>
               {knowledgeLabels.map((label) => (
                 <option key={label}>{label}</option>
               ))}
             </select>
-            <select value={mode} onChange={(event) => setMode(event.target.value as FeedMode)}>
+            <select aria-label="Feed mode" value={mode} onChange={(event) => setMode(event.target.value as FeedMode)}>
               <option value="latest">Latest</option>
               <option value="helpful">Most helpful</option>
               <option value="following">Following</option>
@@ -788,6 +797,14 @@ export function App() {
                   className={`post-card ${selectedPost?.id === post.id ? "is-selected" : ""}`}
                   key={post.id}
                   onClick={() => setSelectedPost(post)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setSelectedPost(post);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
                 >
                   <div>
                     <span className="pill">{post.label}</span>
@@ -867,6 +884,7 @@ export function App() {
                 </div>
                 <form className="inline-form" onSubmit={addComment}>
                   <textarea
+                    aria-label="Comment"
                     required
                     rows={3}
                     value={commentDraft}
@@ -879,6 +897,7 @@ export function App() {
                 </form>
                 <form className="inline-form report-form" onSubmit={reportSelectedPost}>
                   <textarea
+                    aria-label="Report reason"
                     required
                     rows={3}
                     value={reportDraft}
@@ -908,12 +927,17 @@ export function App() {
           <form className="composer" onSubmit={addShortlistItem}>
             <h3>Add model to compare</h3>
             <div className="form-row">
-              <select value={shortlistDraft.brand} onChange={(event) => setShortlistDraft({ ...shortlistDraft, brand: event.target.value })}>
+              <select
+                aria-label="Shortlist brand"
+                value={shortlistDraft.brand}
+                onChange={(event) => setShortlistDraft({ ...shortlistDraft, brand: event.target.value })}
+              >
                 {brands.map((brand) => (
                   <option key={brand}>{brand}</option>
                 ))}
               </select>
               <input
+                aria-label="Shortlist model"
                 required
                 value={shortlistDraft.model}
                 onChange={(event) => setShortlistDraft({ ...shortlistDraft, model: event.target.value })}
@@ -922,6 +946,7 @@ export function App() {
             </div>
             <div className="form-row">
               <input
+                aria-label="Shortlist budget"
                 min="0"
                 type="number"
                 value={shortlistDraft.budget || ""}
@@ -929,6 +954,7 @@ export function App() {
                 placeholder="Budget"
               />
               <select
+                aria-label="Shortlist status"
                 value={shortlistDraft.status}
                 onChange={(event) => setShortlistDraft({ ...shortlistDraft, status: event.target.value as ShortlistItem["status"] })}
               >
@@ -938,6 +964,7 @@ export function App() {
               </select>
             </div>
             <textarea
+              aria-label="Shortlist notes"
               rows={4}
               value={shortlistDraft.notes}
               onChange={(event) => setShortlistDraft({ ...shortlistDraft, notes: event.target.value })}
@@ -981,6 +1008,7 @@ export function App() {
                     </div>
                     <div className="form-row">
                       <select
+                        aria-label={`Status for ${comparison.item.brand} ${comparison.item.model}`}
                         value={comparison.item.status}
                         onChange={(event) =>
                           updateShortlistItem(comparison.item.id, { status: event.target.value as ShortlistItem["status"] })
@@ -995,6 +1023,7 @@ export function App() {
                       </button>
                     </div>
                     <textarea
+                      aria-label={`Decision notes for ${comparison.item.brand} ${comparison.item.model}`}
                       rows={3}
                       value={comparison.item.notes}
                       onChange={(event) => updateShortlistItem(comparison.item.id, { notes: event.target.value })}
@@ -1081,6 +1110,7 @@ export function App() {
         </div>
         <form className="composer" onSubmit={publishPost}>
           <input
+            aria-label="Post title"
             required
             value={draft.title}
             onChange={(event) => setDraft({ ...draft, title: event.target.value })}
@@ -1088,23 +1118,29 @@ export function App() {
           />
           <div className="form-row">
             <input
+              aria-label="Author name"
               value={draft.author}
               onChange={(event) => setDraft({ ...draft, author: event.target.value })}
               placeholder="Your garage name"
             />
-            <select value={draft.label} onChange={(event) => setDraft({ ...draft, label: event.target.value as KnowledgeLabel })}>
+            <select
+              aria-label="Post label"
+              value={draft.label}
+              onChange={(event) => setDraft({ ...draft, label: event.target.value as KnowledgeLabel })}
+            >
               {knowledgeLabels.map((label) => (
                 <option key={label}>{label}</option>
               ))}
             </select>
           </div>
           <div className="form-row">
-            <select value={draft.brand} onChange={(event) => setDraft({ ...draft, brand: event.target.value })}>
+            <select aria-label="Post brand" value={draft.brand} onChange={(event) => setDraft({ ...draft, brand: event.target.value })}>
               {brands.map((brand) => (
                 <option key={brand}>{brand}</option>
               ))}
             </select>
             <input
+              aria-label="Post model"
               required
               value={draft.model}
               onChange={(event) => setDraft({ ...draft, model: event.target.value })}
@@ -1113,17 +1149,20 @@ export function App() {
           </div>
           <div className="form-row">
             <input
+              aria-label="Post variant"
               value={draft.variant}
               onChange={(event) => setDraft({ ...draft, variant: event.target.value })}
               placeholder="Variant"
             />
             <input
+              aria-label="Post city"
               value={draft.city}
               onChange={(event) => setDraft({ ...draft, city: event.target.value })}
               placeholder="City"
             />
           </div>
           <input
+            aria-label="Post odometer kilometres"
             min="0"
             type="number"
             value={draft.odometerKm || ""}
@@ -1131,6 +1170,7 @@ export function App() {
             placeholder="Odometer km"
           />
           <textarea
+            aria-label="Post body"
             required
             rows={7}
             value={draft.body}
@@ -1157,17 +1197,23 @@ export function App() {
           <form className="composer" onSubmit={addVehicle}>
             <h3>Add vehicle</h3>
             <input
+              aria-label="Vehicle nickname"
               value={vehicleDraft.nickname}
               onChange={(event) => setVehicleDraft({ ...vehicleDraft, nickname: event.target.value })}
               placeholder="Nickname"
             />
             <div className="form-row">
-              <select value={vehicleDraft.brand} onChange={(event) => setVehicleDraft({ ...vehicleDraft, brand: event.target.value })}>
+              <select
+                aria-label="Vehicle brand"
+                value={vehicleDraft.brand}
+                onChange={(event) => setVehicleDraft({ ...vehicleDraft, brand: event.target.value })}
+              >
                 {brands.map((brand) => (
                   <option key={brand}>{brand}</option>
                 ))}
               </select>
               <input
+                aria-label="Vehicle model"
                 required
                 value={vehicleDraft.model}
                 onChange={(event) => setVehicleDraft({ ...vehicleDraft, model: event.target.value })}
@@ -1176,11 +1222,13 @@ export function App() {
             </div>
             <div className="form-row">
               <input
+                aria-label="Vehicle variant"
                 value={vehicleDraft.variant}
                 onChange={(event) => setVehicleDraft({ ...vehicleDraft, variant: event.target.value })}
                 placeholder="Variant"
               />
               <input
+                aria-label="Vehicle city"
                 value={vehicleDraft.city}
                 onChange={(event) => setVehicleDraft({ ...vehicleDraft, city: event.target.value })}
                 placeholder="City"
@@ -1188,6 +1236,7 @@ export function App() {
             </div>
             <div className="form-row">
               <input
+                aria-label="Vehicle current odometer"
                 min="0"
                 type="number"
                 value={vehicleDraft.odometerKm || ""}
@@ -1209,6 +1258,7 @@ export function App() {
           <form className="composer" onSubmit={addTimelineNote}>
             <h3>Add timeline note</h3>
             <select
+              aria-label="Timeline vehicle"
               required
               value={timelineDraft.vehicleId}
               onChange={(event) => setTimelineDraft({ ...timelineDraft, vehicleId: event.target.value })}
@@ -1221,6 +1271,7 @@ export function App() {
             </select>
             <div className="form-row">
               <select
+                aria-label="Timeline entry type"
                 value={timelineDraft.kind}
                 onChange={(event) => setTimelineDraft({ ...timelineDraft, kind: event.target.value as TimelineEntryKind })}
               >
@@ -1236,6 +1287,7 @@ export function App() {
               />
             </div>
             <input
+              aria-label="Timeline title"
               required
               value={timelineDraft.title}
               onChange={(event) => setTimelineDraft({ ...timelineDraft, title: event.target.value })}
@@ -1243,6 +1295,7 @@ export function App() {
             />
             <div className="form-row">
               <input
+                aria-label="Timeline amount paid"
                 min="0"
                 type="number"
                 value={timelineDraft.amount || ""}
@@ -1250,6 +1303,7 @@ export function App() {
                 placeholder="Amount paid"
               />
               <input
+                aria-label="Timeline odometer"
                 min="0"
                 type="number"
                 value={timelineDraft.odometerKm || ""}
@@ -1258,6 +1312,7 @@ export function App() {
               />
             </div>
             <textarea
+              aria-label="Timeline note"
               rows={4}
               value={timelineDraft.note}
               onChange={(event) => setTimelineDraft({ ...timelineDraft, note: event.target.value })}

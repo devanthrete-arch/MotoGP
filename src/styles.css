@@ -159,6 +159,15 @@ a {
   grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
 }
 
+.hero-grid > *,
+.dashboard-panel > *,
+.split-panel > *,
+.content-grid > *,
+.shortlist-grid > *,
+.garage-grid > * {
+  min-width: 0;
+}
+
 .eyebrow {
   color: #c95d32;
   font-size: 0.78rem;
@@ -185,6 +194,7 @@ h1 {
   line-height: 0.94;
   margin-bottom: 24px;
   max-width: 920px;
+  overflow-wrap: anywhere;
   text-wrap: balance;
 }
 
@@ -205,6 +215,7 @@ h3 {
   font-size: 1.2rem;
   line-height: 1.7;
   max-width: 720px;
+  overflow-wrap: anywhere;
 }
 
 .hero-actions {
@@ -300,6 +311,8 @@ h3 {
 .service-boundary span {
   color: rgba(255, 248, 237, 0.72);
   line-height: 1.6;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .panel {
@@ -346,6 +359,8 @@ h3 {
 
 .connection-strip span {
   color: inherit;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .dashboard-panel {
@@ -932,7 +947,8 @@ input:focus,
 select:focus,
 textarea:focus,
 button:focus-visible,
-a:focus-visible {
+a:focus-visible,
+.post-card:focus-visible {
   box-shadow: 0 0 0 4px rgba(255, 179, 107, 0.34);
   outline: none;
 }
@@ -951,6 +967,7 @@ a:focus-visible {
 
 .post-card {
   align-items: center;
+  cursor: pointer;
   display: flex;
   gap: 20px;
   justify-content: space-between;
@@ -1979,6 +1996,8 @@ a:focus-visible {
 
   .hero-grid {
     align-items: stretch;
+    max-width: calc(100vw - 28px);
+    overflow: hidden;
   }
 
   .instrument-card {
@@ -2032,11 +2051,21 @@ a:focus-visible {
   .nav {
     align-items: center;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: auto auto;
+    justify-content: space-between;
+    width: 100%;
   }
 
   .nav-toggle {
     display: inline-flex;
+    font-size: 0;
+    justify-self: end;
+    width: 58px;
+  }
+
+  .brand {
+    justify-self: start;
+    width: fit-content;
   }
 
   .nav-actions {
@@ -2131,9 +2160,12 @@ a:focus-visible {
   }
 
   h1 {
-    font-size: clamp(2.45rem, 12vw, 3.35rem);
-    letter-spacing: -0.045em;
-    line-height: 1;
+    font-size: clamp(2.25rem, 10.5vw, 2.95rem);
+    letter-spacing: -0.025em;
+    line-height: 1.04;
+    max-width: 11ch;
+    text-wrap: auto;
+    width: auto;
   }
 
   h2 {
@@ -2143,6 +2175,14 @@ a:focus-visible {
   .hero-copy {
     font-size: 1rem;
     line-height: 1.6;
+    max-width: 31ch;
+    text-wrap: auto;
+    width: auto;
+  }
+
+  .service-boundary span,
+  .connection-strip span {
+    max-width: 31ch;
   }
 }
 
