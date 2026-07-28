@@ -1,9 +1,8 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   knowledgeLabels,
   privacyReadinessItems,
   shortlistStatuses,
-  starterRoutes,
   timelineKinds,
   type DraftPost,
   type DraftShortlistItem,
@@ -25,20 +24,16 @@ import {
   buildCityCircles,
   buildConnectionStatusCopy,
   buildGarageCostLedger,
-  buildGarageInsights,
   buildGarageExportMarkdown,
   buildGarageReminders,
   buildInspectionChecklists,
   buildModelSharePayload,
   buildModerationSummary,
   buildNotificationPreview,
-  buildOwnershipPlaybooks,
   buildPostSharePayload,
   buildPrivacyReadinessSummary,
-  buildReturnNudges,
   buildShortlistComparisons,
   buildShortlistDecisionLanes,
-  buildStarterRouteProgress,
   filterPostsByMode,
   formatMoney,
   groupByModel,
@@ -72,6 +67,7 @@ import {
 
 type FeedMode = "latest" | "helpful" | "saved" | "following";
 type WorkspaceScreen = "home" | "shortlist" | "garage" | "community" | "account";
+type AccountView = "profile" | "saved" | "following" | "notifications" | "settings";
 
 const brands = ["Tata", "Honda", "Kia", "Mahindra", "Maruti Suzuki", "Hyundai", "Toyota", "Skoda", "Volkswagen"];
 
@@ -151,10 +147,30 @@ export function App() {
   const [commentDraft, setCommentDraft] = useState("");
   const [reportDraft, setReportDraft] = useState("");
   const [actionMessage, setActionMessage] = useState("");
-  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [accountView, setAccountView] = useState<AccountView>("profile");
+  const [vehicleMenuOpen, setVehicleMenuOpen] = useState(false);
+  const [shortlistFormOpen, setShortlistFormOpen] = useState(false);
+  const [garageForm, setGarageForm] = useState<"vehicle" | "record" | null>(null);
+  const [postComposerOpen, setPostComposerOpen] = useState(false);
   const [activeNav, setActiveNav] = useState("home");
   const [activeScreen, setActiveScreen] = useState<WorkspaceScreen>("home");
   const [isOnline, setIsOnline] = useState(getInitialOnlineStatus);
+  const communitySearchRef = useRef<HTMLInputElement>(null);
+  const postTitleRef = useRef<HTMLInputElement>(null);
+  const shortlistModelRef = useRef<HTMLInputElement>(null);
+  const timelineTitleRef = useRef<HTMLInputElement>(null);
+  const vehicleNicknameRef = useRef<HTMLInputElement>(null);
+  const postDetailHeadingRef = useRef<HTMLHeadingElement>(null);
+  const shortlistHeadingRef = useRef<HTMLHeadingElement>(null);
+  const garageHeadingRef = useRef<HTMLHeadingElement>(null);
+  const profileNameRef = useRef<HTMLInputElement>(null);
+  const settingsHeadingRef = useRef<HTMLHeadingElement>(null);
+  const notificationsFirstRef = useRef<HTMLInputElement>(null);
+  const accountHeaderRef = useRef<HTMLHeadingElement>(null);
+  const profileTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const vehicleMenuRef = useRef<HTMLDivElement>(null);
+  const vehicleTriggerRef = useRef<HTMLButtonElement>(null);
+  const accountReturnScreenRef = useRef<WorkspaceScreen>("home");
 
   const notebooks = useMemo(() => groupByModel(posts), [posts]);
   const followedModelSet = useMemo(() => new Set(follows.models), [follows.models]);
@@ -173,23 +189,6 @@ export function App() {
     [followedModelSet, followedTopicSet, mode, posts, query, saved, selectedLabel],
   );
 
-  const returnNudges = useMemo(
-    () => buildReturnNudges({ followedModelSet, followedTopicSet, garage, posts, savedCount: saved.size }),
-    [followedModelSet, followedTopicSet, garage, posts, saved.size],
-  );
-  const starterProgress = useMemo(
-    () =>
-      buildStarterRouteProgress({
-        follows,
-        garage,
-        profile,
-        routes: starterRoutes,
-        savedCount: saved.size,
-        shortlistCount: shortlist.length,
-      }),
-    [follows, garage, profile, saved.size, shortlist.length],
-  );
-  const completedStarterSteps = starterProgress.filter((step) => step.complete).length;
   const connectionStatus = useMemo(() => buildConnectionStatusCopy(isOnline), [isOnline]);
 
   const notificationPreview = useMemo(
@@ -197,11 +196,9 @@ export function App() {
     [follows, posts, subscriptionSettings],
   );
 
-  const garageInsights = useMemo(() => buildGarageInsights(garage, timeline, posts), [garage, posts, timeline]);
   const garageCostLedger = useMemo(() => buildGarageCostLedger(garage, timeline), [garage, timeline]);
   const garageReminders = useMemo(() => buildGarageReminders(garage, timeline), [garage, timeline]);
   const cityCircles = useMemo(() => buildCityCircles(posts, garage), [garage, posts]);
-  const ownershipPlaybooks = useMemo(() => buildOwnershipPlaybooks(posts), [posts]);
   const moderationSummary = useMemo(() => buildModerationSummary(reports), [reports]);
   const privacySummary = useMemo(() => buildPrivacyReadinessSummary(privacyReadinessItems), []);
   const shortlistComparisons = useMemo(() => buildShortlistComparisons(shortlist, posts), [posts, shortlist]);
@@ -240,6 +237,30 @@ export function App() {
       window.removeEventListener("offline", updateOffline);
     };
   }, []);
+
+  useEffect(() => {
+    if (!vehicleMenuOpen) return;
+
+    const closeAndRestoreFocus = () => {
+      setVehicleMenuOpen(false);
+      window.requestAnimationFrame(() => vehicleTriggerRef.current?.focus());
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeAndRestoreFocus();
+    };
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (vehicleMenuRef.current?.contains(target) || vehicleTriggerRef.current?.contains(target)) return;
+      closeAndRestoreFocus();
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [vehicleMenuOpen]);
 
   const persistPosts = (nextPosts: OwnerPost[]) => {
     setPosts(nextPosts);
@@ -286,10 +307,12 @@ export function App() {
 
   const toggleSaved = (postId: string) => {
     const next = new Set(saved);
-    if (next.has(postId)) next.delete(postId);
+    const wasSaved = next.has(postId);
+    if (wasSaved) next.delete(postId);
     else next.add(postId);
     setSaved(next);
     saveSaved(next);
+    setActionMessage(wasSaved ? "Removed from saved notes." : "Note saved.");
   };
 
   const toggleFollowModel = (brand: string, model: string) => {
@@ -329,6 +352,7 @@ export function App() {
     persistPosts(next);
     setSelectedPost(next.find((post) => post.id === selectedPost.id) ?? null);
     setCommentDraft("");
+    setActionMessage("Comment posted.");
   };
 
   const reportSelectedPost = (event: FormEvent<HTMLFormElement>) => {
@@ -342,6 +366,7 @@ export function App() {
     });
     persistReports([report, ...reports]);
     setReportDraft("");
+    setActionMessage("Report sent to moderators.");
   };
 
   const setReportStatus = (reportId: string, status: ReportRecord["status"]) => {
@@ -391,8 +416,15 @@ export function App() {
   const addShortlistItem = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!shortlistDraft.model.trim()) return;
-    persistShortlist([createShortlistItem(shortlistDraft), ...shortlist]);
+    const item = createShortlistItem(shortlistDraft);
+    persistShortlist([item, ...shortlist]);
     setShortlistDraft(initialShortlistDraft);
+    setShortlistFormOpen(false);
+    setActionMessage(`${item.brand} ${item.model} added. Review its inspection checks next.`);
+    window.requestAnimationFrame(() => {
+      document.getElementById("shortlist")?.scrollIntoView({ block: "start" });
+      shortlistHeadingRef.current?.focus({ preventScroll: true });
+    });
   };
 
   const addSelectedToShortlist = () => {
@@ -435,7 +467,11 @@ export function App() {
     const next = [post, ...posts];
     persistPosts(next);
     setSelectedPost(post);
+    setPostDetailOpen(true);
+    setPostComposerOpen(false);
     setDraft(initialDraft);
+    setActionMessage("Owner note published.");
+    window.requestAnimationFrame(() => postDetailHeadingRef.current?.focus());
   };
 
   const addVehicle = (event: FormEvent<HTMLFormElement>) => {
@@ -446,7 +482,14 @@ export function App() {
       odometerKm: Number.isFinite(vehicleDraft.odometerKm) ? vehicleDraft.odometerKm : 0,
     });
     persistGarage([vehicle, ...garage]);
+    setTimelineDraft((current) => ({ ...current, vehicleId: vehicle.id }));
     setVehicleDraft(initialVehicleDraft);
+    setGarageForm(null);
+    setActionMessage(`${vehicle.nickname || `${vehicle.brand} ${vehicle.model}`} added. Add its first service or cost record next.`);
+    window.requestAnimationFrame(() => {
+      document.getElementById("garage")?.scrollIntoView({ block: "start" });
+      garageHeadingRef.current?.focus({ preventScroll: true });
+    });
   };
 
   const addTimelineNote = (event: FormEvent<HTMLFormElement>) => {
@@ -463,37 +506,174 @@ export function App() {
       vehicleId: timelineDraft.vehicleId,
       happenedOn: new Date().toISOString().slice(0, 10),
     });
+    setGarageForm(null);
+    setActionMessage("Service or cost record saved.");
   };
 
   const openWorkspace = (screen: WorkspaceScreen, nav: string = screen, nextMode?: FeedMode) => {
     if (nextMode) setMode(nextMode);
     setActiveScreen(screen);
     setActiveNav(nav);
-    setAccountMenuOpen(false);
     window.scrollTo(0, 0);
+  };
+
+  const openProfile = (trigger: HTMLButtonElement) => {
+    profileTriggerRef.current = trigger;
+    accountReturnScreenRef.current = activeScreen;
+    openAccountView("profile");
+  };
+
+  const openAccountView = (view: AccountView) => {
+    setAccountView(view);
+    setActiveScreen("account");
+    window.scrollTo(0, 0);
+    window.requestAnimationFrame(() => {
+      if (view === "profile") profileNameRef.current?.focus();
+      if (view === "saved" || view === "following") accountHeaderRef.current?.focus();
+      if (view === "notifications") notificationsFirstRef.current?.focus();
+      if (view === "settings") settingsHeadingRef.current?.focus();
+    });
+  };
+
+  const returnFromAccount = () => {
+    if (accountView !== "profile") {
+      openAccountView("profile");
+      return;
+    }
+    setActiveScreen(accountReturnScreenRef.current);
+    window.scrollTo(0, 0);
+    window.requestAnimationFrame(() => profileTriggerRef.current?.focus());
+  };
+
+  const selectVehicle = (vehicleId: string) => {
+    const vehicle = garage.find((item) => item.id === vehicleId);
+    setTimelineDraft((current) => ({ ...current, vehicleId }));
+    setVehicleMenuOpen(false);
+    if (vehicle) setActionMessage(`${vehicle.nickname || vehicle.model} selected.`);
+    window.requestAnimationFrame(() => vehicleTriggerRef.current?.focus());
+  };
+
+  const openVehicleMenu = () => {
+    setVehicleMenuOpen(true);
+    window.requestAnimationFrame(() => {
+      const selectedOption = vehicleMenuRef.current?.querySelector<HTMLButtonElement>('[aria-selected="true"]');
+      selectedOption?.focus();
+    });
+  };
+
+  const handleVehicleMenuKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    const options = Array.from(vehicleMenuRef.current?.querySelectorAll<HTMLButtonElement>('[role="option"]') ?? []);
+    if (!options.length) return;
+    const currentIndex = Math.max(0, options.indexOf(document.activeElement as HTMLButtonElement));
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      options[(currentIndex + 1) % options.length]?.focus();
+    }
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      options[(currentIndex - 1 + options.length) % options.length]?.focus();
+    }
+    if (event.key === "Home") {
+      event.preventDefault();
+      options[0]?.focus();
+    }
+    if (event.key === "End") {
+      event.preventDefault();
+      options.at(-1)?.focus();
+    }
+  };
+
+  const openPostDetail = (post: OwnerPost) => {
+    setSelectedPost(post);
+    setPostDetailOpen(true);
+    window.requestAnimationFrame(() => {
+      document.querySelector(".detail-card")?.scrollIntoView({ block: "start" });
+      postDetailHeadingRef.current?.focus({ preventScroll: true });
+    });
+  };
+
+  const openPostComposer = () => {
+    openWorkspace("community", "community");
+    setPostComposerOpen(true);
+    window.requestAnimationFrame(() => {
+      document.getElementById("write")?.scrollIntoView({ block: "start" });
+      postTitleRef.current?.focus({ preventScroll: true });
+    });
+  };
+
+  const openShortlistComposer = () => {
+    openWorkspace("shortlist");
+    setShortlistFormOpen(true);
+    window.requestAnimationFrame(() => {
+      document.getElementById("shortlist-form")?.scrollIntoView({ block: "start" });
+      shortlistModelRef.current?.focus({ preventScroll: true });
+    });
+  };
+
+  const openVehicleComposer = () => {
+    openWorkspace("garage");
+    setGarageForm("vehicle");
+    window.requestAnimationFrame(() => {
+      document.getElementById("vehicle-form")?.scrollIntoView({ block: "start" });
+      vehicleNicknameRef.current?.focus({ preventScroll: true });
+    });
+  };
+
+  const openGarageRecordComposer = () => {
+    if (!currentVehicle) {
+      openVehicleComposer();
+      return;
+    }
+    openWorkspace("garage");
+    setGarageForm("record");
+    window.requestAnimationFrame(() => {
+      document.getElementById("timeline-form")?.scrollIntoView({ block: "start" });
+      timelineTitleRef.current?.focus({ preventScroll: true });
+    });
+  };
+
+  const returnToCommunityFeed = () => {
+    setPostComposerOpen(false);
+    setPostDetailOpen(false);
+    document.getElementById("feed")?.scrollIntoView({ block: "start" });
+    communitySearchRef.current?.focus({ preventScroll: true });
   };
 
   const currentVehicle = garage.find((vehicle) => vehicle.id === timelineDraft.vehicleId) ?? garage[0] ?? null;
   const currentReminder = garageReminders.find((reminder) => reminder.vehicleId === currentVehicle?.id) ?? garageReminders[0] ?? null;
   const currentLedger = garageCostLedger.find((ledger) => ledger.vehicle.id === currentVehicle?.id) ?? null;
+  const isFirstRun = garage.length === 0 && shortlist.length === 0;
   const workspaceCopy: Record<WorkspaceScreen, { eyebrow: string; title: string; detail: string }> = {
-    home: { eyebrow: "Today", title: "Today", detail: "Your next useful ownership action." },
-    shortlist: { eyebrow: "Buyer list", title: "Shortlist", detail: `${shortlist.length} candidate${shortlist.length === 1 ? "" : "s"} with evidence, risk, and next steps.` },
-    garage: { eyebrow: "Vehicle record", title: "Garage", detail: currentVehicle ? `${currentVehicle.nickname || `${currentVehicle.brand} ${currentVehicle.model}`} ledger and upcoming work.` : "Add a vehicle to start the ledger." },
-    community: { eyebrow: "Owner evidence", title: "Community", detail: `${filteredPosts.length} useful note${filteredPosts.length === 1 ? "" : "s"} in the current view.` },
-    account: { eyebrow: "Account", title: "Account", detail: "Profile, saved notes, writing, notifications, and trust controls." },
+    home: { eyebrow: "Today", title: "Today", detail: "Your car's next task." },
+    shortlist: { eyebrow: "Shortlist", title: "Compare cars", detail: `${shortlist.length} car${shortlist.length === 1 ? "" : "s"} saved with owner notes and inspection steps.` },
+    garage: { eyebrow: "Garage", title: "My car", detail: currentVehicle ? `${currentVehicle.nickname || `${currentVehicle.brand} ${currentVehicle.model}`}: service, costs, and records.` : "Add your car to track service and costs." },
+    community: { eyebrow: "Community", title: "Owner notes", detail: `${filteredPosts.length} note${filteredPosts.length === 1 ? "" : "s"} match the current search.` },
+    account:
+      accountView === "profile"
+        ? { eyebrow: "Account", title: "Profile", detail: "Your local name, city, and owner role." }
+        : accountView === "saved"
+          ? { eyebrow: "Profile", title: "Saved notes", detail: "Owner notes you kept for later." }
+          : accountView === "following"
+            ? { eyebrow: "Profile", title: "Following", detail: "Cars and topics you follow." }
+        : accountView === "notifications"
+          ? { eyebrow: "Account", title: "Notifications", detail: "Choose which updates appear on this device." }
+          : { eyebrow: "Account", title: "Settings & privacy", detail: "Review what Autoflex stores on this device." },
   };
+  const accountBackLabel =
+    accountView !== "profile"
+      ? "Back to Profile"
+      : `Back to ${accountReturnScreenRef.current === "home" ? "Today" : accountReturnScreenRef.current === "shortlist" ? "Shortlist" : accountReturnScreenRef.current === "garage" ? "Garage" : "Community"}`;
   return (
     <main className="app-shell" data-screen={activeScreen}>
-      <aside className="desktop-rail" aria-label="Autoflex workspace">
-        <a className="rail-brand" href="#top" aria-label="Autoflex home" onClick={() => openWorkspace("home", "home")}>
+      <aside className="desktop-rail" aria-label="Autoflex navigation">
+        <a className="rail-brand" href="#top" aria-label="Autoflex Today" onClick={() => openWorkspace("home", "home")}>
           Auto<span>flex</span>
         </a>
-        <p className="rail-kicker">Ownership workspace</p>
-        <nav className="rail-nav" aria-label="Workspace destinations">
+        <p className="rail-kicker">Cars, service, and owner notes</p>
+        <nav className="rail-nav" aria-label="Primary destinations">
           <a className={activeNav === "home" ? "is-active" : ""} href="#top" aria-current={activeNav === "home" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("home", "home"); }}>
             <span className="shell-icon" aria-hidden="true">⌂</span>
-            <span>Home</span>
+            <span>Today</span>
           </a>
           <a className={activeNav === "shortlist" ? "is-active" : ""} href="#shortlist" aria-current={activeNav === "shortlist" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("shortlist"); }}>
             <span className="shell-icon" aria-hidden="true">▤</span>
@@ -521,58 +701,115 @@ export function App() {
 
       <section className="hero screen-home">
         <nav className="nav" aria-label="Primary navigation">
-          <a className="brand" href="#top" aria-label="Autoflex home" onClick={(event) => { event.preventDefault(); openWorkspace("home", "home"); }}>
+          <a className="brand" href="#top" aria-label="Autoflex Today" onClick={(event) => { event.preventDefault(); openWorkspace("home", "home"); }}>
             Auto<span>flex</span>
           </a>
-          <div className="nav-context" aria-label="Current workspace">
-            <span>Live ownership workspace</span>
+          <div className="nav-context" aria-label="Today summary">
+            <span>Today</span>
             <strong>{garage.length ? `${garage.length} garage record${garage.length === 1 ? "" : "s"}` : "Garage not started"}</strong>
           </div>
-          <button aria-controls="account-sheet" aria-expanded={accountMenuOpen} aria-label="Open account menu" className="account-button" type="button" onClick={() => setAccountMenuOpen((isOpen) => !isOpen)}>
+          <button aria-label="Open Profile" className="account-button" type="button" onClick={(event) => openProfile(event.currentTarget)}>
             <span aria-hidden="true">{profile.displayName.trim().slice(0, 1).toUpperCase() || "A"}</span>
-            <strong>Account</strong>
+            <strong>Profile</strong>
           </button>
-          <div className={`account-sheet ${accountMenuOpen ? "is-open" : ""}`} id="account-sheet">
-            <div className="account-sheet-head"><strong>{profile.displayName.trim() || "Garage member"}</strong><small>{profile.garageRole} · local profile</small></div>
-            <button type="button" onClick={() => openWorkspace("account", "account")}><span aria-hidden="true">◉</span><span>Profile & settings</span><small>Edit local identity and preferences</small></button>
-            <button type="button" onClick={() => openWorkspace("community", "community", "saved")}><span aria-hidden="true">☆</span><span>Saved notes</span><small>{saved.size} owner signals</small></button>
-            <button type="button" onClick={() => openWorkspace("community", "community", "following")}><span aria-hidden="true">◴</span><span>Following</span><small>{follows.models.length + follows.topics.length} models and topics</small></button>
-            <button type="button" onClick={() => { setAccountMenuOpen(false); openWorkspace("community", "community"); }}><span aria-hidden="true">+</span><span>Write post</span><small>Add an owner note or cost record</small></button>
-            <button type="button" onClick={() => openWorkspace("account", "account")}><span aria-hidden="true">!</span><span>Notifications</span><small>Digest and quiet-hour controls</small></button>
-          </div>
         </nav>
 
         <div className="home-workbench" id="top">
           <div className="home-toolbar">
             <div>
               <p className="app-kicker">Today</p>
-              <h1>Ownership, kept in order.</h1>
-              <p className="home-status">{currentVehicle ? `${currentVehicle.nickname || `${currentVehicle.brand} ${currentVehicle.model}`} is your active record.` : "Your local garage is ready for its first vehicle."}</p>
+              <h1>What needs attention today</h1>
+              <p className="home-status">{currentVehicle ? `${currentVehicle.nickname || `${currentVehicle.brand} ${currentVehicle.model}`} is selected.` : "Add a car you own or one you are comparing."}</p>
             </div>
-            <label className="vehicle-picker">
-              <span>Current vehicle</span>
-              {garage.length ? (
-                <select value={currentVehicle?.id ?? ""} onChange={(event) => setTimelineDraft({ ...timelineDraft, vehicleId: event.target.value })}>
-                  {garage.map((vehicle) => <option key={vehicle.id} value={vehicle.id}>{vehicle.nickname || `${vehicle.brand} ${vehicle.model}`}</option>)}
-                </select>
-              ) : <strong>No vehicle yet</strong>}
-            </label>
+            <div className="home-toolbar-actions">
+              {isFirstRun ? (
+                <div className="first-run-actions" aria-label="Choose how to start">
+                  <button className="primary-action first-run-action" type="button" onClick={openVehicleComposer}>
+                    <span aria-hidden="true">+</span>
+                    <span><small>I own a car</small>Add vehicle</span>
+                  </button>
+                  <button className="save-button first-run-action" type="button" onClick={openShortlistComposer}>
+                    <span aria-hidden="true">▤</span>
+                    <span><small>I'm choosing a car</small>Add candidate</span>
+                  </button>
+                </div>
+              ) : garage.length === 1 && currentVehicle ? (
+                <div className="vehicle-summary" aria-label="Current vehicle">
+                  <span>My car</span>
+                  <strong>{currentVehicle.nickname || `${currentVehicle.brand} ${currentVehicle.model}`}</strong>
+                  <small>{currentVehicle.brand} {currentVehicle.model}{currentVehicle.variant ? ` · ${currentVehicle.variant}` : ""}</small>
+                </div>
+              ) : currentVehicle ? (
+                <div className="vehicle-switcher">
+                  <span className="vehicle-switcher-label">Current vehicle</span>
+                  <button
+                    aria-controls="vehicle-menu"
+                    aria-expanded={vehicleMenuOpen}
+                    aria-haspopup="listbox"
+                    className="vehicle-switcher-trigger"
+                    ref={vehicleTriggerRef}
+                    type="button"
+                    onClick={() => vehicleMenuOpen ? setVehicleMenuOpen(false) : openVehicleMenu()}
+                    onKeyDown={(event) => {
+                      if (event.key === "ArrowDown") {
+                        event.preventDefault();
+                        openVehicleMenu();
+                      }
+                    }}
+                  >
+                    <span><strong>{currentVehicle.nickname || currentVehicle.model}</strong><small>{currentVehicle.brand} {currentVehicle.model}</small></span>
+                    <span aria-hidden="true">⌄</span>
+                  </button>
+                  <div
+                    aria-label="Choose a vehicle"
+                    className={`compact-popover vehicle-menu ${vehicleMenuOpen ? "is-open" : ""}`}
+                    id="vehicle-menu"
+                    onKeyDown={handleVehicleMenuKeyDown}
+                    ref={vehicleMenuRef}
+                    role="listbox"
+                  >
+                    {garage.map((vehicle) => (
+                      <button
+                        aria-selected={vehicle.id === currentVehicle.id}
+                        key={vehicle.id}
+                        role="option"
+                        type="button"
+                        onClick={() => selectVehicle(vehicle.id)}
+                      >
+                        <span aria-hidden="true">{vehicle.id === currentVehicle.id ? "✓" : ""}</span>
+                        <span><strong>{vehicle.nickname || vehicle.model}</strong><small>{vehicle.brand} {vehicle.model}{vehicle.variant ? ` · ${vehicle.variant}` : ""}</small></span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              {!isFirstRun ? (
+                <button className="primary-action workspace-task-action" type="button" onClick={openVehicleComposer}>
+                  <span aria-hidden="true">+</span>
+                  Add vehicle
+                </button>
+              ) : null}
+            </div>
           </div>
+          {isFirstRun ? (
+            <div className="first-run-note">Add one car to see its next maintenance task or inspection check.</div>
+          ) : (
           <div className="home-work-grid">
             <article className="next-action-card">
-              <span className="readout-label">Next due</span>
+              <span className="readout-label">Service due</span>
               <h2>{currentReminder?.title ?? "Add your vehicle"}</h2>
-              <p>{currentReminder?.detail ?? "Start with one vehicle so reminders, costs, and ownership notes have somewhere to land."}</p>
-              <button className="primary-action" type="button" onClick={() => openWorkspace("garage")}>
-                {currentVehicle ? "Open garage record" : "Add your vehicle"}
+              <p>{currentReminder?.detail ?? "Add one vehicle to track service, repairs, and costs."}</p>
+              <button className="save-button" type="button" onClick={() => openWorkspace("garage")}>
+                {currentVehicle ? "View car records" : "Add your vehicle"}
               </button>
             </article>
-            <aside className="home-readout" aria-label="Current ownership readout">
+            <aside className="home-readout" aria-label="Current car summary">
               <div><span className="readout-label">Odometer</span><strong>{currentVehicle ? `${currentVehicle.odometerKm.toLocaleString("en-IN")} km` : "--"}</strong></div>
               <div><span className="readout-label">Logged cost</span><strong>{currentLedger ? formatMoney(currentLedger.totalSpend) : "--"}</strong></div>
-              <div><span className="readout-label">Open signals</span><strong>{shortlistDecisionLanes.filter((lane) => lane.priority === "High").length + garageReminders.filter((reminder) => reminder.urgency === "Soon").length}</strong></div>
+              <div><span className="readout-label">Items to check</span><strong>{shortlistDecisionLanes.filter((lane) => lane.priority === "High").length + garageReminders.filter((reminder) => reminder.urgency === "Soon").length}</strong></div>
             </aside>
           </div>
+          )}
         </div>
       </section>
 
@@ -582,33 +819,25 @@ export function App() {
         </div>
       ) : null}
 
-      <section className="workspace-header" aria-label={`${workspaceCopy[activeScreen].title} workspace`}>
+      <section className="workspace-header" aria-label={`${workspaceCopy[activeScreen].title} screen`}>
         <div>
+          {activeScreen === "account" ? <button className="detail-back" type="button" onClick={returnFromAccount}>{accountBackLabel}</button> : null}
           <p className="app-kicker">{workspaceCopy[activeScreen].eyebrow}</p>
-          <h2>{workspaceCopy[activeScreen].title}</h2>
+          <h2 ref={activeScreen === "account" ? accountHeaderRef : undefined} tabIndex={activeScreen === "account" ? -1 : undefined}>{workspaceCopy[activeScreen].title}</h2>
           <p>{workspaceCopy[activeScreen].detail}</p>
         </div>
         <div className="workspace-header-actions">
-          {activeScreen === "shortlist" ? <button className="primary-action" type="button" onClick={() => document.querySelector("#shortlist form")?.scrollIntoView()}>Add candidate</button> : null}
-          {activeScreen === "garage" ? <button className="primary-action" type="button" onClick={() => document.querySelector("#garage form")?.scrollIntoView()}>Add record</button> : null}
-          {activeScreen === "community" ? <button className="primary-action" type="button" onClick={() => { setAccountMenuOpen(false); document.getElementById("write")?.scrollIntoView(); }}>Write post</button> : null}
-          {activeScreen === "account" ? <button className="primary-action" type="button" onClick={() => document.querySelector("#profile")?.scrollIntoView()}>Edit profile</button> : null}
-          <button className="workspace-account-button" type="button" aria-label="Open account menu" onClick={() => openWorkspace("account", "account")}>
-            {profile.displayName.trim().slice(0, 1).toUpperCase() || "A"}
-          </button>
-        </div>
-      </section>
-
-      <section className="panel dashboard-panel screen-home" aria-label="Return user dashboard">
-        <div>
-          <p className="app-kicker">Open tasks</p>
-          <h2>Keep these moving.</h2>
-        </div>
-        <div className="nudge-grid">
-          {returnNudges.length ? (
-            returnNudges.map((nudge) => <p key={nudge}>{nudge}</p>)
+          {activeScreen === "shortlist" && shortlist.length && !shortlistFormOpen ? <button className="primary-action workspace-task-action" type="button" onClick={openShortlistComposer}><span aria-hidden="true">+</span>Add candidate</button> : null}
+          {activeScreen === "garage" && currentVehicle && garageForm === null ? <button className="primary-action workspace-task-action" type="button" onClick={openGarageRecordComposer}><span aria-hidden="true">+</span>Add service record</button> : null}
+          {activeScreen === "community" && !postComposerOpen && !postDetailOpen ? <button className="primary-action workspace-task-action" type="button" onClick={openPostComposer}><span aria-hidden="true">✎</span>Write a note</button> : null}
+          {activeScreen === "account" ? (
+            <span className="workspace-account-button" aria-label="Profile">
+              {profile.displayName.trim().slice(0, 1).toUpperCase() || "A"}
+            </span>
           ) : (
-            <p>Follow a model, save a note, or add a vehicle to unlock a more personal garage dashboard.</p>
+            <button className="workspace-account-button" type="button" aria-label="Open Profile" onClick={(event) => openProfile(event.currentTarget)}>
+              {profile.displayName.trim().slice(0, 1).toUpperCase() || "A"}
+            </button>
           )}
         </div>
       </section>
@@ -616,11 +845,11 @@ export function App() {
       <section className="panel recent-activity-panel screen-home" aria-label="Recent useful activity">
         <div className="section-head">
           <div>
-            <p className="eyebrow">Recent useful activity</p>
-            <h2>Signals worth picking up.</h2>
+            <p className="eyebrow">New in Community</p>
+            <h2>Recent owner notes</h2>
           </div>
           <button className="save-button" type="button" onClick={() => openWorkspace("community", "community", "latest")}>
-            Open community
+            Search notes
           </button>
         </div>
         <div className="recent-activity-list">
@@ -631,9 +860,8 @@ export function App() {
               key={post.id}
               onClick={(event) => {
                 event.preventDefault();
-                setSelectedPost(post);
-                setPostDetailOpen(true);
                 openWorkspace("community", "community", "latest");
+                openPostDetail(post);
               }}
             >
               <span>{post.label}</span>
@@ -646,57 +874,15 @@ export function App() {
         </div>
       </section>
 
-      <section className="panel starter-panel screen-home" aria-label="First visit starter route">
-        <div className="section-head">
-          <div>
-            <p className="eyebrow">Starter route</p>
-            <h2>Five moves to make Autoflex useful on day one.</h2>
-          </div>
-          <div className="starter-score">
-            <strong>
-              {completedStarterSteps}/{starterProgress.length}
-            </strong>
-            done
-          </div>
-        </div>
-        <div className="starter-grid">
-          {starterProgress.map((step) => (
-            <a className={`starter-card ${step.complete ? "complete" : ""}`} href={step.href} key={step.id}>
-              <span>{step.complete ? "Done" : "Next"}</span>
-              <h3>{step.title}</h3>
-              <p>{step.detail}</p>
-            </a>
-          ))}
-        </div>
-      </section>
-
-      <section className="panel account-index screen-more" aria-label="Account utilities">
-        <div className="section-head">
-          <div>
-            <p className="app-kicker">Account utilities</p>
-            <h2>Personal controls</h2>
-          </div>
-        </div>
-        <div className="account-list">
-          <button type="button" onClick={() => document.getElementById("profile")?.scrollIntoView()}><span aria-hidden="true">◉</span><strong>Profile & settings</strong><small>Local identity, role, and privacy preferences</small></button>
-          <button type="button" onClick={() => openWorkspace("community", "community", "saved")}><span aria-hidden="true">☆</span><strong>Saved notes</strong><small>{saved.size} saved owner signals</small></button>
-          <button type="button" onClick={() => openWorkspace("community", "community", "following")}><span aria-hidden="true">◴</span><strong>Following</strong><small>{follows.models.length + follows.topics.length} models and topics</small></button>
-          <button type="button" onClick={() => openWorkspace("community", "community")}><span aria-hidden="true">+</span><strong>Write post</strong><small>Add an owner note, fix, cost, or buyer check</small></button>
-          <button type="button" onClick={() => document.getElementById("notifications")?.scrollIntoView()}><span aria-hidden="true">!</span><strong>Notifications</strong><small>Digest, browser alerts, and quiet hours</small></button>
-        </div>
-      </section>
-
+      {accountView === "profile" ? (
       <section className="panel split-panel profile-panel screen-more" id="profile">
-        <div>
-          <p className="eyebrow">Lightweight profile</p>
-          <h2>Join the discussion without account ceremony.</h2>
-          <p>
-            This local profile keeps comments, reports, and future recovery simple until the hosted account layer is
-            ready.
-          </p>
+        <div className="profile-intro">
+          <h2>Your name on owner notes</h2>
+          <p>This profile stays on this device and is used when you write, comment, or report a note.</p>
         </div>
-        <form className="composer" onSubmit={(event) => event.preventDefault()}>
+        <form className="composer" onSubmit={(event) => { event.preventDefault(); setActionMessage("Profile saved on this device."); }}>
           <input
+            ref={profileNameRef}
             value={profile.displayName}
             onChange={(event) => persistProfile({ ...profile, displayName: event.target.value })}
             placeholder="Display name"
@@ -720,14 +906,52 @@ export function App() {
             Posting as {profile.displayName.trim() || "Anonymous garage member"}
             {profile.city.trim() ? ` from ${profile.city}` : ""}.
           </p>
+          <button className="primary-action workspace-task-action" type="submit"><span aria-hidden="true">✓</span>Save profile</button>
         </form>
+        <nav className="profile-utility-list" aria-label="Profile sections">
+          <button type="button" onClick={() => openAccountView("saved")}><span aria-hidden="true">☆</span><span><strong>Saved notes</strong><small>{saved.size} note{saved.size === 1 ? "" : "s"}</small></span><span aria-hidden="true">›</span></button>
+          <button type="button" onClick={() => openAccountView("following")}><span aria-hidden="true">◴</span><span><strong>Following</strong><small>{follows.models.length + follows.topics.length} cars and topics</small></span><span aria-hidden="true">›</span></button>
+          <button type="button" onClick={() => openAccountView("notifications")}><span aria-hidden="true">!</span><span><strong>Notifications</strong><small>Weekly updates and quiet hours</small></span><span aria-hidden="true">›</span></button>
+          <button type="button" onClick={() => openAccountView("settings")}><span aria-hidden="true">⚙</span><span><strong>Settings & privacy</strong><small>Local data and privacy details</small></span><span aria-hidden="true">›</span></button>
+        </nav>
       </section>
+      ) : null}
 
+      {accountView === "saved" ? (
+      <section className="panel profile-subscreen screen-more" aria-label="Saved notes">
+        <div className="profile-subscreen-list">
+          {posts.filter((post) => saved.has(post.id)).map((post) => (
+            <button key={post.id} type="button" onClick={() => { openWorkspace("community", "community", "saved"); openPostDetail(post); }}>
+              <span className="pill">{post.label}</span>
+              <span><strong>{post.title}</strong><small>{post.brand} {post.model} · {post.city}</small></span>
+            </button>
+          ))}
+          {!saved.size ? <div className="empty-state">No saved notes yet. Save an owner note to find it here.</div> : null}
+        </div>
+      </section>
+      ) : null}
+
+      {accountView === "following" ? (
+      <section className="panel profile-subscreen screen-more" aria-label="Following">
+        <div className="profile-subscreen-list">
+          {notebooks.filter((notebook) => followedModelSet.has(notebook.key)).map((notebook) => (
+            <button key={notebook.key} type="button" onClick={() => { setQuery(`${notebook.brand} ${notebook.model}`); openWorkspace("community", "community", "following"); }}>
+              <span aria-hidden="true">▤</span>
+              <span><strong>{notebook.brand} {notebook.model}</strong><small>{notebook.posts.length} owner notes</small></span>
+            </button>
+          ))}
+          {follows.topics.map((topic) => <div className="profile-follow-row" key={topic}><span aria-hidden="true">#</span><strong>{topic}</strong></div>)}
+          {!follows.models.length && !follows.topics.length ? <div className="empty-state">You are not following a car or topic yet.</div> : null}
+        </div>
+      </section>
+      ) : null}
+
+      {accountView === "settings" ? (
       <section className="panel privacy-panel screen-more" id="privacy">
         <div className="section-head">
           <div>
-            <p className="eyebrow">Privacy readiness</p>
-            <h2>Be explicit about what the MVP stores.</h2>
+            <p className="eyebrow">Settings & privacy</p>
+            <h2 ref={settingsHeadingRef} tabIndex={-1}>What Autoflex stores on this device</h2>
           </div>
           <div className="privacy-stats" aria-label="Privacy readiness summary">
             <span>{privacySummary["Stored for MVP"]} stored</span>
@@ -745,21 +969,21 @@ export function App() {
           ))}
         </div>
       </section>
+      ) : null}
 
+      {accountView === "notifications" ? (
       <section className="panel notification-panel screen-more" id="notifications">
         <div className="notification-layout">
           <div className="notification-copy">
-            <p className="eyebrow">Subscriptions</p>
-            <h2>Choose the updates you actually want.</h2>
-            <p>
-              Keep this lightweight for the MVP: weekly ownership summaries, optional browser alerts, and quiet hours
-              when notification jobs are added.
-            </p>
+            <p className="eyebrow">Notifications</p>
+            <h2>Choose the updates you want</h2>
+            <p>Weekly summaries and quiet hours are stored on this device.</p>
           </div>
           <div className="preference-card" aria-label="Notification preferences">
             <label>
               <input
                 checked={subscriptionSettings.emailDigest}
+                ref={notificationsFirstRef}
                 onChange={(event) =>
                   persistSubscriptionSettings({ ...subscriptionSettings, emailDigest: event.currentTarget.checked })
                 }
@@ -797,6 +1021,7 @@ export function App() {
               </span>
             </label>
           </div>
+          <button className="primary-action workspace-task-action" type="button" onClick={() => setActionMessage("Notification settings saved on this device.")}><span aria-hidden="true">✓</span>Save notification settings</button>
         </div>
         <div className="notification-grid">
           {notificationPreview.map((preview) => (
@@ -804,64 +1029,30 @@ export function App() {
           ))}
         </div>
       </section>
-
-      <section className="panel screen-community" id="cities">
-        <div className="section-head">
-          <div>
-            <p className="eyebrow">City circles</p>
-            <h2>Local ownership signals matter.</h2>
-          </div>
-        </div>
-        <div className="city-grid">
-          {cityCircles.length ? (
-            cityCircles.map((circle) => (
-              <article className={`city-card ${circle.localSignal.toLowerCase()}`} key={circle.city}>
-                <span>{circle.localSignal}</span>
-                <h3>{circle.city}</h3>
-                <p>
-                  {circle.posts.length} owner notes · {circle.garageVehicles.length} garage vehicles
-                </p>
-                <div className="city-tags">
-                  {circle.topBrands.map((brand) => (
-                    <button key={brand} type="button" onClick={() => setQuery(brand)}>
-                      {brand}
-                    </button>
-                  ))}
-                  {circle.hotTopics.map((topic) => (
-                    <button key={topic} type="button" onClick={() => setSelectedLabel(topic)}>
-                      {topic}
-                    </button>
-                  ))}
-                </div>
-              </article>
-            ))
-          ) : (
-            <div className="empty-state">Add city details to posts or garage vehicles to start local circles.</div>
-          )}
-        </div>
-      </section>
+      ) : null}
 
       <section className="panel screen-community" id="feed">
         <div className="section-head">
           <div>
-            <p className="app-kicker">Evidence list</p>
+            <p className="app-kicker">Search notes</p>
             <h2>Owner notes</h2>
           </div>
-          <div className="filters" aria-label="Feed filters">
+          <div className="filters" aria-label="Owner note filters">
             <input
-              aria-label="Search owner evidence"
+              aria-label="Search owner notes"
+              ref={communitySearchRef}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search brand, model, city, issue..."
               type="search"
             />
-            <select aria-label="Filter owner evidence by type" value={selectedLabel} onChange={(event) => setSelectedLabel(event.target.value as KnowledgeLabel | "All")}>
+            <select aria-label="Filter notes by type" value={selectedLabel} onChange={(event) => setSelectedLabel(event.target.value as KnowledgeLabel | "All")}>
               <option>All</option>
               {knowledgeLabels.map((label) => (
                 <option key={label}>{label}</option>
               ))}
             </select>
-            <select aria-label="Sort owner evidence" value={mode} onChange={(event) => setMode(event.target.value as FeedMode)}>
+            <select aria-label="Sort owner notes" value={mode} onChange={(event) => setMode(event.target.value as FeedMode)}>
               <option value="latest">Latest</option>
               <option value="helpful">Most helpful</option>
               <option value="following">Following</option>
@@ -871,10 +1062,18 @@ export function App() {
         </div>
 
         {cityCircles.length ? (
-          <div className="city-filter-strip" aria-label="Browse by city">
-            <span>City signal</span>
+          <div className="city-filter-strip" aria-label="Filter notes by city">
+            <span>Filter by city</span>
             {cityCircles.map((circle) => (
-              <button key={circle.city} type="button" onClick={() => setQuery(circle.city)}>{circle.city} · {circle.posts.length}</button>
+              <button
+                aria-label={`Show notes from ${circle.city}`}
+                aria-pressed={query === circle.city}
+                key={circle.city}
+                type="button"
+                onClick={() => setQuery(query === circle.city ? "" : circle.city)}
+              >
+                {circle.city} · {circle.posts.length}
+              </button>
             ))}
           </div>
         ) : null}
@@ -891,10 +1090,7 @@ export function App() {
                     className="post-open-button"
                     type="button"
                     aria-label={`Open owner note: ${post.title}`}
-                    onClick={() => {
-                      setSelectedPost(post);
-                      setPostDetailOpen(true);
-                    }}
+                    onClick={() => openPostDetail(post)}
                   >
                     <span className="pill">{post.label}</span>
                     <h3>{post.title}</h3>
@@ -910,21 +1106,24 @@ export function App() {
                       toggleSaved(post.id);
                     }}
                   >
-                    {saved.has(post.id) ? "Saved" : "Save"}
+                    {saved.has(post.id) ? "Remove saved note" : "Save note"}
                   </button>
                 </article>
               ))
             ) : (
-              <div className="empty-state">No notes match this filter yet. Write or follow the first useful one.</div>
+              <div className="empty-state">
+                <p>No notes match the current search.</p>
+                <button className="save-button" type="button" onClick={() => { setQuery(""); setSelectedLabel("All"); setMode("latest"); }}>Clear note filters</button>
+              </div>
             )}
           </div>
 
           <aside className="detail-card" aria-label="Owner note detail">
             {postDetailOpen && selectedPost ? (
               <>
-                <button className="detail-back" type="button" onClick={() => setPostDetailOpen(false)}>Back to notes</button>
+                <button className="detail-back" type="button" onClick={returnToCommunityFeed}>Back to notes</button>
                 <span className="pill">{selectedPost.label}</span>
-                <h2>{selectedPost.title}</h2>
+                <h2 ref={postDetailHeadingRef} tabIndex={-1}>{selectedPost.title}</h2>
                 <p className="owner-line">
                   By {selectedPost.author} · {selectedPost.brand} {selectedPost.model} {selectedPost.variant} ·{" "}
                   {selectedPost.city}
@@ -938,7 +1137,7 @@ export function App() {
                     <strong>
                       {selectedPostQuality.grade} · {selectedPostQuality.score}/{selectedPostQuality.maxScore}
                     </strong>
-                    <p>{selectedPostQuality.strengths[0] ?? "This note needs more ownership context."}</p>
+                    <p>{selectedPostQuality.strengths[0] ?? "Add car, mileage, and location details to make this note more useful."}</p>
                   </div>
                 ) : null}
                 <div className="signal-row">
@@ -950,8 +1149,9 @@ export function App() {
                       Worked for me · {selectedPost.fixesConfirmed}
                     </button>
                   ) : null}
-                  <button type="button" onClick={() => toggleSaved(selectedPost.id)}>
-                    {saved.has(selectedPost.id) ? "Remove saved" : "Save note"}
+                  <button className={saved.has(selectedPost.id) ? "" : "primary-action workspace-task-action"} type="button" onClick={() => toggleSaved(selectedPost.id)}>
+                    <span aria-hidden="true">{saved.has(selectedPost.id) ? "−" : "☆"}</span>
+                    {saved.has(selectedPost.id) ? "Remove from saved notes" : "Save note"}
                   </button>
                   <button type="button" onClick={() => toggleFollowModel(selectedPost.brand, selectedPost.model)}>
                     {followedModelSet.has(modelKeyFor(selectedPost.brand, selectedPost.model)) ? "Following model" : "Follow model"}
@@ -963,7 +1163,7 @@ export function App() {
                     Share note
                   </button>
                   <button type="button" onClick={addSelectedToShortlist}>
-                    Add model to shortlist
+                    Add car to shortlist
                   </button>
                 </div>
                 <div className="comments">
@@ -981,8 +1181,8 @@ export function App() {
                     onChange={(event) => setCommentDraft(event.target.value)}
                     placeholder="Add a useful reply, correction, bill detail, or ownership question."
                   />
-                  <button className="primary-action" type="submit">
-                    Add comment
+                  <button className="save-button" type="submit">
+                    Post comment
                   </button>
                 </form>
                 <form className="inline-form report-form" onSubmit={reportSelectedPost}>
@@ -995,7 +1195,7 @@ export function App() {
                     placeholder="Report spam, abuse, fake lead, or dangerous advice."
                   />
                   <button className="save-button" type="submit">
-                    Send to moderators
+                    Submit report
                   </button>
                 </form>
               </>
@@ -1009,16 +1209,16 @@ export function App() {
       <section className="panel screen-shortlist" id="shortlist">
         <div className="section-head">
           <div>
-            <p className="app-kicker">Candidates</p>
-            <h2>Compare evidence</h2>
+            <p className="app-kicker">Cars saved</p>
+            <h2 ref={shortlistHeadingRef} tabIndex={-1}>Compare cars</h2>
           </div>
         </div>
-        <div className="decision-lane-board" aria-label="Buyer decision lane">
+        <div className="decision-lane-board" aria-label="What to check next">
           {shortlistDecisionLanes.length ? (
             shortlistDecisionLanes.map((lane) => (
               <article className={`decision-lane ${lane.priority.toLowerCase()}`} key={lane.item.id}>
                 <div className="decision-lane-meta">
-                  <span>{lane.decision}</span>
+                  <span>Next check</span>
                   <span
                     className={`decision-priority ${lane.priority.toLowerCase()}`}
                     aria-label={`${lane.priority} priority`}
@@ -1037,13 +1237,14 @@ export function App() {
             ))
           ) : (
             <div className="empty-state">
-              <p>Add a candidate to start comparing evidence and risk.</p>
-              <button className="primary-action" type="button" onClick={() => document.querySelector("#shortlist form")?.scrollIntoView()}>Add first candidate</button>
+              <p>Add a car to compare owner notes and inspection checks.</p>
+              <button className="primary-action workspace-task-action" type="button" onClick={openShortlistComposer}><span aria-hidden="true">+</span>Add first candidate</button>
             </div>
           )}
         </div>
         <div className="shortlist-grid">
-          <form className="composer" onSubmit={addShortlistItem}>
+          {shortlistFormOpen ? (
+          <form className="composer" id="shortlist-form" onSubmit={addShortlistItem}>
             <h3>Add model to compare</h3>
             <div className="form-row">
               <select value={shortlistDraft.brand} onChange={(event) => setShortlistDraft({ ...shortlistDraft, brand: event.target.value })}>
@@ -1053,6 +1254,7 @@ export function App() {
               </select>
               <input
                 required
+                ref={shortlistModelRef}
                 value={shortlistDraft.model}
                 onChange={(event) => setShortlistDraft({ ...shortlistDraft, model: event.target.value })}
                 placeholder="Model"
@@ -1085,7 +1287,9 @@ export function App() {
               Add to shortlist
             </button>
           </form>
+          ) : null}
 
+          {shortlist.length ? (
           <div className="comparison-grid">
             {shortlistComparisons.length ? (
               shortlistComparisons.map((comparison) => {
@@ -1129,7 +1333,7 @@ export function App() {
                         ))}
                       </select>
                       <button className="save-button" type="button" onClick={() => removeShortlistItem(comparison.item.id)}>
-                        Remove
+                        Remove car
                       </button>
                     </div>
                     <textarea
@@ -1142,59 +1346,14 @@ export function App() {
                 );
               })
             ) : (
-              <div className="empty-state">Add a model manually or from an owner note to begin comparison.</div>
+              <div className="empty-state">Add a car to compare price, owner notes, and inspection checks.</div>
             )}
           </div>
+          ) : null}
         </div>
       </section>
 
-      <section className="panel playbook-panel screen-garage" id="playbooks">
-        <div className="section-head">
-          <div>
-            <p className="eyebrow">Ownership playbooks</p>
-            <h2>Turn scattered owner notes into “what should I check?” guidance.</h2>
-          </div>
-        </div>
-        <div className="playbook-grid">
-          {ownershipPlaybooks.map((playbook) => (
-            <article className="playbook-card" key={playbook.key}>
-              <div className="playbook-topline">
-                <span>{playbook.confidence}</span>
-                <strong>{playbook.evidenceCount} notes</strong>
-              </div>
-              <h3>
-                {playbook.brand} {playbook.model}
-              </h3>
-              <p>{playbook.headline}</p>
-              <div className="playbook-columns">
-                <div>
-                  <h4>Owner signals</h4>
-                  {playbook.ownerSignals.map((signal) => (
-                    <p key={signal}>{signal}</p>
-                  ))}
-                </div>
-                <div>
-                  <h4>Buyer checks</h4>
-                  {playbook.buyerChecks.map((check) => (
-                    <p key={check}>{check}</p>
-                  ))}
-                </div>
-              </div>
-              <button
-                className="save-button"
-                type="button"
-                onClick={() => {
-                  setQuery(`${playbook.brand} ${playbook.model}`);
-                  setMode("latest");
-                }}
-              >
-                Open matching notes
-              </button>
-            </article>
-          ))}
-        </div>
-      </section>
-
+      {postComposerOpen ? (
       <section className="panel split-panel screen-community" id="write">
         <div>
           <p className="eyebrow">Publish</p>
@@ -1216,10 +1375,15 @@ export function App() {
               ))}
             </div>
           </div>
+          <button className="detail-back" type="button" onClick={returnToCommunityFeed}>
+            Back to owner notes
+          </button>
         </div>
         <form className="composer" onSubmit={publishPost}>
           <input
+            aria-label="Post title"
             required
+            ref={postTitleRef}
             value={draft.title}
             onChange={(event) => setDraft({ ...draft, title: event.target.value })}
             placeholder="Title"
@@ -1280,12 +1444,13 @@ export function App() {
           </button>
         </form>
       </section>
+      ) : null}
 
       <section className="panel screen-garage" id="garage">
         <div className="section-head">
           <div>
-            <p className="app-kicker">Ownership ledger</p>
-            <h2>Selected vehicle</h2>
+            <p className="app-kicker">My car</p>
+            <h2 ref={garageHeadingRef} tabIndex={-1}>{currentVehicle?.nickname || "Car records"}</h2>
           </div>
           <button className="save-button" type="button" onClick={exportGarage}>
             Export garage
@@ -1294,24 +1459,27 @@ export function App() {
         {currentVehicle ? (
           <div className="garage-selected-record" aria-label="Selected vehicle record">
             <div>
-              <span className="readout-label">Selected vehicle</span>
+              <span className="readout-label">Car</span>
               <h3>{currentVehicle.nickname || `${currentVehicle.brand} ${currentVehicle.model}`}</h3>
               <p>{currentVehicle.brand} {currentVehicle.model} {currentVehicle.variant ? `· ${currentVehicle.variant}` : ""}</p>
             </div>
             <div><span className="readout-label">Odometer</span><strong>{currentVehicle.odometerKm.toLocaleString("en-IN")} km</strong></div>
             <div><span className="readout-label">Logged cost</span><strong>{currentLedger ? formatMoney(currentLedger.totalSpend) : "No spend yet"}</strong></div>
-            <div><span className="readout-label">Next due</span><strong>{currentReminder?.title ?? "No reminder"}</strong></div>
+            <div><span className="readout-label">Service due</span><strong>{currentReminder?.title ?? "Nothing due"}</strong></div>
           </div>
         ) : (
           <div className="empty-state garage-empty-state">
-            <p>Add your vehicle to start the maintenance and cost ledger.</p>
-            <button className="primary-action" type="button" onClick={() => document.querySelector("#garage form")?.scrollIntoView()}>Add your vehicle</button>
+            <p>Add your car to see service due dates and running costs.</p>
+            <button className="primary-action workspace-task-action" type="button" onClick={openVehicleComposer}><span aria-hidden="true">+</span>Add your vehicle</button>
           </div>
         )}
+        {garageForm ? (
         <div className="garage-grid">
-          <form className="composer" onSubmit={addVehicle}>
+          {garageForm === "vehicle" ? (
+          <form className="composer" id="vehicle-form" onSubmit={addVehicle}>
             <h3>Add vehicle</h3>
             <input
+              ref={vehicleNicknameRef}
               value={vehicleDraft.nickname}
               onChange={(event) => setVehicleDraft({ ...vehicleDraft, nickname: event.target.value })}
               placeholder="Nickname"
@@ -1360,9 +1528,11 @@ export function App() {
               Save vehicle
             </button>
           </form>
+          ) : null}
 
-          <form className="composer" onSubmit={addTimelineNote}>
-            <h3>Add timeline note</h3>
+          {garageForm === "record" && currentVehicle ? (
+          <form className="composer" id="timeline-form" onSubmit={addTimelineNote}>
+            <h3>Add service or cost record</h3>
             <select
               required
               value={timelineDraft.vehicleId}
@@ -1387,14 +1557,15 @@ export function App() {
                 type="date"
                 value={timelineDraft.happenedOn}
                 onChange={(event) => setTimelineDraft({ ...timelineDraft, happenedOn: event.target.value })}
-                aria-label="Timeline date"
+                aria-label="Record date"
               />
             </div>
             <input
               required
+              ref={timelineTitleRef}
               value={timelineDraft.title}
               onChange={(event) => setTimelineDraft({ ...timelineDraft, title: event.target.value })}
-              placeholder="What happened?"
+              placeholder="Service, repair, fuel, or other record"
             />
             <div className="form-row">
               <input
@@ -1419,12 +1590,16 @@ export function App() {
               placeholder="Bill details, symptoms, shop notes, or what you would do differently."
             />
             <button className="primary-action" type="submit">
-              Add timeline note
+              Save record
             </button>
           </form>
+          ) : null}
         </div>
+        ) : null}
 
-        <div className="reminder-board" aria-label="Garage reminders">
+        {currentVehicle ? (
+        <>
+        <div className="reminder-board" aria-label="Service due">
           {garageReminders.length ? (
             garageReminders.map((reminder) => (
               <article className={`reminder-card ${reminder.urgency.toLowerCase()}`} key={reminder.id}>
@@ -1436,7 +1611,7 @@ export function App() {
               </article>
             ))
           ) : (
-            <div className="empty-state">No garage reminders right now. Keep logging service, insurance, tyre, and repair notes.</div>
+            <div className="empty-state">Nothing is due. Add a service or insurance record to keep dates current.</div>
           )}
         </div>
 
@@ -1466,7 +1641,7 @@ export function App() {
           ))}
         </div>
 
-        <div className="ledger-board" aria-label="Garage running cost ledger">
+        <div className="ledger-board" aria-label="Running costs">
           {garageCostLedger.map((ledger) => (
             <article className="ledger-card" key={ledger.vehicle.id}>
               <span>{ledger.vehicle.brand}</span>
@@ -1482,34 +1657,27 @@ export function App() {
                 </p>
                 <p>
                   <strong>{ledger.entryCount}</strong>
-                  <small>Timeline notes</small>
+                  <small>Records</small>
                 </p>
               </div>
               <p>
                 {ledger.latestEntry
                   ? `Latest: ${ledger.latestEntry.kind.toLowerCase()} · ${ledger.latestEntry.title}`
-                  : "No timeline spend yet. Add service, repair, tyre, fuel, or insurance notes."}
+                  : "No costs recorded. Add service, repair, tyre, fuel, or insurance costs."}
               </p>
             </article>
           ))}
         </div>
-
-        <div className="insight-grid">
-          {garageInsights.map((insight) => (
-            <article className={`insight-card ${insight.tone}`} key={insight.id}>
-              <span>{insight.tone}</span>
-              <h3>{insight.title}</h3>
-              <p>{insight.detail}</p>
-            </article>
-          ))}
-        </div>
+        </>
+        ) : null}
       </section>
 
+      {shortlist.length ? (
       <section className="panel screen-shortlist" id="notebooks">
         <div className="section-head">
           <div>
-            <p className="eyebrow">Model notebooks</p>
-            <h2>Every model earns its own living knowledge page.</h2>
+            <p className="eyebrow">Owner notes by car</p>
+            <h2>Notes for cars you are comparing</h2>
           </div>
         </div>
         <div className="notebook-grid">
@@ -1524,7 +1692,7 @@ export function App() {
                   {isFollowing ? "Following" : "Follow model"}
                 </button>
                 <button className="save-button" type="button" onClick={() => shareModelNotebook(notebook.brand, notebook.model)}>
-                  Share notebook
+                  Share notes
                 </button>
                 <div className="notebook-tags">
                   {knowledgeLabels
@@ -1540,6 +1708,7 @@ export function App() {
           })}
         </div>
       </section>
+      ) : null}
 
       <section className="panel moderation-panel screen-more" id="moderation">
         <div className="section-head">
@@ -1582,7 +1751,7 @@ export function App() {
       <nav className="mobile-dock" aria-label="Primary mobile navigation">
         <a className={activeNav === "home" ? "is-active" : ""} href="#top" aria-current={activeNav === "home" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("home", "home"); }}>
           <span className="shell-icon" aria-hidden="true">⌂</span>
-          <span>Home</span>
+          <span>Today</span>
         </a>
         <a className={activeNav === "shortlist" ? "is-active" : ""} href="#shortlist" aria-current={activeNav === "shortlist" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("shortlist"); }}>
           <span className="shell-icon" aria-hidden="true">▤</span>
@@ -1598,15 +1767,6 @@ export function App() {
           <span className="shell-icon" aria-hidden="true">◉</span>
           <span>Community</span>
         </a>
-        <button className="dock-context-action" type="button" onClick={() => {
-          if (activeScreen === "home") return openWorkspace("garage");
-          if (activeScreen === "shortlist") return document.querySelector("#shortlist form")?.scrollIntoView();
-          if (activeScreen === "garage") return document.querySelector("#garage form")?.scrollIntoView();
-          return document.getElementById("write")?.scrollIntoView();
-        }}>
-          <span className="shell-icon" aria-hidden="true">+</span>
-          <span>{activeScreen === "home" ? "Add vehicle" : activeScreen === "shortlist" ? "Add candidate" : activeScreen === "garage" ? "Add record" : "Write post"}</span>
-        </button>
       </nav>
 
     </main>
