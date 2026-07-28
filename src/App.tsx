@@ -72,6 +72,7 @@ import {
 } from "./storage";
 
 type FeedMode = "latest" | "helpful" | "saved" | "following";
+type WorkspaceScreen = "home" | "shortlist" | "garage" | "community" | "more";
 
 const brands = ["Tata", "Honda", "Kia", "Mahindra", "Maruti Suzuki", "Hyundai", "Toyota", "Skoda", "Volkswagen"];
 
@@ -151,6 +152,8 @@ export function App() {
   const [reportDraft, setReportDraft] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [navMenuOpen, setNavMenuOpen] = useState(false);
+  const [activeNav, setActiveNav] = useState("home");
+  const [activeScreen, setActiveScreen] = useState<WorkspaceScreen>("home");
   const [isOnline, setIsOnline] = useState(getInitialOnlineStatus);
 
   const notebooks = useMemo(() => groupByModel(posts), [posts]);
@@ -462,61 +465,121 @@ export function App() {
     });
   };
 
+  const openWorkspace = (screen: WorkspaceScreen, nav: string = screen, nextMode?: FeedMode) => {
+    if (nextMode) setMode(nextMode);
+    setActiveScreen(screen);
+    setActiveNav(nav);
+    setNavMenuOpen(false);
+    window.scrollTo(0, 0);
+  };
+
+  const workspaceCopy: Record<WorkspaceScreen, { eyebrow: string; title: string; detail: string }> = {
+    home: { eyebrow: "Today's ownership desk", title: "Your next useful action", detail: "A compact view of what needs attention across your garage and buyer work." },
+    shortlist: { eyebrow: "Buyer workspace", title: "Decide with evidence", detail: "Compare candidates, inspect risk, and keep every buying reason visible." },
+    garage: { eyebrow: "Garage workspace", title: "Keep the record moving", detail: "Vehicles, reminders, running costs, and service history in one working ledger." },
+    community: { eyebrow: "Community workspace", title: "Find the owner signal", detail: "Search, filter, and inspect notes without losing the context around them." },
+    more: { eyebrow: "Utility workspace", title: "Keep the system honest", detail: "Profile, saved views, writing tools, notifications, and trust controls." },
+  };
+
   return (
-    <main className="app-shell">
-      <section className="hero">
+    <main className="app-shell" data-screen={activeScreen}>
+      <aside className="desktop-rail" aria-label="Autoflex workspace">
+        <a className="rail-brand" href="#top" aria-label="Autoflex home" onClick={() => openWorkspace("home", "home")}>
+          Auto<span>flex</span>
+        </a>
+        <p className="rail-kicker">Ownership workspace</p>
+        <nav className="rail-nav" aria-label="Workspace destinations">
+          <a className={activeNav === "home" ? "is-active" : ""} href="#top" aria-current={activeNav === "home" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("home", "home"); }}>
+            <span className="shell-icon" aria-hidden="true">⌂</span>
+            <span>Home</span>
+          </a>
+          <a className={activeNav === "shortlist" ? "is-active" : ""} href="#shortlist" aria-current={activeNav === "shortlist" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("shortlist"); }}>
+            <span className="shell-icon" aria-hidden="true">▤</span>
+            <span>Shortlist</span>
+            <strong>{shortlist.length}</strong>
+          </a>
+          <a className={activeNav === "garage" ? "is-active" : ""} href="#garage" aria-current={activeNav === "garage" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("garage"); }}>
+            <span className="shell-icon" aria-hidden="true">▣</span>
+            <span>Garage</span>
+            <strong>{garage.length}</strong>
+          </a>
+          <a className={activeNav === "community" ? "is-active" : ""} href="#feed" aria-current={activeNav === "community" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("community", "community", "latest"); }}>
+            <span className="shell-icon" aria-hidden="true">◉</span>
+            <span>Community</span>
+          </a>
+          <a className={activeNav === "more" ? "is-active" : ""} href="#profile" aria-current={activeNav === "more" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("more", "more"); }}>
+            <span className="shell-icon" aria-hidden="true">⋯</span>
+            <span>More</span>
+          </a>
+        </nav>
+        <div className="rail-status">
+          <span className={`status-dot ${connectionStatus.tone}`} aria-hidden="true" />
+          <div>
+            <strong>{connectionStatus.label}</strong>
+            <small>Local records stay on this device.</small>
+          </div>
+        </div>
+      </aside>
+
+      <section className="hero screen-home">
         <nav className="nav" aria-label="Primary navigation">
-          <a className="brand" href="#top" aria-label="Autoflex home" onClick={() => setNavMenuOpen(false)}>
+          <a className="brand" href="#top" aria-label="Autoflex home" onClick={(event) => { event.preventDefault(); openWorkspace("home", "home"); }}>
             Auto<span>flex</span>
           </a>
+          <div className="nav-context" aria-label="Current workspace">
+            <span>Live ownership workspace</span>
+            <strong>{garage.length ? `${garage.length} garage record${garage.length === 1 ? "" : "s"}` : "Garage not started"}</strong>
+          </div>
           <button
             aria-controls="primary-nav-links"
             aria-expanded={navMenuOpen}
-            className="nav-toggle"
+            aria-label="Open utility menu"
+            className="nav-toggle utility-toggle"
             type="button"
             onClick={() => setNavMenuOpen((isOpen) => !isOpen)}
           >
-            <span />
-            <span />
-            <span />
-            Menu
+            <span aria-hidden="true">⋯</span>
+            More
           </button>
           <div className={`nav-actions ${navMenuOpen ? "is-open" : ""}`} id="primary-nav-links">
-            <a href="#feed" onClick={() => setNavMenuOpen(false)}>
-              Feed
-            </a>
-            <a href="#cities" onClick={() => setNavMenuOpen(false)}>
+            <a href="#cities" onClick={(event) => { event.preventDefault(); openWorkspace("community"); }}>
               Cities
             </a>
-            <a href="#playbooks" onClick={() => setNavMenuOpen(false)}>
+            <a href="#playbooks" onClick={(event) => { event.preventDefault(); openWorkspace("community"); }}>
               Playbooks
             </a>
-            <a href="#garage" onClick={() => setNavMenuOpen(false)}>
+            <a href="#garage" onClick={(event) => { event.preventDefault(); openWorkspace("garage"); }}>
               Garage
             </a>
-            <a href="#notebooks" onClick={() => setNavMenuOpen(false)}>
+            <a href="#notebooks" onClick={(event) => { event.preventDefault(); openWorkspace("community"); }}>
               Model notebooks
             </a>
-            <a href="#loop" onClick={() => setNavMenuOpen(false)}>
+            <a href="#loop" onClick={(event) => { event.preventDefault(); openWorkspace("more"); }}>
               Build loop
+            </a>
+            <a href="#profile" onClick={(event) => { event.preventDefault(); openWorkspace("more"); }}>
+              Profile & settings
+            </a>
+            <a href="#moderation" onClick={(event) => { event.preventDefault(); openWorkspace("more"); }}>
+              Moderation
             </a>
           </div>
         </nav>
 
         <div className="hero-grid" id="top">
           <div>
-            <p className="eyebrow">Deep ownership knowledge, built for the next wave</p>
-            <h1>Owner notes that help people buy, fix, and actually live with cars.</h1>
+            <p className="eyebrow">Today's ownership desk</p>
+            <h1>Your garage, shortlist, and owner evidence in one place.</h1>
             <p className="hero-copy">
-              Autoflex turns owner notes, known issues, fixes, cost logs, garage timelines, and shortlist checks into a
-              living cockpit for buying and running cars with more confidence.
+              Pick up the next useful task: check a buyer signal, log a service visit, or add the owner context that
+              keeps a model notebook honest.
             </p>
             <div className="hero-actions">
-              <a className="primary-action" href="#write">
-                Write ownership note
+              <a className="primary-action" href="#feed" onClick={(event) => { event.preventDefault(); openWorkspace("community", "community", "latest"); }}>
+                Open feed
               </a>
-              <a className="secondary-action" href="#garage">
-                Build my garage
+              <a className="secondary-action" href="#garage" onClick={(event) => { event.preventDefault(); openWorkspace("garage"); }}>
+                Add garage record
               </a>
             </div>
           </div>
@@ -547,7 +610,7 @@ export function App() {
         </div>
       </section>
 
-      <section className="service-boundary">
+      <section className="service-boundary screen-home">
         <strong>Service-center integration boundary</strong>
         <span>
           Endpoints stay separate for now because another team owns that contract. Autoflex focuses on community,
@@ -566,7 +629,18 @@ export function App() {
         <span>{connectionStatus.detail}</span>
       </section>
 
-      <section className="panel dashboard-panel" aria-label="Return user dashboard">
+      <section className="workspace-header" aria-label={`${workspaceCopy[activeScreen].title} workspace`}>
+        <div>
+          <p className="eyebrow">{workspaceCopy[activeScreen].eyebrow}</p>
+          <h2>{workspaceCopy[activeScreen].title}</h2>
+          <p>{workspaceCopy[activeScreen].detail}</p>
+        </div>
+        <button className="save-button" type="button" onClick={() => openWorkspace("home", "home")}>
+          Back to cockpit
+        </button>
+      </section>
+
+      <section className="panel dashboard-panel screen-home" aria-label="Return user dashboard">
         <div>
           <p className="eyebrow">Return-user garage</p>
           <h2>Your next useful reason to come back.</h2>
@@ -580,7 +654,7 @@ export function App() {
         </div>
       </section>
 
-      <section className="panel starter-panel" aria-label="First visit starter route">
+      <section className="panel starter-panel screen-home" aria-label="First visit starter route">
         <div className="section-head">
           <div>
             <p className="eyebrow">Starter route</p>
@@ -604,7 +678,33 @@ export function App() {
         </div>
       </section>
 
-      <section className="panel split-panel profile-panel" id="profile">
+      <section className="panel utility-launcher screen-more" aria-label="Utility shortcuts">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Quick access</p>
+            <h2>Pick up a supporting task.</h2>
+          </div>
+        </div>
+        <div className="utility-launch-grid">
+          <button className="utility-launch-card" type="button" onClick={() => openWorkspace("community", "saved", "saved")}>
+            <span className="shell-icon" aria-hidden="true">☆</span>
+            <strong>Saved notes</strong>
+            <small>{saved.size} saved owner signals</small>
+          </button>
+          <button className="utility-launch-card" type="button" onClick={() => openWorkspace("community", "activity", "following")}>
+            <span className="shell-icon" aria-hidden="true">◴</span>
+            <strong>Following</strong>
+            <small>{follows.models.length + follows.topics.length} model and topic follows</small>
+          </button>
+          <a className="utility-launch-card" href="#write" onClick={(event) => { event.preventDefault(); document.getElementById("write")?.scrollIntoView(); }}>
+            <span className="shell-icon" aria-hidden="true">+</span>
+            <strong>Write ownership note</strong>
+            <small>Add a bill, fix, cost, or buyer check.</small>
+          </a>
+        </div>
+      </section>
+
+      <section className="panel split-panel profile-panel screen-more" id="profile">
         <div>
           <p className="eyebrow">Lightweight profile</p>
           <h2>Join the discussion without account ceremony.</h2>
@@ -641,7 +741,7 @@ export function App() {
         </form>
       </section>
 
-      <section className="panel privacy-panel" id="privacy">
+      <section className="panel privacy-panel screen-more" id="privacy">
         <div className="section-head">
           <div>
             <p className="eyebrow">Privacy readiness</p>
@@ -664,7 +764,7 @@ export function App() {
         </div>
       </section>
 
-      <section className="panel notification-panel" id="notifications">
+      <section className="panel notification-panel screen-more" id="notifications">
         <div className="notification-layout">
           <div className="notification-copy">
             <p className="eyebrow">Subscriptions</p>
@@ -723,7 +823,7 @@ export function App() {
         </div>
       </section>
 
-      <section className="panel" id="cities">
+      <section className="panel screen-community" id="cities">
         <div className="section-head">
           <div>
             <p className="eyebrow">City circles</p>
@@ -759,7 +859,7 @@ export function App() {
         </div>
       </section>
 
-      <section className="panel" id="feed">
+      <section className="panel screen-community" id="feed">
         <div className="section-head">
           <div>
             <p className="eyebrow">Community feed</p>
@@ -904,7 +1004,7 @@ export function App() {
         </div>
       </section>
 
-      <section className="panel" id="shortlist">
+      <section className="panel screen-shortlist" id="shortlist">
         <div className="section-head">
           <div>
             <p className="eyebrow">Buyer shortlist</p>
@@ -1043,7 +1143,7 @@ export function App() {
         </div>
       </section>
 
-      <section className="panel playbook-panel" id="playbooks">
+      <section className="panel playbook-panel screen-community" id="playbooks">
         <div className="section-head">
           <div>
             <p className="eyebrow">Ownership playbooks</p>
@@ -1090,7 +1190,7 @@ export function App() {
         </div>
       </section>
 
-      <section className="panel split-panel" id="write">
+      <section className="panel split-panel screen-more" id="write">
         <div>
           <p className="eyebrow">Publish</p>
           <h2>Write like the next owner depends on it.</h2>
@@ -1176,7 +1276,7 @@ export function App() {
         </form>
       </section>
 
-      <section className="panel" id="garage">
+      <section className="panel screen-garage" id="garage">
         <div className="section-head">
           <div>
             <p className="eyebrow">Garage timeline</p>
@@ -1383,7 +1483,7 @@ export function App() {
         </div>
       </section>
 
-      <section className="panel" id="notebooks">
+      <section className="panel screen-community" id="notebooks">
         <div className="section-head">
           <div>
             <p className="eyebrow">Model notebooks</p>
@@ -1419,7 +1519,7 @@ export function App() {
         </div>
       </section>
 
-      <section className="panel" id="loop">
+      <section className="panel screen-more" id="loop">
         <div className="section-head">
           <div>
             <p className="eyebrow">Build loop</p>
@@ -1437,7 +1537,7 @@ export function App() {
         </div>
       </section>
 
-      <section className="panel moderation-panel" id="moderation">
+      <section className="panel moderation-panel screen-more" id="moderation">
         <div className="section-head">
           <div>
             <p className="eyebrow">Moderator bay</p>
@@ -1474,6 +1574,31 @@ export function App() {
           )}
         </div>
       </section>
+
+      <nav className="mobile-dock" aria-label="Primary mobile navigation">
+        <a className={activeNav === "home" ? "is-active" : ""} href="#top" aria-current={activeNav === "home" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("home", "home"); }}>
+          <span className="shell-icon" aria-hidden="true">⌂</span>
+          <span>Home</span>
+        </a>
+        <a className={activeNav === "shortlist" ? "is-active" : ""} href="#shortlist" aria-current={activeNav === "shortlist" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("shortlist"); }}>
+          <span className="shell-icon" aria-hidden="true">▤</span>
+          <span>Shortlist</span>
+          {shortlist.length ? <strong>{shortlist.length}</strong> : null}
+        </a>
+        <a className={activeNav === "garage" ? "is-active" : ""} href="#garage" aria-current={activeNav === "garage" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("garage"); }}>
+          <span className="shell-icon" aria-hidden="true">▣</span>
+          <span>Garage</span>
+          {garage.length ? <strong>{garage.length}</strong> : null}
+        </a>
+        <a className={activeNav === "community" ? "is-active" : ""} href="#feed" aria-current={activeNav === "community" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("community", "community", "latest"); }}>
+          <span className="shell-icon" aria-hidden="true">◉</span>
+          <span>Community</span>
+        </a>
+        <a className={activeNav === "more" ? "is-active" : ""} href="#profile" aria-current={activeNav === "more" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("more", "more"); }}>
+          <span className="shell-icon" aria-hidden="true">⋯</span>
+          <span>More</span>
+        </a>
+      </nav>
 
     </main>
   );
