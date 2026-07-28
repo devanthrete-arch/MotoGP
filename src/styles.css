@@ -563,6 +563,45 @@ h3 {
   padding-top: 42px;
 }
 
+.recent-activity-panel {
+  padding-top: 28px;
+  padding-bottom: 36px;
+}
+
+.recent-activity-list {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.recent-activity-item {
+  background: #fffaf2;
+  border: 1px solid rgba(95, 61, 40, 0.16);
+  border-radius: 8px;
+  display: grid;
+  gap: 7px;
+  min-height: 118px;
+  padding: 16px;
+}
+
+.recent-activity-item:hover,
+.recent-activity-item:focus-visible {
+  border-color: #c95d32;
+  box-shadow: 0 8px 24px rgba(95, 61, 40, 0.1);
+}
+
+.recent-activity-item > span {
+  color: #c95d32;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.recent-activity-item small {
+  color: #725a48;
+}
+
 .utility-launch-grid {
   display: grid;
   gap: 12px;
@@ -2504,6 +2543,10 @@ h3,
     grid-template-columns: 1fr;
   }
 
+  .recent-activity-list {
+    grid-template-columns: 1fr;
+  }
+
   .section-head,
   .responsive-qa-head,
   .service-boundary,
@@ -2746,5 +2789,325 @@ h3,
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* Operational app surfaces: the workbench should feel like a record system, not a campaign page. */
+.hero {
+  background:
+    linear-gradient(90deg, rgba(242, 238, 228, 0.05) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(242, 238, 228, 0.05) 1px, transparent 1px),
+    #1b211d;
+  background-size: 34px 34px;
+  padding-bottom: 30px;
+}
+
+.home-workbench {
+  margin: 0 auto;
+  max-width: 1180px;
+}
+
+.home-toolbar {
+  align-items: end;
+  border-bottom: 1px solid rgba(255, 248, 237, 0.14);
+  display: grid;
+  gap: 28px;
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 280px);
+  padding: 22px 0 20px;
+}
+
+.app-kicker,
+.readout-label {
+  color: #c6a15d;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  margin: 0 0 7px;
+  text-transform: uppercase;
+}
+
+.home-toolbar h1 {
+  font-size: clamp(2rem, 3.4vw, 3.1rem);
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.home-status {
+  color: rgba(255, 248, 237, 0.72);
+  margin: 0;
+}
+
+.vehicle-picker {
+  color: #c7cec6;
+  display: grid;
+  gap: 7px;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.vehicle-picker select {
+  background: rgba(255, 248, 237, 0.1);
+  border: 1px solid rgba(255, 248, 237, 0.2);
+  color: #fff8ed;
+  min-height: 42px;
+}
+
+.home-work-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  padding-top: 18px;
+}
+
+.next-action-card,
+.home-readout,
+.garage-selected-record {
+  background: rgba(255, 248, 237, 0.08);
+  border: 1px solid rgba(255, 248, 237, 0.16);
+  border-radius: 8px;
+}
+
+.next-action-card {
+  padding: 22px;
+}
+
+.next-action-card h2 {
+  color: #fff8ed;
+  font-size: clamp(1.45rem, 3vw, 2.3rem);
+  margin: 0 0 9px;
+}
+
+.next-action-card p {
+  color: rgba(255, 248, 237, 0.72);
+  line-height: 1.5;
+  margin-bottom: 18px;
+  max-width: 600px;
+}
+
+.home-readout {
+  display: grid;
+  gap: 1px;
+  overflow: hidden;
+}
+
+.home-readout div {
+  background: rgba(255, 248, 237, 0.06);
+  display: grid;
+  gap: 4px;
+  padding: 15px 17px;
+}
+
+.home-readout .readout-label,
+.home-readout strong {
+  color: #fff8ed;
+}
+
+.workspace-header {
+  align-items: center;
+  display: none;
+  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 26px clamp(18px, 4vw, 34px) 4px;
+}
+
+.workspace-header h2 {
+  font-size: clamp(1.45rem, 3vw, 2.2rem);
+  line-height: 1.05;
+  margin-bottom: 5px;
+}
+
+.workspace-header > div > p:last-child {
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.workspace-header .primary-action {
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.panel .app-kicker,
+.workspace-header .app-kicker {
+  color: #9b5a2e;
+}
+
+.app-shell[data-screen="home"] .starter-panel {
+  display: none;
+}
+
+.app-shell[data-screen="community"] #cities {
+  display: none;
+}
+
+.panel {
+  padding-bottom: 42px;
+  padding-top: 42px;
+}
+
+.panel h2 {
+  font-size: clamp(1.45rem, 3vw, 2.25rem);
+  line-height: 1.08;
+}
+
+.section-head {
+  gap: 18px;
+}
+
+.decision-lane-board,
+.comparison-grid,
+.garage-grid,
+.content-grid,
+.timeline-board,
+.ledger-board {
+  gap: 12px;
+}
+
+.decision-lane,
+.comparison-card,
+.composer,
+.post-card,
+.vehicle-card,
+.ledger-card,
+.city-card,
+.playbook-card,
+.notebook-card,
+.loop-card,
+.report-card,
+.detail-card {
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.city-filter-strip {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: -6px 0 16px;
+}
+
+.city-filter-strip > span {
+  color: #725a48;
+  font-size: 0.75rem;
+  font-weight: 900;
+  margin-right: 3px;
+  text-transform: uppercase;
+}
+
+.city-filter-strip button {
+  background: #f4ead9;
+  border: 1px solid rgba(95, 61, 40, 0.14);
+  border-radius: 999px;
+  color: #4e463d;
+  cursor: pointer;
+  min-height: 32px;
+  padding: 5px 10px;
+}
+
+.garage-selected-record {
+  align-items: center;
+  color: #1f2320;
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(100px, 0.7fr));
+  margin-bottom: 16px;
+  padding: 16px 18px;
+}
+
+.garage-selected-record h3,
+.garage-selected-record p {
+  margin: 0;
+}
+
+.garage-selected-record .readout-label {
+  color: #8b6441;
+}
+
+.garage-selected-record strong {
+  display: block;
+  font-size: 0.92rem;
+}
+
+.garage-empty-state {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding: 16px 18px;
+}
+
+.garage-empty-state p {
+  margin: 0;
+}
+
+.recent-activity-panel {
+  background: #f2eee4;
+}
+
+.recent-activity-panel h2 {
+  margin-bottom: 0;
+}
+
+.recent-activity-item,
+.utility-launch-card {
+  box-shadow: none;
+}
+
+@media (max-width: 860px) {
+  .home-toolbar,
+  .home-work-grid,
+  .garage-selected-record {
+    grid-template-columns: 1fr;
+  }
+
+  .vehicle-picker {
+    max-width: 360px;
+  }
+
+  .garage-selected-record {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 560px) {
+  .hero {
+    padding: 0 14px 24px;
+  }
+
+  .home-toolbar {
+    padding-top: 16px;
+  }
+
+  .home-toolbar h1 {
+    font-size: 2rem;
+  }
+
+  .home-work-grid {
+    padding-top: 14px;
+  }
+
+  .next-action-card {
+    padding: 17px;
+  }
+
+  .next-action-card h2 {
+    font-size: 1.45rem;
+  }
+
+  .workspace-header {
+    align-items: start;
+    grid-template-columns: 1fr;
+    padding: 22px 14px 2px;
+  }
+
+  .workspace-header .primary-action {
+    width: auto;
+  }
+
+  .garage-empty-state {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

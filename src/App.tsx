@@ -473,14 +473,16 @@ export function App() {
     window.scrollTo(0, 0);
   };
 
+  const currentVehicle = garage.find((vehicle) => vehicle.id === timelineDraft.vehicleId) ?? garage[0] ?? null;
+  const currentReminder = garageReminders.find((reminder) => reminder.vehicleId === currentVehicle?.id) ?? garageReminders[0] ?? null;
+  const currentLedger = garageCostLedger.find((ledger) => ledger.vehicle.id === currentVehicle?.id) ?? null;
   const workspaceCopy: Record<WorkspaceScreen, { eyebrow: string; title: string; detail: string }> = {
-    home: { eyebrow: "Today's ownership desk", title: "Your next useful action", detail: "A compact view of what needs attention across your garage and buyer work." },
-    shortlist: { eyebrow: "Buyer workspace", title: "Decide with evidence", detail: "Compare candidates, inspect risk, and keep every buying reason visible." },
-    garage: { eyebrow: "Garage workspace", title: "Keep the record moving", detail: "Vehicles, reminders, running costs, and service history in one working ledger." },
-    community: { eyebrow: "Community workspace", title: "Find the owner signal", detail: "Search, filter, and inspect notes without losing the context around them." },
-    more: { eyebrow: "Utility workspace", title: "Keep the system honest", detail: "Profile, saved views, writing tools, notifications, and trust controls." },
+    home: { eyebrow: "Today", title: "Today", detail: "Your next useful ownership action." },
+    shortlist: { eyebrow: "Buyer list", title: "Shortlist", detail: `${shortlist.length} candidate${shortlist.length === 1 ? "" : "s"} with evidence, risk, and next steps.` },
+    garage: { eyebrow: "Vehicle record", title: "Garage", detail: currentVehicle ? `${currentVehicle.nickname || `${currentVehicle.brand} ${currentVehicle.model}`} ledger and upcoming work.` : "Add a vehicle to start the ledger." },
+    community: { eyebrow: "Owner evidence", title: "Community", detail: `${filteredPosts.length} useful note${filteredPosts.length === 1 ? "" : "s"} in the current view.` },
+    more: { eyebrow: "Utilities", title: "More", detail: "Profile, saved notes, writing, notifications, and trust controls." },
   };
-
   return (
     <main className="app-shell" data-screen={activeScreen}>
       <aside className="desktop-rail" aria-label="Autoflex workspace">
@@ -566,56 +568,38 @@ export function App() {
           </div>
         </nav>
 
-        <div className="hero-grid" id="top">
-          <div>
-            <p className="eyebrow">Today's ownership desk</p>
-            <h1>Your garage, shortlist, and owner evidence in one place.</h1>
-            <p className="hero-copy">
-              Pick up the next useful task: check a buyer signal, log a service visit, or add the owner context that
-              keeps a model notebook honest.
-            </p>
-            <div className="hero-actions">
-              <a className="primary-action" href="#feed" onClick={(event) => { event.preventDefault(); openWorkspace("community", "community", "latest"); }}>
-                Open feed
-              </a>
-              <a className="secondary-action" href="#garage" onClick={(event) => { event.preventDefault(); openWorkspace("garage"); }}>
-                Add garage record
-              </a>
+        <div className="home-workbench" id="top">
+          <div className="home-toolbar">
+            <div>
+              <p className="app-kicker">Today</p>
+              <h1>Ownership, kept in order.</h1>
+              <p className="home-status">{currentVehicle ? `${currentVehicle.nickname || `${currentVehicle.brand} ${currentVehicle.model}`} is your active record.` : "Your local garage is ready for its first vehicle."}</p>
             </div>
+            <label className="vehicle-picker">
+              <span>Current vehicle</span>
+              {garage.length ? (
+                <select value={currentVehicle?.id ?? ""} onChange={(event) => setTimelineDraft({ ...timelineDraft, vehicleId: event.target.value })}>
+                  {garage.map((vehicle) => <option key={vehicle.id} value={vehicle.id}>{vehicle.nickname || `${vehicle.brand} ${vehicle.model}`}</option>)}
+                </select>
+              ) : <strong>No vehicle yet</strong>}
+            </label>
           </div>
-
-          <div className="instrument-card" aria-label="Autoflex community pulse">
-            <p className="instrument-kicker">Live garage cockpit</p>
-            <div className="instrument-metrics">
-              <span>
-                <strong>{stats.posts}</strong>
-                Owner notes
-              </span>
-              <span>
-                <strong>{stats.models}</strong>
-                Model notebooks
-              </span>
-              <span>
-                <strong>{stats.confirmations}</strong>
-                Fix confirmations
-              </span>
-            </div>
-            <div className="cockpit-stack" aria-label="Ownership signals">
-              <span>{garageReminders.length} reminders armed</span>
-              <span>{shortlistDecisionLanes.filter((lane) => lane.priority === "High").length} buyer alerts</span>
-              <span>{moderationSummary.openReports} trust checks open</span>
-            </div>
-            <p>Records, reminders, buyer checks, and local circles feed the same ownership loop.</p>
+          <div className="home-work-grid">
+            <article className="next-action-card">
+              <span className="readout-label">Next due</span>
+              <h2>{currentReminder?.title ?? "Add your vehicle"}</h2>
+              <p>{currentReminder?.detail ?? "Start with one vehicle so reminders, costs, and ownership notes have somewhere to land."}</p>
+              <button className="primary-action" type="button" onClick={() => openWorkspace("garage")}>
+                {currentVehicle ? "Open garage record" : "Add your vehicle"}
+              </button>
+            </article>
+            <aside className="home-readout" aria-label="Current ownership readout">
+              <div><span className="readout-label">Odometer</span><strong>{currentVehicle ? `${currentVehicle.odometerKm.toLocaleString("en-IN")} km` : "--"}</strong></div>
+              <div><span className="readout-label">Logged cost</span><strong>{currentLedger ? formatMoney(currentLedger.totalSpend) : "--"}</strong></div>
+              <div><span className="readout-label">Open signals</span><strong>{shortlistDecisionLanes.filter((lane) => lane.priority === "High").length + garageReminders.filter((reminder) => reminder.urgency === "Soon").length}</strong></div>
+            </aside>
           </div>
         </div>
-      </section>
-
-      <section className="service-boundary screen-home">
-        <strong>Service-center integration boundary</strong>
-        <span>
-          Endpoints stay separate for now because another team owns that contract. Autoflex focuses on community,
-          ownership knowledge, garage retention, moderation, and return-user loops.
-        </span>
       </section>
 
       {actionMessage ? (
@@ -624,26 +608,22 @@ export function App() {
         </div>
       ) : null}
 
-      <section className={`connection-strip ${connectionStatus.tone}`} aria-label="Connection status">
-        <strong>{connectionStatus.label}</strong>
-        <span>{connectionStatus.detail}</span>
-      </section>
-
       <section className="workspace-header" aria-label={`${workspaceCopy[activeScreen].title} workspace`}>
         <div>
-          <p className="eyebrow">{workspaceCopy[activeScreen].eyebrow}</p>
+          <p className="app-kicker">{workspaceCopy[activeScreen].eyebrow}</p>
           <h2>{workspaceCopy[activeScreen].title}</h2>
           <p>{workspaceCopy[activeScreen].detail}</p>
         </div>
-        <button className="save-button" type="button" onClick={() => openWorkspace("home", "home")}>
-          Back to cockpit
-        </button>
+        {activeScreen === "shortlist" ? <button className="primary-action" type="button" onClick={() => document.querySelector("#shortlist form")?.scrollIntoView()}>Add candidate</button> : null}
+        {activeScreen === "garage" ? <button className="primary-action" type="button" onClick={() => document.querySelector("#garage form")?.scrollIntoView()}>Add record</button> : null}
+        {activeScreen === "community" ? <button className="primary-action" type="button" onClick={() => openWorkspace("more", "more")}>Write post</button> : null}
+        {activeScreen === "more" ? <button className="primary-action" type="button" onClick={() => document.querySelector("#profile")?.scrollIntoView()}>Edit profile</button> : null}
       </section>
 
       <section className="panel dashboard-panel screen-home" aria-label="Return user dashboard">
         <div>
-          <p className="eyebrow">Return-user garage</p>
-          <h2>Your next useful reason to come back.</h2>
+          <p className="app-kicker">Open tasks</p>
+          <h2>Keep these moving.</h2>
         </div>
         <div className="nudge-grid">
           {returnNudges.length ? (
@@ -651,6 +631,38 @@ export function App() {
           ) : (
             <p>Follow a model, save a note, or add a vehicle to unlock a more personal garage dashboard.</p>
           )}
+        </div>
+      </section>
+
+      <section className="panel recent-activity-panel screen-home" aria-label="Recent useful activity">
+        <div className="section-head">
+          <div>
+            <p className="eyebrow">Recent useful activity</p>
+            <h2>Signals worth picking up.</h2>
+          </div>
+          <button className="save-button" type="button" onClick={() => openWorkspace("community", "community", "latest")}>
+            Open community
+          </button>
+        </div>
+        <div className="recent-activity-list">
+          {posts.slice(0, 3).map((post) => (
+            <a
+              className="recent-activity-item"
+              href="#feed"
+              key={post.id}
+              onClick={(event) => {
+                event.preventDefault();
+                setSelectedPost(post);
+                openWorkspace("community", "community", "latest");
+              }}
+            >
+              <span>{post.label}</span>
+              <strong>{post.title}</strong>
+              <small>
+                {post.brand} {post.model} · {post.city || "Community note"}
+              </small>
+            </a>
+          ))}
         </div>
       </section>
 
@@ -862,8 +874,8 @@ export function App() {
       <section className="panel screen-community" id="feed">
         <div className="section-head">
           <div>
-            <p className="eyebrow">Community feed</p>
-            <h2>Useful posts first, drama last.</h2>
+            <p className="app-kicker">Evidence list</p>
+            <h2>Owner notes</h2>
           </div>
           <div className="filters" aria-label="Feed filters">
             <input
@@ -886,6 +898,15 @@ export function App() {
             </select>
           </div>
         </div>
+
+        {cityCircles.length ? (
+          <div className="city-filter-strip" aria-label="Browse by city">
+            <span>City signal</span>
+            {cityCircles.map((circle) => (
+              <button key={circle.city} type="button" onClick={() => setQuery(circle.city)}>{circle.city} · {circle.posts.length}</button>
+            ))}
+          </div>
+        ) : null}
 
         <div className="content-grid">
           <div className="feed-list">
@@ -1007,8 +1028,8 @@ export function App() {
       <section className="panel screen-shortlist" id="shortlist">
         <div className="section-head">
           <div>
-            <p className="eyebrow">Buyer shortlist</p>
-            <h2>Turn owner notes into a decision.</h2>
+            <p className="app-kicker">Candidates</p>
+            <h2>Compare evidence</h2>
           </div>
         </div>
         <div className="decision-lane-board" aria-label="Buyer decision lane">
@@ -1034,7 +1055,10 @@ export function App() {
               </article>
             ))
           ) : (
-            <div className="empty-state">Add one model to unlock a buyer decision lane with next actions.</div>
+            <div className="empty-state">
+              <p>Add a candidate to start comparing evidence and risk.</p>
+              <button className="primary-action" type="button" onClick={() => document.querySelector("#shortlist form")?.scrollIntoView()}>Add first candidate</button>
+            </div>
           )}
         </div>
         <div className="shortlist-grid">
@@ -1279,13 +1303,30 @@ export function App() {
       <section className="panel screen-garage" id="garage">
         <div className="section-head">
           <div>
-            <p className="eyebrow">Garage timeline</p>
-            <h2>Make ownership useful before something breaks.</h2>
+            <p className="app-kicker">Ownership ledger</p>
+            <h2>Selected vehicle</h2>
           </div>
           <button className="save-button" type="button" onClick={exportGarage}>
             Export garage
           </button>
         </div>
+        {currentVehicle ? (
+          <div className="garage-selected-record" aria-label="Selected vehicle record">
+            <div>
+              <span className="readout-label">Selected vehicle</span>
+              <h3>{currentVehicle.nickname || `${currentVehicle.brand} ${currentVehicle.model}`}</h3>
+              <p>{currentVehicle.brand} {currentVehicle.model} {currentVehicle.variant ? `· ${currentVehicle.variant}` : ""}</p>
+            </div>
+            <div><span className="readout-label">Odometer</span><strong>{currentVehicle.odometerKm.toLocaleString("en-IN")} km</strong></div>
+            <div><span className="readout-label">Logged cost</span><strong>{currentLedger ? formatMoney(currentLedger.totalSpend) : "No spend yet"}</strong></div>
+            <div><span className="readout-label">Next due</span><strong>{currentReminder?.title ?? "No reminder"}</strong></div>
+          </div>
+        ) : (
+          <div className="empty-state garage-empty-state">
+            <p>Add your vehicle to start the maintenance and cost ledger.</p>
+            <button className="primary-action" type="button" onClick={() => document.querySelector("#garage form")?.scrollIntoView()}>Add your vehicle</button>
+          </div>
+        )}
         <div className="garage-grid">
           <form className="composer" onSubmit={addVehicle}>
             <h3>Add vehicle</h3>
