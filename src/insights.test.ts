@@ -585,6 +585,7 @@ describe("Autoflex insights", () => {
     );
 
     expect(lanes.map((lane) => lane.decision)).toEqual(["Gather evidence", "Inspect risk", "Archive"]);
+    expect(lanes).toHaveLength(3);
     expect(lanes[0]).toMatchObject({
       item: expect.objectContaining({ model: "Hyryder" }),
       priority: "High",

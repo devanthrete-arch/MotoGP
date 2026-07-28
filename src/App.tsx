@@ -913,9 +913,19 @@ export function App() {
         </div>
         <div className="decision-lane-board" aria-label="Buyer decision lane">
           {shortlistDecisionLanes.length ? (
-            shortlistDecisionLanes.slice(0, 4).map((lane) => (
+            shortlistDecisionLanes.map((lane) => (
               <article className={`decision-lane ${lane.priority.toLowerCase()}`} key={lane.item.id}>
-                <span>{lane.decision}</span>
+                <div className="decision-lane-meta">
+                  <span>{lane.decision}</span>
+                  <span
+                    className={`decision-priority ${lane.priority.toLowerCase()}`}
+                    aria-label={`${lane.priority} priority`}
+                    title={`${lane.priority} priority`}
+                  >
+                    <span aria-hidden="true">{lane.priority === "High" ? "!" : lane.priority === "Medium" ? "~" : "-"}</span>
+                    {lane.priority} priority
+                  </span>
+                </div>
                 <h3>
                   {lane.item.brand} {lane.item.model}
                 </h3>

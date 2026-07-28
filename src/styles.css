@@ -1959,6 +1959,14 @@ a:focus-visible {
   padding: 16px;
 }
 
+.decision-lane-meta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+}
+
 .decision-lane.high {
   border-left-color: #b94b35;
 }
@@ -1982,6 +1990,60 @@ a:focus-visible {
   letter-spacing: 0.12em;
   padding: 7px 10px;
   text-transform: uppercase;
+}
+
+.decision-lane .decision-priority {
+  align-items: center;
+  background: transparent;
+  border: 1px solid rgba(31, 35, 32, 0.2);
+  border-radius: 999px;
+  color: #3b3932;
+  display: inline-flex;
+  font-size: 0.68rem;
+  gap: 5px;
+  letter-spacing: 0.04em;
+  padding: 5px 8px;
+  text-transform: none;
+}
+
+.decision-lane .decision-priority span {
+  align-items: center;
+  background: #3b3932;
+  border-radius: 50%;
+  color: #fffaf2;
+  display: inline-flex;
+  font-size: 0.72rem;
+  height: 16px;
+  justify-content: center;
+  padding: 0;
+  width: 16px;
+}
+
+.decision-lane .decision-priority.high {
+  border-color: #b94b35;
+  color: #8b281d;
+}
+
+.decision-lane .decision-priority.high span {
+  background: #b94b35;
+}
+
+.decision-lane .decision-priority.medium {
+  border-color: #c29326;
+  color: #785b10;
+}
+
+.decision-lane .decision-priority.medium span {
+  background: #c29326;
+}
+
+.decision-lane .decision-priority.low {
+  border-color: #6a7f63;
+  color: #496043;
+}
+
+.decision-lane .decision-priority.low span {
+  background: #6a7f63;
 }
 
 .decision-lane h3,
