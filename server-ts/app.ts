@@ -1,5 +1,5 @@
 import cors from "@fastify/cors";
-import Fastify, { type FastifyInstance } from "fastify";
+import Fastify, { type FastifyError, type FastifyInstance, type FastifyReply, type FastifyRequest } from "fastify";
 import type {
   DraftPost,
   DraftReport,
@@ -12,7 +12,7 @@ import type {
   ShortlistItem,
 } from "../src/domain";
 import { createPost, createReport, createShortlistItem, createTimelineEntry, createVehicle } from "../src/storage";
-import { createMemoryStore, makeId, type AutoflexStore, type FeedbackRecord, type InspectionSession } from "./store";
+import { createStoreBundle, makeId, type AutoflexStore, type FeedbackRecord, type InspectionSession, type StorePersistence } from "./store";
 
 type CreateCommentBody = {
   author?: string;
@@ -32,7 +32,12 @@ type CreateInspectionBody = {
 };
 
 type ApiOptions = {
+  adminToken?: string;
+  allowedOrigins?: string[];
+  dataPath?: string;
+  persistence?: StorePersistence;
   store?: AutoflexStore;
+  version?: string;
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -51,21 +56,67 @@ const requiredString = (body: Record<string, unknown>, key: string): string | nu
 };
 
 const optionalStringArray = (value: unknown): string[] =>
-  Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && Boolean(item.trim())) : [];
+  Array.isArray(value)
+    ? value
+        .filter((item): item is string => typeof item === "string" && Boolean(item.trim()))
+        .map((item) => item.trim().slice(0, 120))
+        .slice(0, 50)
+    : [];
+
+const profileRoles: Profile["garageRole"][] = ["Owner", "Buyer", "Enthusiast", "Mechanic"];
+
+const isAdminRequest = (headers: FastifyRequest["headers"], adminToken: string): boolean => {
+  const token = headers["x-admin-token"];
+  const authorization = headers.authorization;
+  return token === adminToken || authorization === `Bearer ${adminToken}`;
+};
 
 export async function buildAutoflexApi(options: ApiOptions = {}): Promise<FastifyInstance> {
-  const store = options.store ?? createMemoryStore();
+  const bundle = options.store
+    ? {
+        persistence: options.persistence ?? {
+          persist: async () => undefined,
+          storage: "memory" as const,
+        },
+        store: options.store,
+      }
+    : await createStoreBundle(options.dataPath ?? process.env.API_DATA_PATH);
+  const { persistence, store } = bundle;
+  const adminToken = options.adminToken ?? process.env.ADMIN_TOKEN ?? "dev-admin";
+  const version = options.version ?? process.env.APP_VERSION ?? "dev";
   const app = Fastify({ logger: false });
 
   await app.register(cors, {
-    origin: true,
+    origin: options.allowedOrigins ?? process.env.CORS_ORIGINS?.split(",").map((origin) => origin.trim()).filter(Boolean) ?? true,
   });
 
-  app.get("/health", async () => ({
+  app.setErrorHandler((error: FastifyError, _request, reply) => {
+    if ("statusCode" in error && typeof error.statusCode === "number" && error.statusCode < 500) {
+      return reply.code(error.statusCode).send(badRequest(error.message));
+    }
+    app.log.error(error);
+    return reply.code(500).send({ error: "Internal server error", message: "Request failed." });
+  });
+
+  const healthResponse = () => ({
     serviceCenterBoundary: "reserved",
     status: "ok",
-    storage: "memory",
-  }));
+    storage: persistence.storage,
+    version,
+  });
+
+  const persist = async () => {
+    await persistence.persist();
+  };
+
+  const requireAdmin = (request: FastifyRequest, reply: FastifyReply) => {
+    if (isAdminRequest(request.headers, adminToken)) return true;
+    reply.code(401).send({ error: "Unauthorized", message: "Admin token is required." });
+    return false;
+  };
+
+  app.get("/health", async () => healthResponse());
+  app.get("/api/health", async () => healthResponse());
 
   app.get("/api/profiles/:profileId", async (request, reply) => {
     const { profileId } = request.params as { profileId: string };
@@ -83,6 +134,9 @@ export async function buildAutoflexApi(options: ApiOptions = {}): Promise<Fastif
     if (!displayName || !city || !garageRole) {
       return reply.code(400).send(badRequest("displayName, city, and garageRole are required."));
     }
+    if (!profileRoles.includes(garageRole as Profile["garageRole"])) {
+      return reply.code(400).send(badRequest("garageRole must be Owner, Buyer, Enthusiast, or Mechanic."));
+    }
 
     const profile: Profile = {
       city,
@@ -90,6 +144,7 @@ export async function buildAutoflexApi(options: ApiOptions = {}): Promise<Fastif
       garageRole: garageRole as Profile["garageRole"],
     };
     store.profiles.set(profileId, profile);
+    await persist();
     return { id: profileId, ...profile };
   });
 
@@ -109,6 +164,7 @@ export async function buildAutoflexApi(options: ApiOptions = {}): Promise<Fastif
     const post = createPost(body as DraftPost);
     store.posts.set(post.id, post);
     store.comments.set(post.id, []);
+    await persist();
     return reply.code(201).send(post);
   });
 
@@ -133,6 +189,7 @@ export async function buildAutoflexApi(options: ApiOptions = {}): Promise<Fastif
 
     const post = store.posts.get(postId);
     if (post) store.posts.set(postId, { ...post, comments });
+    await persist();
     return reply.code(201).send({ comment, comments });
   });
 
@@ -151,14 +208,19 @@ export async function buildAutoflexApi(options: ApiOptions = {}): Promise<Fastif
       reporterName: requiredString(body, "reporterName") ?? "Anonymous reporter",
     });
     store.reports.set(report.id, report);
+    await persist();
     return reply.code(201).send(report);
   });
 
-  app.get("/api/moderation/reports", async () => ({
-    reports: [...store.reports.values()].sort((first, second) => Date.parse(second.createdAt) - Date.parse(first.createdAt)),
-  }));
+  app.get("/api/moderation/reports", async (request, reply) => {
+    if (!requireAdmin(request, reply)) return;
+    return {
+      reports: [...store.reports.values()].sort((first, second) => Date.parse(second.createdAt) - Date.parse(first.createdAt)),
+    };
+  });
 
   app.patch("/api/moderation/reports/:reportId", async (request, reply) => {
+    if (!requireAdmin(request, reply)) return;
     const { reportId } = request.params as { reportId: string };
     const report = store.reports.get(reportId);
     if (!report) return reply.code(404).send({ error: "Report not found" });
@@ -170,6 +232,7 @@ export async function buildAutoflexApi(options: ApiOptions = {}): Promise<Fastif
 
     const nextReport = { ...report, status };
     store.reports.set(reportId, nextReport);
+    await persist();
     return nextReport;
   });
 
@@ -186,6 +249,7 @@ export async function buildAutoflexApi(options: ApiOptions = {}): Promise<Fastif
       topics: optionalStringArray(body.topics),
     };
     store.follows.set(profileId, follows);
+    await persist();
     return follows;
   });
 
@@ -201,6 +265,7 @@ export async function buildAutoflexApi(options: ApiOptions = {}): Promise<Fastif
     if (unknownPost) return reply.code(404).send({ error: `Post not found: ${unknownPost}` });
 
     store.saves.set(profileId, new Set(postIds));
+    await persist();
     return { postIds };
   });
 
@@ -215,6 +280,7 @@ export async function buildAutoflexApi(options: ApiOptions = {}): Promise<Fastif
 
     const vehicle = createVehicle(body as DraftVehicle);
     store.garage.set(vehicle.id, vehicle);
+    await persist();
     return reply.code(201).send(vehicle);
   });
 
@@ -230,6 +296,7 @@ export async function buildAutoflexApi(options: ApiOptions = {}): Promise<Fastif
 
     const entry = createTimelineEntry(body as DraftTimelineEntry);
     store.timeline.set(entry.id, entry);
+    await persist();
     return reply.code(201).send(entry);
   });
 
@@ -244,6 +311,7 @@ export async function buildAutoflexApi(options: ApiOptions = {}): Promise<Fastif
 
     const item: ShortlistItem = createShortlistItem(body as DraftShortlistItem);
     store.shortlist.set(item.id, item);
+    await persist();
     return reply.code(201).send(item);
   });
 
@@ -264,6 +332,7 @@ export async function buildAutoflexApi(options: ApiOptions = {}): Promise<Fastif
       shortlistItemId,
     };
     store.inspections.set(session.id, session);
+    await persist();
     return reply.code(201).send(session);
   });
 
@@ -280,12 +349,16 @@ export async function buildAutoflexApi(options: ApiOptions = {}): Promise<Fastif
       surface: body.surface?.trim() || "general",
     };
     store.feedback.set(feedback.id, feedback);
+    await persist();
     return reply.code(201).send(feedback);
   });
 
-  app.get("/api/feedback", async () => ({
-    feedback: [...store.feedback.values()].sort((first, second) => Date.parse(second.createdAt) - Date.parse(first.createdAt)),
-  }));
+  app.get("/api/feedback", async (request, reply) => {
+    if (!requireAdmin(request, reply)) return;
+    return {
+      feedback: [...store.feedback.values()].sort((first, second) => Date.parse(second.createdAt) - Date.parse(first.createdAt)),
+    };
+  });
 
   app.all("/api/service-centers/*", async (_request, reply) =>
     reply.code(404).send({

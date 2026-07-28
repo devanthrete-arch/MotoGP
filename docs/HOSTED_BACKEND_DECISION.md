@@ -29,10 +29,12 @@ contracts into the community MVP API until the owning team provides its contract
 
 ## Current implementation
 
-The repo now includes `server-ts`, a Fastify API foundation with in-memory
-repositories and tests for:
+The repo now includes `server-ts`, a Fastify API foundation with seeded
+in-memory repositories by default, optional JSON-backed persistence when
+`API_DATA_PATH` is set, and tests for:
 
 - `GET /health`
+- `GET /api/health`
 - `GET /api/profiles/:profileId`
 - `PUT /api/profiles/:profileId`
 - `GET /api/posts`
@@ -60,8 +62,24 @@ repositories and tests for:
 `/api/service-centers/*` intentionally returns a boundary response until the
 separate owning team provides its contract.
 
+## Runtime config
+
+- `PORT`: API port. Default: `3001`.
+- `HOST`: bind host. Default: `0.0.0.0`.
+- `API_DATA_PATH`: optional JSON persistence file. Leave unset for seeded
+  in-memory local development.
+- `ADMIN_TOKEN`: required for internal moderation and feedback list routes.
+  Default local value: `dev-admin`; never use this in shared environments.
+- `APP_VERSION`: release label returned by `/health` and `/api/health`.
+- `CORS_ORIGINS`: optional comma-separated allowlist for shared environments.
+
+Internal routes `GET /api/moderation/reports`, `PATCH
+/api/moderation/reports/:reportId`, and `GET /api/feedback` accept either
+`x-admin-token` or `Authorization: Bearer <ADMIN_TOKEN>`.
+
 ## Next backend step
 
-Replace the in-memory repositories with durable hosted persistence. Start with
-posts, comments, reports, profiles, saves, follows, garage vehicles, timeline
-entries, shortlist items, and inspection sessions.
+Use the JSON-backed mode for beta validation, then replace it with the selected
+production database before public scale. Start with posts, comments, reports,
+profiles, saves, follows, garage vehicles, timeline entries, shortlist items,
+and inspection sessions.
