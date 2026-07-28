@@ -81,6 +81,7 @@ Service-center integration is intentionally kept separate under
 - [x] Decided the first hosted backend path: TypeScript/Fastify for the web MVP, with Kotlin/Ktor retained for the later Android/native path.
 - [x] Added the first TypeScript/Fastify API foundation for profiles, posts, comments, reports, moderation, follows, saved posts, garage vehicles, timeline entries, shortlist items, inspection sessions, and feedback ingestion.
 - [x] Added API tests that verify core hosted routes and confirm service-center routes remain reserved for the separate owning team.
+- [x] Added optional JSON-backed API persistence, `/api/health`, configurable CORS, admin-token protection for internal queues, and persistence tests.
 
 ### Yet to be done
 
@@ -88,7 +89,7 @@ Service-center integration is intentionally kept separate under
 - [ ] Deploy the TypeScript webapp on Vercel and record the production URL in the launch panel.
 - [ ] Run a visual responsive QA pass on the deployed Vercel URL, including the starter route, QA checklist, responsive QA matrix, and install prompt.
 - [ ] Run an offline-mode smoke check in the deployed browser.
-- [ ] Add durable hosted persistence behind the TypeScript/Fastify routes after the deployed web surface is validated.
+- [ ] Choose the production persistence backend after validating the JSON-backed beta API path.
 - [ ] Replace local backup/restore with hosted account sync once persistence exists.
 - [ ] Replace local subscription previews with real hosted notification jobs after accounts/persistence exist.
 - [ ] Wire the webapp to the hosted profile/report/comment/moderation APIs after durable persistence exists.
@@ -140,10 +141,21 @@ Run the local API foundation with:
 npm run api:dev
 ```
 
-It starts a Fastify server on port `3001` by default. Current routes are
-in-memory contracts for profiles, posts, comments, reports, moderation, follows,
-saved posts, garage vehicles, timeline entries, shortlist items, inspection
-sessions, and feedback. Durable persistence is the next backend step.
+It starts a Fastify server on port `3001` by default. Current routes cover
+profiles, posts, comments, reports, moderation, follows, saved posts, garage
+vehicles, timeline entries, shortlist items, inspection sessions, and feedback.
+By default the API uses seeded in-memory data for local development and tests.
+Set `API_DATA_PATH` to persist the same contracts to a JSON file for staging or
+beta validation:
+
+```bash
+API_DATA_PATH=./data/autoflex-api.json ADMIN_TOKEN=change-me npm run api:dev
+```
+
+Internal moderation and feedback list routes require `x-admin-token` or
+`Authorization: Bearer <ADMIN_TOKEN>`. Public feedback submission and community
+report submission remain open. Use `CORS_ORIGINS` as a comma-separated allowlist
+for shared environments; local development stays permissive by default.
 - Android Studio with Android SDK 36 only when building the Android app
 
 ## Run locally
@@ -213,8 +225,10 @@ Set `UPLOAD_DIR` to move them in a shared environment.
 - Deploy the active TypeScript webapp through Vercel.
 - Run `npm run release:check`.
 - Serve the future hosted API over HTTPS.
-- Set `ADMIN_TOKEN`, `DATABASE_PATH`, `UPLOAD_DIR`, and `APP_VERSION`.
-- Back up the database and upload directory.
+- Set `ADMIN_TOKEN`, `API_DATA_PATH`, `APP_VERSION`, and `CORS_ORIGINS` for the
+  TypeScript API beta path.
+- Back up the API data file, or replace it with the selected production
+  database before public scale.
 - Use [RELEASE_CHECKLIST.md](/Users/priyanshtyagi/Auto-Motive-Flex/docs/RELEASE_CHECKLIST.md:1).
 - Use [STAGING_DEPLOYMENT.md](/Users/priyanshtyagi/Auto-Motive-Flex/docs/STAGING_DEPLOYMENT.md:1) for the Docker staging path.
 - Use [PRIVACY_AND_DELETION.md](/Users/priyanshtyagi/Auto-Motive-Flex/docs/PRIVACY_AND_DELETION.md:1) as the MVP privacy baseline.

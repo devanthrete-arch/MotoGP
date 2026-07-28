@@ -1,14 +1,16 @@
-FROM eclipse-temurin:17-jdk AS build
-WORKDIR /workspace
-COPY . .
-RUN ./gradlew --no-daemon :server-kotlin:installDist
+FROM node:20-alpine
 
-FROM eclipse-temurin:17-jre
 WORKDIR /app
-ENV PORT=8080 \
-    DATABASE_PATH=/data/autoflex.db \
-    UPLOAD_DIR=/data/uploads
-COPY --from=build /workspace/server-kotlin/build/install/server-kotlin /app
-EXPOSE 8080
+ENV HOST=0.0.0.0 \
+    PORT=3001 \
+    API_DATA_PATH=/data/autoflex-api.json
+
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY . .
+RUN npm run build
+
+EXPOSE 3001
 VOLUME ["/data"]
-CMD ["/app/bin/server-kotlin"]
+CMD ["npm", "run", "api:start"]
