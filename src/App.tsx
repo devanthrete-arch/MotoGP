@@ -38,6 +38,7 @@ import {
   buildPrivacyReadinessSummary,
   buildReturnNudges,
   buildShortlistComparisons,
+  buildShortlistDecisionLanes,
   buildStarterRouteProgress,
   filterPostsByMode,
   formatMoney,
@@ -201,6 +202,7 @@ export function App() {
   const moderationSummary = useMemo(() => buildModerationSummary(reports), [reports]);
   const privacySummary = useMemo(() => buildPrivacyReadinessSummary(privacyReadinessItems), []);
   const shortlistComparisons = useMemo(() => buildShortlistComparisons(shortlist, posts), [posts, shortlist]);
+  const shortlistDecisionLanes = useMemo(() => buildShortlistDecisionLanes(shortlist, posts), [posts, shortlist]);
   const inspectionChecklists = useMemo(() => buildInspectionChecklists(shortlist, posts), [posts, shortlist]);
   const inspectionChecklistByItemId = useMemo(
     () => new Map(inspectionChecklists.map((checklist) => [checklist.item.id, checklist])),
@@ -506,8 +508,8 @@ export function App() {
             <p className="eyebrow">Deep ownership knowledge, built for the next wave</p>
             <h1>Owner notes that help people buy, fix, and actually live with cars.</h1>
             <p className="hero-copy">
-              Autoflex brings real reviews, known issues, verified fixes, cost notes, travelogues, garage timelines, and
-              model notebooks into one ownership-first community. Less noise, more garage truth.
+              Autoflex turns owner notes, known issues, fixes, cost logs, garage timelines, and shortlist checks into a
+              living cockpit for buying and running cars with more confidence.
             </p>
             <div className="hero-actions">
               <a className="primary-action" href="#write">
@@ -520,7 +522,7 @@ export function App() {
           </div>
 
           <div className="instrument-card" aria-label="Autoflex community pulse">
-            <p className="instrument-kicker">Community pulse</p>
+            <p className="instrument-kicker">Live garage cockpit</p>
             <div className="instrument-metrics">
               <span>
                 <strong>{stats.posts}</strong>
@@ -535,7 +537,12 @@ export function App() {
                 Fix confirmations
               </span>
             </div>
-            <p>Knowledge cards, garage records, buyer checks, and local circles are already feeding the ownership loop.</p>
+            <div className="cockpit-stack" aria-label="Ownership signals">
+              <span>{garageReminders.length} reminders armed</span>
+              <span>{shortlistDecisionLanes.filter((lane) => lane.priority === "High").length} buyer alerts</span>
+              <span>{moderationSummary.openReports} trust checks open</span>
+            </div>
+            <p>Records, reminders, buyer checks, and local circles feed the same ownership loop.</p>
           </div>
         </div>
       </section>
@@ -903,6 +910,22 @@ export function App() {
             <p className="eyebrow">Buyer shortlist</p>
             <h2>Turn owner notes into a decision.</h2>
           </div>
+        </div>
+        <div className="decision-lane-board" aria-label="Buyer decision lane">
+          {shortlistDecisionLanes.length ? (
+            shortlistDecisionLanes.slice(0, 4).map((lane) => (
+              <article className={`decision-lane ${lane.priority.toLowerCase()}`} key={lane.item.id}>
+                <span>{lane.decision}</span>
+                <h3>
+                  {lane.item.brand} {lane.item.model}
+                </h3>
+                <p>{lane.signal}</p>
+                <strong>{lane.nextAction}</strong>
+              </article>
+            ))
+          ) : (
+            <div className="empty-state">Add one model to unlock a buyer decision lane with next actions.</div>
+          )}
         </div>
         <div className="shortlist-grid">
           <form className="composer" onSubmit={addShortlistItem}>

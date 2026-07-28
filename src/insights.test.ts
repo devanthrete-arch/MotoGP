@@ -37,6 +37,7 @@ import {
   buildResponsiveQaSummary,
   buildReturnNudges,
   buildShortlistComparisons,
+  buildShortlistDecisionLanes,
   buildStarterRouteProgress,
   buildTesterRunSummary,
   filterPostsByMode,
@@ -514,6 +515,81 @@ describe("Autoflex insights", () => {
       confidence: "Low",
       relatedNotes: 0,
     });
+  });
+
+  it("prioritizes buyer shortlist next actions from evidence and status", () => {
+    const lanes = buildShortlistDecisionLanes(
+      [
+        {
+          brand: "Toyota",
+          budget: 2200000,
+          id: "shortlist-hyryder",
+          model: "Hyryder",
+          notes: "Needs owner data",
+          status: "Test drive",
+        },
+        {
+          brand: "Mahindra",
+          budget: 1800000,
+          id: "shortlist-xuv",
+          model: "XUV700",
+          notes: "Already rejected",
+          status: "Rejected",
+        },
+        {
+          brand: "Tata",
+          budget: 1200000,
+          id: "shortlist-nexon",
+          model: "Nexon",
+          notes: "Family compact SUV option",
+          status: "Researching",
+        },
+      ],
+      [
+        ...seedPosts,
+        {
+          author: "Owner",
+          body: "Repeated clutch issue appeared in traffic before the fix was attempted.",
+          brand: "Tata",
+          city: "Pune",
+          comments: [],
+          createdAt: "2026-07-21T10:00:00.000Z",
+          fixesConfirmed: 0,
+          helpful: 1,
+          id: "nexon-clutch-issue",
+          label: "Known issue",
+          model: "Nexon",
+          odometerKm: 39000,
+          title: "Clutch judder in traffic",
+          topic: "Drivetrain",
+          variant: "Diesel AMT",
+        },
+        {
+          author: "Owner",
+          body: "Another owner saw similar low-speed drivetrain shudder before service inspection.",
+          brand: "Tata",
+          city: "Pune",
+          comments: [],
+          createdAt: "2026-07-21T11:00:00.000Z",
+          fixesConfirmed: 0,
+          helpful: 1,
+          id: "nexon-second-clutch-issue",
+          label: "Known issue",
+          model: "Nexon",
+          odometerKm: 41000,
+          title: "Second clutch shudder report",
+          topic: "Drivetrain",
+          variant: "Diesel AMT",
+        },
+      ],
+    );
+
+    expect(lanes.map((lane) => lane.decision)).toEqual(["Gather evidence", "Inspect risk", "Archive"]);
+    expect(lanes[0]).toMatchObject({
+      item: expect.objectContaining({ model: "Hyryder" }),
+      priority: "High",
+    });
+    expect(lanes[1].signal).toContain("2 issue signals");
   });
 
   it("builds city circles from posts and garage vehicles", () => {

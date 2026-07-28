@@ -1,6 +1,6 @@
 :root {
-  color: #211b16;
-  background: #f7f0e5;
+  color: #1f2320;
+  background: #f2eee4;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-synthesis: none;
@@ -45,9 +45,12 @@ a {
 
 .hero {
   background:
-    radial-gradient(circle at 75% 15%, rgba(255, 119, 68, 0.24), transparent 28rem),
-    linear-gradient(135deg, #241912 0%, #4b2418 45%, #a24326 100%);
-  color: #fff8ed;
+    linear-gradient(90deg, rgba(242, 238, 228, 0.05) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(242, 238, 228, 0.05) 1px, transparent 1px),
+    radial-gradient(circle at 78% 16%, rgba(237, 183, 61, 0.2), transparent 22rem),
+    linear-gradient(135deg, #151a17 0%, #29332e 54%, #6d2f21 100%);
+  background-size: 34px 34px, 34px 34px, auto, auto;
+  color: #fbf4e5;
   padding: 28px clamp(18px, 4vw, 64px) 64px;
 }
 
@@ -95,15 +98,15 @@ a {
 
 .brand {
   border: 1px solid rgba(255, 248, 237, 0.26);
-  border-radius: 999px;
+  border-radius: 8px;
   font-size: 1.1rem;
   font-weight: 900;
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
   padding: 10px 16px;
 }
 
 .brand span {
-  color: #ffb36b;
+  color: #edb73d;
 }
 
 .nav-toggle {
@@ -181,7 +184,7 @@ p {
 
 h1 {
   font-size: clamp(3rem, 7.8vw, 6.4rem);
-  letter-spacing: -0.055em;
+  letter-spacing: 0;
   line-height: 0.94;
   margin-bottom: 24px;
   max-width: 920px;
@@ -190,14 +193,14 @@ h1 {
 
 h2 {
   font-size: clamp(2rem, 5vw, 4.2rem);
-  letter-spacing: -0.065em;
+  letter-spacing: 0;
   line-height: 0.92;
   margin-bottom: 14px;
 }
 
 h3 {
   font-size: 1.2rem;
-  letter-spacing: -0.035em;
+  letter-spacing: 0;
 }
 
 .hero-copy {
@@ -215,9 +218,9 @@ h3 {
 }
 
 .primary-action {
-  background: #ffb36b;
-  border-color: #ffb36b;
-  color: #241912;
+  background: #edb73d;
+  border-color: #edb73d;
+  color: #151a17;
   font-weight: 900;
 }
 
@@ -239,15 +242,17 @@ h3 {
 }
 
 .instrument-card {
-  background: rgba(36, 25, 18, 0.64);
-  border-color: rgba(255, 248, 237, 0.18);
+  background:
+    linear-gradient(180deg, rgba(21, 26, 23, 0.86), rgba(21, 26, 23, 0.68)),
+    repeating-linear-gradient(90deg, transparent 0 38px, rgba(237, 183, 61, 0.08) 38px 39px);
+  border-color: rgba(237, 183, 61, 0.3);
   display: grid;
   gap: 18px;
   padding: 24px;
 }
 
 .instrument-kicker {
-  color: #ffcc8d;
+  color: #edb73d;
   font-size: 0.78rem;
   font-weight: 900;
   letter-spacing: 0.14em;
@@ -272,9 +277,9 @@ h3 {
 }
 
 .instrument-metrics strong {
-  color: #fff8ed;
+  color: #fbf4e5;
   font-size: clamp(1.8rem, 5vw, 3rem);
-  letter-spacing: -0.06em;
+  letter-spacing: 0;
   line-height: 0.9;
 }
 
@@ -282,6 +287,22 @@ h3 {
   color: rgba(255, 248, 237, 0.7);
   line-height: 1.6;
   margin-bottom: 0;
+}
+
+.cockpit-stack {
+  display: grid;
+  gap: 8px;
+}
+
+.cockpit-stack span {
+  align-items: center;
+  background: rgba(251, 244, 229, 0.07);
+  border-left: 4px solid #edb73d;
+  color: rgba(251, 244, 229, 0.84);
+  display: flex;
+  font-weight: 850;
+  min-height: 38px;
+  padding: 8px 10px;
 }
 
 .service-boundary {
@@ -1913,9 +1934,124 @@ a:focus-visible {
 .empty-state {
   background: #fffaf2;
   border: 1px dashed rgba(95, 61, 40, 0.28);
-  border-radius: 24px;
+  border-radius: 8px;
   color: #725a48;
   padding: 28px;
+}
+
+.decision-lane-board {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 18px;
+}
+
+.decision-lane {
+  background:
+    linear-gradient(180deg, #fbf4e5, #ede1cc),
+    repeating-linear-gradient(90deg, transparent 0 34px, rgba(31, 35, 32, 0.05) 34px 35px);
+  border: 1px solid rgba(31, 35, 32, 0.16);
+  border-left: 5px solid #6a7f63;
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  min-height: 100%;
+  padding: 16px;
+}
+
+.decision-lane.high {
+  border-left-color: #b94b35;
+}
+
+.decision-lane.medium {
+  border-left-color: #edb73d;
+}
+
+.decision-lane.low {
+  border-left-color: #6a7f63;
+}
+
+.decision-lane span {
+  background: #151a17;
+  border-radius: 999px;
+  color: #edb73d;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 900;
+  justify-self: start;
+  letter-spacing: 0.12em;
+  padding: 7px 10px;
+  text-transform: uppercase;
+}
+
+.decision-lane h3,
+.decision-lane p,
+.decision-lane strong {
+  margin: 0;
+}
+
+.decision-lane p {
+  color: #5f554b;
+  line-height: 1.45;
+}
+
+.decision-lane strong {
+  color: #1f2320;
+  line-height: 1.45;
+}
+
+.instrument-card,
+.detail-card,
+.post-card,
+.notebook-card,
+.loop-card,
+.composer,
+.vehicle-card,
+.comparison-card,
+.city-card,
+.insight-card,
+.playbook-card,
+.report-card,
+.starter-card,
+.quality-card,
+.privacy-grid article,
+.preference-card,
+.preference-card label,
+.inspection-list,
+.reminder-card,
+.ledger-card,
+.launch-card,
+.production-launch-card,
+.production-ops-card,
+.hosted-api-card,
+.hosted-api-grid article,
+.feedback-card,
+.service-boundary {
+  border-radius: 8px;
+}
+
+.instrument-metrics span,
+.comparison-stats span,
+.ledger-stats p,
+.comments p,
+input,
+select,
+textarea {
+  border-radius: 6px;
+}
+
+h1,
+h2,
+h3,
+.responsive-qa-head h3,
+.notification-copy h2,
+.feedback-triage-bar strong,
+.feedback-loop-bar strong,
+.playbook-card h3,
+.production-launch-card h3,
+.production-ops-card h3,
+.hosted-api-card h3 {
+  letter-spacing: 0;
 }
 
 @media (max-width: 860px) {
@@ -1932,6 +2068,7 @@ a:focus-visible {
   .dashboard-panel,
   .nudge-grid,
   .starter-grid,
+  .decision-lane-board,
   .qa-grid,
   .responsive-qa-grid,
   .garage-grid,
@@ -1966,7 +2103,7 @@ a:focus-visible {
 
   .nav {
     gap: 18px;
-    margin-bottom: 44px;
+    margin-bottom: 36px;
   }
 
   .nav-actions {
@@ -2022,7 +2159,7 @@ a:focus-visible {
 
 @media (max-width: 560px) {
   .hero {
-    padding: 18px 14px 36px;
+    padding: 18px 14px 24px;
   }
 
   .brand {
@@ -2098,8 +2235,9 @@ a:focus-visible {
   .city-card,
   .insight-card,
   .playbook-card,
-  .report-card {
-    border-radius: 22px;
+  .report-card,
+  .decision-lane {
+    border-radius: 8px;
     padding: 18px;
   }
 
@@ -2109,7 +2247,16 @@ a:focus-visible {
   }
 
   .instrument-metrics {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .instrument-metrics span {
+    font-size: 0.78rem;
+    padding: 10px 8px;
+  }
+
+  .instrument-metrics strong {
+    font-size: 1.8rem;
   }
 
   .comparison-stats {
@@ -2131,9 +2278,10 @@ a:focus-visible {
   }
 
   h1 {
-    font-size: clamp(2.45rem, 12vw, 3.35rem);
-    letter-spacing: -0.045em;
-    line-height: 1;
+    font-size: clamp(1.86rem, 8vw, 2.15rem);
+    letter-spacing: 0;
+    line-height: 1.04;
+    margin-bottom: 16px;
   }
 
   h2 {
@@ -2141,8 +2289,30 @@ a:focus-visible {
   }
 
   .hero-copy {
-    font-size: 1rem;
-    line-height: 1.6;
+    font-size: 0.96rem;
+    line-height: 1.48;
+  }
+
+  .hero-actions {
+    margin-top: 18px;
+  }
+
+  .hero-grid {
+    gap: 18px;
+  }
+
+  .instrument-card {
+    gap: 10px;
+    padding: 16px;
+  }
+
+  .cockpit-stack {
+    gap: 6px;
+  }
+
+  .cockpit-stack span {
+    min-height: 32px;
+    padding: 6px 8px;
   }
 }
 
