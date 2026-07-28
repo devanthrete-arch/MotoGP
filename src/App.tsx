@@ -1,6 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
-  buildLoop,
   knowledgeLabels,
   privacyReadinessItems,
   shortlistStatuses,
@@ -72,7 +71,7 @@ import {
 } from "./storage";
 
 type FeedMode = "latest" | "helpful" | "saved" | "following";
-type WorkspaceScreen = "home" | "shortlist" | "garage" | "community" | "more";
+type WorkspaceScreen = "home" | "shortlist" | "garage" | "community" | "account";
 
 const brands = ["Tata", "Honda", "Kia", "Mahindra", "Maruti Suzuki", "Hyundai", "Toyota", "Skoda", "Volkswagen"];
 
@@ -141,6 +140,7 @@ export function App() {
   const [mode, setMode] = useState<FeedMode>("latest");
   const [selectedLabel, setSelectedLabel] = useState<KnowledgeLabel | "All">("All");
   const [selectedPost, setSelectedPost] = useState<OwnerPost | null>(posts[0] ?? null);
+  const [postDetailOpen, setPostDetailOpen] = useState(false);
   const [draft, setDraft] = useState<DraftPost>(initialDraft);
   const [vehicleDraft, setVehicleDraft] = useState<DraftVehicle>(initialVehicleDraft);
   const [timelineDraft, setTimelineDraft] = useState<DraftTimelineEntry>(() => ({
@@ -151,7 +151,7 @@ export function App() {
   const [commentDraft, setCommentDraft] = useState("");
   const [reportDraft, setReportDraft] = useState("");
   const [actionMessage, setActionMessage] = useState("");
-  const [navMenuOpen, setNavMenuOpen] = useState(false);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [activeNav, setActiveNav] = useState("home");
   const [activeScreen, setActiveScreen] = useState<WorkspaceScreen>("home");
   const [isOnline, setIsOnline] = useState(getInitialOnlineStatus);
@@ -469,7 +469,7 @@ export function App() {
     if (nextMode) setMode(nextMode);
     setActiveScreen(screen);
     setActiveNav(nav);
-    setNavMenuOpen(false);
+    setAccountMenuOpen(false);
     window.scrollTo(0, 0);
   };
 
@@ -481,7 +481,7 @@ export function App() {
     shortlist: { eyebrow: "Buyer list", title: "Shortlist", detail: `${shortlist.length} candidate${shortlist.length === 1 ? "" : "s"} with evidence, risk, and next steps.` },
     garage: { eyebrow: "Vehicle record", title: "Garage", detail: currentVehicle ? `${currentVehicle.nickname || `${currentVehicle.brand} ${currentVehicle.model}`} ledger and upcoming work.` : "Add a vehicle to start the ledger." },
     community: { eyebrow: "Owner evidence", title: "Community", detail: `${filteredPosts.length} useful note${filteredPosts.length === 1 ? "" : "s"} in the current view.` },
-    more: { eyebrow: "Utilities", title: "More", detail: "Profile, saved notes, writing, notifications, and trust controls." },
+    account: { eyebrow: "Account", title: "Account", detail: "Profile, saved notes, writing, notifications, and trust controls." },
   };
   return (
     <main className="app-shell" data-screen={activeScreen}>
@@ -509,10 +509,6 @@ export function App() {
             <span className="shell-icon" aria-hidden="true">◉</span>
             <span>Community</span>
           </a>
-          <a className={activeNav === "more" ? "is-active" : ""} href="#profile" aria-current={activeNav === "more" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("more", "more"); }}>
-            <span className="shell-icon" aria-hidden="true">⋯</span>
-            <span>More</span>
-          </a>
         </nav>
         <div className="rail-status">
           <span className={`status-dot ${connectionStatus.tone}`} aria-hidden="true" />
@@ -532,39 +528,17 @@ export function App() {
             <span>Live ownership workspace</span>
             <strong>{garage.length ? `${garage.length} garage record${garage.length === 1 ? "" : "s"}` : "Garage not started"}</strong>
           </div>
-          <button
-            aria-controls="primary-nav-links"
-            aria-expanded={navMenuOpen}
-            aria-label="Open utility menu"
-            className="nav-toggle utility-toggle"
-            type="button"
-            onClick={() => setNavMenuOpen((isOpen) => !isOpen)}
-          >
-            <span aria-hidden="true">⋯</span>
-            More
+          <button aria-controls="account-sheet" aria-expanded={accountMenuOpen} aria-label="Open account menu" className="account-button" type="button" onClick={() => setAccountMenuOpen((isOpen) => !isOpen)}>
+            <span aria-hidden="true">{profile.displayName.trim().slice(0, 1).toUpperCase() || "A"}</span>
+            <strong>Account</strong>
           </button>
-          <div className={`nav-actions ${navMenuOpen ? "is-open" : ""}`} id="primary-nav-links">
-            <a href="#cities" onClick={(event) => { event.preventDefault(); openWorkspace("community"); }}>
-              Cities
-            </a>
-            <a href="#playbooks" onClick={(event) => { event.preventDefault(); openWorkspace("community"); }}>
-              Playbooks
-            </a>
-            <a href="#garage" onClick={(event) => { event.preventDefault(); openWorkspace("garage"); }}>
-              Garage
-            </a>
-            <a href="#notebooks" onClick={(event) => { event.preventDefault(); openWorkspace("community"); }}>
-              Model notebooks
-            </a>
-            <a href="#loop" onClick={(event) => { event.preventDefault(); openWorkspace("more"); }}>
-              Build loop
-            </a>
-            <a href="#profile" onClick={(event) => { event.preventDefault(); openWorkspace("more"); }}>
-              Profile & settings
-            </a>
-            <a href="#moderation" onClick={(event) => { event.preventDefault(); openWorkspace("more"); }}>
-              Moderation
-            </a>
+          <div className={`account-sheet ${accountMenuOpen ? "is-open" : ""}`} id="account-sheet">
+            <div className="account-sheet-head"><strong>{profile.displayName.trim() || "Garage member"}</strong><small>{profile.garageRole} · local profile</small></div>
+            <button type="button" onClick={() => openWorkspace("account", "account")}><span aria-hidden="true">◉</span><span>Profile & settings</span><small>Edit local identity and preferences</small></button>
+            <button type="button" onClick={() => openWorkspace("community", "community", "saved")}><span aria-hidden="true">☆</span><span>Saved notes</span><small>{saved.size} owner signals</small></button>
+            <button type="button" onClick={() => openWorkspace("community", "community", "following")}><span aria-hidden="true">◴</span><span>Following</span><small>{follows.models.length + follows.topics.length} models and topics</small></button>
+            <button type="button" onClick={() => { setAccountMenuOpen(false); openWorkspace("community", "community"); }}><span aria-hidden="true">+</span><span>Write post</span><small>Add an owner note or cost record</small></button>
+            <button type="button" onClick={() => openWorkspace("account", "account")}><span aria-hidden="true">!</span><span>Notifications</span><small>Digest and quiet-hour controls</small></button>
           </div>
         </nav>
 
@@ -614,10 +588,15 @@ export function App() {
           <h2>{workspaceCopy[activeScreen].title}</h2>
           <p>{workspaceCopy[activeScreen].detail}</p>
         </div>
-        {activeScreen === "shortlist" ? <button className="primary-action" type="button" onClick={() => document.querySelector("#shortlist form")?.scrollIntoView()}>Add candidate</button> : null}
-        {activeScreen === "garage" ? <button className="primary-action" type="button" onClick={() => document.querySelector("#garage form")?.scrollIntoView()}>Add record</button> : null}
-        {activeScreen === "community" ? <button className="primary-action" type="button" onClick={() => openWorkspace("more", "more")}>Write post</button> : null}
-        {activeScreen === "more" ? <button className="primary-action" type="button" onClick={() => document.querySelector("#profile")?.scrollIntoView()}>Edit profile</button> : null}
+        <div className="workspace-header-actions">
+          {activeScreen === "shortlist" ? <button className="primary-action" type="button" onClick={() => document.querySelector("#shortlist form")?.scrollIntoView()}>Add candidate</button> : null}
+          {activeScreen === "garage" ? <button className="primary-action" type="button" onClick={() => document.querySelector("#garage form")?.scrollIntoView()}>Add record</button> : null}
+          {activeScreen === "community" ? <button className="primary-action" type="button" onClick={() => { setAccountMenuOpen(false); document.getElementById("write")?.scrollIntoView(); }}>Write post</button> : null}
+          {activeScreen === "account" ? <button className="primary-action" type="button" onClick={() => document.querySelector("#profile")?.scrollIntoView()}>Edit profile</button> : null}
+          <button className="workspace-account-button" type="button" aria-label="Open account menu" onClick={() => openWorkspace("account", "account")}>
+            {profile.displayName.trim().slice(0, 1).toUpperCase() || "A"}
+          </button>
+        </div>
       </section>
 
       <section className="panel dashboard-panel screen-home" aria-label="Return user dashboard">
@@ -653,6 +632,7 @@ export function App() {
               onClick={(event) => {
                 event.preventDefault();
                 setSelectedPost(post);
+                setPostDetailOpen(true);
                 openWorkspace("community", "community", "latest");
               }}
             >
@@ -690,29 +670,19 @@ export function App() {
         </div>
       </section>
 
-      <section className="panel utility-launcher screen-more" aria-label="Utility shortcuts">
+      <section className="panel account-index screen-more" aria-label="Account utilities">
         <div className="section-head">
           <div>
-            <p className="eyebrow">Quick access</p>
-            <h2>Pick up a supporting task.</h2>
+            <p className="app-kicker">Account utilities</p>
+            <h2>Personal controls</h2>
           </div>
         </div>
-        <div className="utility-launch-grid">
-          <button className="utility-launch-card" type="button" onClick={() => openWorkspace("community", "saved", "saved")}>
-            <span className="shell-icon" aria-hidden="true">☆</span>
-            <strong>Saved notes</strong>
-            <small>{saved.size} saved owner signals</small>
-          </button>
-          <button className="utility-launch-card" type="button" onClick={() => openWorkspace("community", "activity", "following")}>
-            <span className="shell-icon" aria-hidden="true">◴</span>
-            <strong>Following</strong>
-            <small>{follows.models.length + follows.topics.length} model and topic follows</small>
-          </button>
-          <a className="utility-launch-card" href="#write" onClick={(event) => { event.preventDefault(); document.getElementById("write")?.scrollIntoView(); }}>
-            <span className="shell-icon" aria-hidden="true">+</span>
-            <strong>Write ownership note</strong>
-            <small>Add a bill, fix, cost, or buyer check.</small>
-          </a>
+        <div className="account-list">
+          <button type="button" onClick={() => document.getElementById("profile")?.scrollIntoView()}><span aria-hidden="true">◉</span><strong>Profile & settings</strong><small>Local identity, role, and privacy preferences</small></button>
+          <button type="button" onClick={() => openWorkspace("community", "community", "saved")}><span aria-hidden="true">☆</span><strong>Saved notes</strong><small>{saved.size} saved owner signals</small></button>
+          <button type="button" onClick={() => openWorkspace("community", "community", "following")}><span aria-hidden="true">◴</span><strong>Following</strong><small>{follows.models.length + follows.topics.length} models and topics</small></button>
+          <button type="button" onClick={() => openWorkspace("community", "community")}><span aria-hidden="true">+</span><strong>Write post</strong><small>Add an owner note, fix, cost, or buyer check</small></button>
+          <button type="button" onClick={() => document.getElementById("notifications")?.scrollIntoView()}><span aria-hidden="true">!</span><strong>Notifications</strong><small>Digest, browser alerts, and quiet hours</small></button>
         </div>
       </section>
 
@@ -879,18 +849,19 @@ export function App() {
           </div>
           <div className="filters" aria-label="Feed filters">
             <input
+              aria-label="Search owner evidence"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search brand, model, city, issue..."
               type="search"
             />
-            <select value={selectedLabel} onChange={(event) => setSelectedLabel(event.target.value as KnowledgeLabel | "All")}>
+            <select aria-label="Filter owner evidence by type" value={selectedLabel} onChange={(event) => setSelectedLabel(event.target.value as KnowledgeLabel | "All")}>
               <option>All</option>
               {knowledgeLabels.map((label) => (
                 <option key={label}>{label}</option>
               ))}
             </select>
-            <select value={mode} onChange={(event) => setMode(event.target.value as FeedMode)}>
+            <select aria-label="Sort owner evidence" value={mode} onChange={(event) => setMode(event.target.value as FeedMode)}>
               <option value="latest">Latest</option>
               <option value="helpful">Most helpful</option>
               <option value="following">Following</option>
@@ -915,15 +886,22 @@ export function App() {
                 <article
                   className={`post-card ${selectedPost?.id === post.id ? "is-selected" : ""}`}
                   key={post.id}
-                  onClick={() => setSelectedPost(post)}
                 >
-                  <div>
+                  <button
+                    className="post-open-button"
+                    type="button"
+                    aria-label={`Open owner note: ${post.title}`}
+                    onClick={() => {
+                      setSelectedPost(post);
+                      setPostDetailOpen(true);
+                    }}
+                  >
                     <span className="pill">{post.label}</span>
                     <h3>{post.title}</h3>
                     <p>
                       {post.brand} {post.model} · {post.city} · {post.odometerKm.toLocaleString("en-IN")} km
                     </p>
-                  </div>
+                  </button>
                   <button
                     className="save-button"
                     type="button"
@@ -941,9 +919,10 @@ export function App() {
             )}
           </div>
 
-          <aside className="detail-card">
-            {selectedPost ? (
+          <aside className="detail-card" aria-label="Owner note detail">
+            {postDetailOpen && selectedPost ? (
               <>
+                <button className="detail-back" type="button" onClick={() => setPostDetailOpen(false)}>Back to notes</button>
                 <span className="pill">{selectedPost.label}</span>
                 <h2>{selectedPost.title}</h2>
                 <p className="owner-line">
@@ -995,6 +974,7 @@ export function App() {
                 </div>
                 <form className="inline-form" onSubmit={addComment}>
                   <textarea
+                    aria-label="Write a comment on this note"
                     required
                     rows={3}
                     value={commentDraft}
@@ -1007,6 +987,7 @@ export function App() {
                 </form>
                 <form className="inline-form report-form" onSubmit={reportSelectedPost}>
                   <textarea
+                    aria-label="Report this owner note"
                     required
                     rows={3}
                     value={reportDraft}
@@ -1167,7 +1148,7 @@ export function App() {
         </div>
       </section>
 
-      <section className="panel playbook-panel screen-community" id="playbooks">
+      <section className="panel playbook-panel screen-garage" id="playbooks">
         <div className="section-head">
           <div>
             <p className="eyebrow">Ownership playbooks</p>
@@ -1214,7 +1195,7 @@ export function App() {
         </div>
       </section>
 
-      <section className="panel split-panel screen-more" id="write">
+      <section className="panel split-panel screen-community" id="write">
         <div>
           <p className="eyebrow">Publish</p>
           <h2>Write like the next owner depends on it.</h2>
@@ -1524,7 +1505,7 @@ export function App() {
         </div>
       </section>
 
-      <section className="panel screen-community" id="notebooks">
+      <section className="panel screen-shortlist" id="notebooks">
         <div className="section-head">
           <div>
             <p className="eyebrow">Model notebooks</p>
@@ -1557,24 +1538,6 @@ export function App() {
               </article>
             );
           })}
-        </div>
-      </section>
-
-      <section className="panel screen-more" id="loop">
-        <div className="section-head">
-          <div>
-            <p className="eyebrow">Build loop</p>
-            <h2>The product keeps moving through six lenses.</h2>
-          </div>
-        </div>
-        <div className="loop-grid">
-          {buildLoop.map((item) => (
-            <article className="loop-card" key={item.role}>
-              <span>{item.role}</span>
-              <h3>{item.question}</h3>
-              <p>{item.currentDecision}</p>
-            </article>
-          ))}
         </div>
       </section>
 
@@ -1635,10 +1598,15 @@ export function App() {
           <span className="shell-icon" aria-hidden="true">◉</span>
           <span>Community</span>
         </a>
-        <a className={activeNav === "more" ? "is-active" : ""} href="#profile" aria-current={activeNav === "more" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("more", "more"); }}>
-          <span className="shell-icon" aria-hidden="true">⋯</span>
-          <span>More</span>
-        </a>
+        <button className="dock-context-action" type="button" onClick={() => {
+          if (activeScreen === "home") return openWorkspace("garage");
+          if (activeScreen === "shortlist") return document.querySelector("#shortlist form")?.scrollIntoView();
+          if (activeScreen === "garage") return document.querySelector("#garage form")?.scrollIntoView();
+          return document.getElementById("write")?.scrollIntoView();
+        }}>
+          <span className="shell-icon" aria-hidden="true">+</span>
+          <span>{activeScreen === "home" ? "Add vehicle" : activeScreen === "shortlist" ? "Add candidate" : activeScreen === "garage" ? "Add record" : "Write post"}</span>
+        </button>
       </nav>
 
     </main>
