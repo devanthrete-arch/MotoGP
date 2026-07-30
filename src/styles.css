@@ -72,7 +72,6 @@ a {
 }
 
 button {
-  border-radius: 8px;
   min-height: 42px;
 }
 
@@ -758,13 +757,6 @@ textarea:focus-visible {
   box-shadow: 0 0 0 1px var(--petrol);
 }
 
-.hero .save-button:hover,
-.hero .secondary-action:hover {
-  background: #31433c;
-  box-shadow: 0 0 0 1px #52645d;
-  color: var(--text-on-dark);
-}
-
 .primary-action:active,
 .save-button:active,
 .account-button:active,
@@ -903,7 +895,6 @@ select,
 textarea {
   background: var(--surface);
   border: 1px solid var(--line-strong);
-  border-radius: 8px;
   color: var(--ink);
   min-height: 46px;
   padding: 11px 13px;
@@ -973,10 +964,6 @@ textarea:focus {
   gap: 12px;
 }
 
-.notebook-grid {
-  grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
-}
-
 .feed-list {
   border-top: 1px solid var(--line-strong);
 }
@@ -1020,21 +1007,15 @@ textarea:focus {
 }
 
 .signal-row {
-  align-items: stretch;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
 .signal-row button {
-  flex: 0 1 auto;
   font-size: 0.78rem;
-  line-height: 1.25;
-  max-width: 100%;
   min-height: 36px;
-  min-width: 0;
   padding: 7px 10px;
-  white-space: normal;
 }
 
 .detail-card {
@@ -1103,21 +1084,10 @@ textarea:focus {
   padding: 11px;
 }
 
-.inline-form {
-  display: grid;
-  gap: 10px;
-  margin-top: 14px;
-}
-
-.inline-form .save-button {
-  justify-self: start;
-}
-
 .quality-card,
 .inspection-list {
   background: #edf6f4;
   border-left: 3px solid var(--petrol);
-  border-radius: 0 8px 8px 0;
   margin: 14px 0;
   padding: 14px;
 }
@@ -1177,7 +1147,6 @@ textarea:focus {
 .privacy-grid article,
 .report-card {
   background: var(--surface);
-  border-radius: 8px;
   box-shadow:
     0 0 0 1px rgba(17, 25, 22, 0.06),
     0 2px 5px rgba(17, 25, 22, 0.04);
@@ -1270,90 +1239,15 @@ textarea:focus {
 
 .inspection-item,
 .timeline-entry {
-  align-items: start;
   border-bottom: 1px solid var(--line);
   display: grid;
   gap: 12px;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   padding: 13px 0;
-}
-
-.inspection-item > span {
-  background: var(--surface);
-  border: 1px solid var(--line-strong);
-  border-radius: 999px;
-  color: var(--petrol-deep);
-  font-size: 0.65rem;
-  font-weight: 800;
-  line-height: 1;
-  padding: 6px 8px;
-  text-transform: uppercase;
-}
-
-.inspection-item b {
-  display: block;
-  line-height: 1.3;
-  margin-bottom: 4px;
-}
-
-.inspection-item p {
-  margin: 0;
-  overflow-wrap: anywhere;
 }
 
 .timeline-entry {
   grid-template-columns: 12px minmax(0, 1fr) auto;
-}
-
-.notebook-card {
-  display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.notebook-card > .pill,
-.notebook-card > h3,
-.notebook-card > p,
-.notebook-tags {
-  grid-column: 1 / -1;
-}
-
-.notebook-card > h3,
-.notebook-card > p {
-  margin-bottom: 0;
-}
-
-.notebook-card > .save-button {
-  line-height: 1.25;
-  min-width: 0;
-  padding-inline: 12px;
-  text-align: center;
-  white-space: normal;
-  width: 100%;
-}
-
-.notebook-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
-  padding-top: 2px;
-}
-
-.notebook-tags button {
-  background: #e8f3f1;
-  border: 1px solid transparent;
-  color: var(--petrol-deep);
-  cursor: pointer;
-  font-size: 0.72rem;
-  font-weight: 750;
-  line-height: 1.2;
-  min-height: 34px;
-  padding: 7px 10px;
-}
-
-.notebook-tags button:hover {
-  background: #d9ebe8;
-  border-color: var(--petrol);
 }
 
 .timeline-entry::before {
@@ -1850,10 +1744,9 @@ textarea:focus {
 
   .mobile-dock {
     align-items: center;
-    background: var(--surface);
+    background: rgba(255, 255, 255, 0.97);
     border-top: 1px solid var(--line);
     bottom: 0;
-    box-shadow: 0 -8px 24px rgba(17, 25, 22, 0.09);
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     left: 0;
@@ -2096,20 +1989,6 @@ textarea:focus {
 
   .post-card {
     grid-template-columns: 1fr;
-  }
-
-  .signal-row {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .signal-row button {
-    width: 100%;
-  }
-
-  .inline-form .save-button {
-    justify-self: stretch;
-    width: 100%;
   }
 
   .comparison-stats,
