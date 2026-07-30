@@ -1,5 +1,25 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Bell,
+  Bookmark,
+  CarFront,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  CircleUserRound,
+  Download,
+  Gauge,
+  House,
+  IndianRupee,
+  ListChecks,
+  MessageCircle,
+  Plus,
+  Search,
+  Settings,
+  UsersRound,
+  Wrench,
+} from "lucide-react";
+import {
   knowledgeLabels,
   privacyReadinessItems,
   shortlistStatuses,
@@ -645,9 +665,9 @@ export function App() {
   const isFirstRun = garage.length === 0 && shortlist.length === 0;
   const workspaceCopy: Record<WorkspaceScreen, { eyebrow: string; title: string; detail: string }> = {
     home: { eyebrow: "Today", title: "Today", detail: "Your car's next task." },
-    shortlist: { eyebrow: "Shortlist", title: "Compare cars", detail: `${shortlist.length} car${shortlist.length === 1 ? "" : "s"} saved with owner notes and inspection steps.` },
-    garage: { eyebrow: "Garage", title: "My car", detail: currentVehicle ? `${currentVehicle.nickname || `${currentVehicle.brand} ${currentVehicle.model}`}: service, costs, and records.` : "Add your car to track service and costs." },
-    community: { eyebrow: "Community", title: "Owner notes", detail: `${filteredPosts.length} note${filteredPosts.length === 1 ? "" : "s"} match the current search.` },
+    shortlist: { eyebrow: "Buyer tools", title: "Shortlist", detail: `${shortlist.length} car${shortlist.length === 1 ? "" : "s"} saved with owner notes and inspection steps.` },
+    garage: { eyebrow: "Ownership", title: "Garage", detail: currentVehicle ? `${currentVehicle.nickname || `${currentVehicle.brand} ${currentVehicle.model}`}: service, costs, and records.` : "Add your car to track service and costs." },
+    community: { eyebrow: "Owner network", title: "Community", detail: `${filteredPosts.length} note${filteredPosts.length === 1 ? "" : "s"} match the current search.` },
     account:
       accountView === "profile"
         ? { eyebrow: "Account", title: "Profile", detail: "Your local name, city, and owner role." }
@@ -667,26 +687,27 @@ export function App() {
     <main className="app-shell" data-screen={activeScreen}>
       <aside className="desktop-rail" aria-label="Autoflex navigation">
         <a className="rail-brand" href="#top" aria-label="Autoflex Today" onClick={() => openWorkspace("home", "home")}>
-          Auto<span>flex</span>
+          <span className="brand-mark" aria-hidden="true">A</span>
+          <span className="brand-word">Auto<strong>flex</strong></span>
         </a>
-        <p className="rail-kicker">Cars, service, and owner notes</p>
+        <p className="rail-kicker">Own with confidence</p>
         <nav className="rail-nav" aria-label="Primary destinations">
           <a className={activeNav === "home" ? "is-active" : ""} href="#top" aria-current={activeNav === "home" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("home", "home"); }}>
-            <span className="shell-icon" aria-hidden="true">⌂</span>
+            <House className="shell-icon" aria-hidden="true" />
             <span>Today</span>
           </a>
           <a className={activeNav === "shortlist" ? "is-active" : ""} href="#shortlist" aria-current={activeNav === "shortlist" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("shortlist"); }}>
-            <span className="shell-icon" aria-hidden="true">▤</span>
+            <ListChecks className="shell-icon" aria-hidden="true" />
             <span>Shortlist</span>
             <strong>{shortlist.length}</strong>
           </a>
           <a className={activeNav === "garage" ? "is-active" : ""} href="#garage" aria-current={activeNav === "garage" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("garage"); }}>
-            <span className="shell-icon" aria-hidden="true">▣</span>
+            <CarFront className="shell-icon" aria-hidden="true" />
             <span>Garage</span>
             <strong>{garage.length}</strong>
           </a>
           <a className={activeNav === "community" ? "is-active" : ""} href="#feed" aria-current={activeNav === "community" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("community", "community", "latest"); }}>
-            <span className="shell-icon" aria-hidden="true">◉</span>
+            <MessageCircle className="shell-icon" aria-hidden="true" />
             <span>Community</span>
           </a>
         </nav>
@@ -699,36 +720,38 @@ export function App() {
         </div>
       </aside>
 
-      <section className="hero screen-home">
-        <nav className="nav" aria-label="Primary navigation">
+      <nav className="nav app-topbar" aria-label="Primary navigation">
           <a className="brand" href="#top" aria-label="Autoflex Today" onClick={(event) => { event.preventDefault(); openWorkspace("home", "home"); }}>
-            Auto<span>flex</span>
+            <span className="brand-mark" aria-hidden="true">A</span>
+            <span className="brand-word">Auto<strong>flex</strong></span>
           </a>
           <div className="nav-context" aria-label="Today summary">
-            <span>Today</span>
-            <strong>{garage.length ? `${garage.length} garage record${garage.length === 1 ? "" : "s"}` : "Garage not started"}</strong>
+            <span>{workspaceCopy[activeScreen].eyebrow}</span>
+            <strong>{workspaceCopy[activeScreen].title}</strong>
           </div>
           <button aria-label="Open Profile" className="account-button" type="button" onClick={(event) => openProfile(event.currentTarget)}>
+            <CircleUserRound aria-hidden="true" />
             <strong>Profile</strong>
           </button>
-        </nav>
+      </nav>
 
+      <section className="hero screen-home">
         <div className="home-workbench" id="top">
           <div className="home-toolbar">
             <div>
               <p className="app-kicker">Today</p>
-              <h1>What needs attention today</h1>
-              <p className="home-status">{currentVehicle ? `${currentVehicle.nickname || `${currentVehicle.brand} ${currentVehicle.model}`} is selected.` : "Add a car you own or one you are comparing."}</p>
+              <h1>{currentVehicle ? `${currentVehicle.nickname || currentVehicle.model}, at a glance` : "Start with your next car decision"}</h1>
+              <p className="home-status">{currentVehicle ? "Maintenance, costs, and owner evidence in one place." : "Track a car you own or build a shortlist before you buy."}</p>
             </div>
             <div className="home-toolbar-actions">
               {isFirstRun ? (
                 <div className="first-run-actions" aria-label="Choose how to start">
                   <button className="primary-action first-run-action" type="button" onClick={openVehicleComposer}>
-                    <span aria-hidden="true">+</span>
+                    <CarFront aria-hidden="true" />
                     <span><small>I own a car</small>Add vehicle</span>
                   </button>
                   <button className="save-button first-run-action" type="button" onClick={openShortlistComposer}>
-                    <span aria-hidden="true">▤</span>
+                    <ListChecks aria-hidden="true" />
                     <span><small>I'm choosing a car</small>Add candidate</span>
                   </button>
                 </div>
@@ -757,7 +780,7 @@ export function App() {
                     }}
                   >
                     <span><strong>{currentVehicle.nickname || currentVehicle.model}</strong><small>{currentVehicle.brand} {currentVehicle.model}</small></span>
-                    <span aria-hidden="true">⌄</span>
+                    <ChevronDown aria-hidden="true" />
                   </button>
                   <div
                     aria-label="Choose a vehicle"
@@ -775,7 +798,7 @@ export function App() {
                         type="button"
                         onClick={() => selectVehicle(vehicle.id)}
                       >
-                        <span aria-hidden="true">{vehicle.id === currentVehicle.id ? "✓" : ""}</span>
+                        <span aria-hidden="true">{vehicle.id === currentVehicle.id ? <Check /> : null}</span>
                         <span><strong>{vehicle.nickname || vehicle.model}</strong><small>{vehicle.brand} {vehicle.model}{vehicle.variant ? ` · ${vehicle.variant}` : ""}</small></span>
                       </button>
                     ))}
@@ -784,7 +807,7 @@ export function App() {
               ) : null}
               {!isFirstRun ? (
                 <button className="primary-action workspace-task-action" type="button" onClick={openVehicleComposer}>
-                  <span aria-hidden="true">+</span>
+                  <Plus aria-hidden="true" />
                   Add vehicle
                 </button>
               ) : null}
@@ -795,17 +818,21 @@ export function App() {
           ) : (
           <div className="home-work-grid">
             <article className="next-action-card">
-              <span className="readout-label">Service due</span>
-              <h2>{currentReminder?.title ?? "Add your vehicle"}</h2>
-              <p>{currentReminder?.detail ?? "Add one vehicle to track service, repairs, and costs."}</p>
-              <button className="save-button" type="button" onClick={() => openWorkspace("garage")}>
-                {currentVehicle ? "View car records" : "Add your vehicle"}
-              </button>
+              <div className="next-action-copy">
+                <span className="readout-label">Next action</span>
+                <h2>{currentReminder?.title ?? "Add your vehicle"}</h2>
+                <p>{currentReminder?.detail ?? "Add one vehicle to track service, repairs, and costs."}</p>
+                <button className="save-button" type="button" onClick={() => openWorkspace("garage")}>
+                  <Wrench aria-hidden="true" />
+                  {currentVehicle ? "Open service records" : "Add your vehicle"}
+                </button>
+              </div>
+              <img className="vehicle-visual" src="/autoflex-garage.jpg" alt="Petrol teal compact SUV in a clean service bay" />
             </article>
             <aside className="home-readout" aria-label="Current car summary">
-              <div><span className="readout-label">Odometer</span><strong>{currentVehicle ? `${currentVehicle.odometerKm.toLocaleString("en-IN")} km` : "--"}</strong></div>
-              <div><span className="readout-label">Logged cost</span><strong>{currentLedger ? formatMoney(currentLedger.totalSpend) : "--"}</strong></div>
-              <div><span className="readout-label">Items to check</span><strong>{shortlistDecisionLanes.filter((lane) => lane.priority === "High").length + garageReminders.filter((reminder) => reminder.urgency === "Soon").length}</strong></div>
+              <div><Gauge aria-hidden="true" /><span className="readout-label">Odometer</span><strong>{currentVehicle ? `${currentVehicle.odometerKm.toLocaleString("en-IN")} km` : "--"}</strong></div>
+              <div><IndianRupee aria-hidden="true" /><span className="readout-label">Logged cost</span><strong>{currentLedger ? formatMoney(currentLedger.totalSpend) : "--"}</strong></div>
+              <div><ListChecks aria-hidden="true" /><span className="readout-label">Items to check</span><strong>{shortlistDecisionLanes.filter((lane) => lane.priority === "High").length + garageReminders.filter((reminder) => reminder.urgency === "Soon").length}</strong></div>
             </aside>
           </div>
           )}
@@ -826,14 +853,9 @@ export function App() {
           <p>{workspaceCopy[activeScreen].detail}</p>
         </div>
         <div className="workspace-header-actions">
-          {activeScreen === "shortlist" && shortlist.length && !shortlistFormOpen ? <button className="primary-action workspace-task-action" type="button" onClick={openShortlistComposer}><span aria-hidden="true">+</span>Add candidate</button> : null}
-          {activeScreen === "garage" && currentVehicle && garageForm === null ? <button className="primary-action workspace-task-action" type="button" onClick={openGarageRecordComposer}><span aria-hidden="true">+</span>Add service record</button> : null}
-          {activeScreen === "community" && !postComposerOpen && !postDetailOpen ? <button className="primary-action workspace-task-action" type="button" onClick={openPostComposer}><span aria-hidden="true">✎</span>Write a note</button> : null}
-          {activeScreen !== "account" ? (
-            <button className="workspace-account-button" type="button" aria-label="Open Profile" onClick={(event) => openProfile(event.currentTarget)}>
-              Profile
-            </button>
-          ) : null}
+          {activeScreen === "shortlist" && shortlist.length && !shortlistFormOpen ? <button className="primary-action workspace-task-action" type="button" onClick={openShortlistComposer}><Plus aria-hidden="true" />Add candidate</button> : null}
+          {activeScreen === "garage" && currentVehicle && garageForm === null ? <button className="primary-action workspace-task-action" type="button" onClick={openGarageRecordComposer}><Plus aria-hidden="true" />Add service record</button> : null}
+          {activeScreen === "community" && !postComposerOpen && !postDetailOpen ? <button className="primary-action workspace-task-action" type="button" onClick={openPostComposer}><Plus aria-hidden="true" />Write a note</button> : null}
         </div>
       </section>
 
@@ -844,6 +866,7 @@ export function App() {
             <h2>Recent owner notes</h2>
           </div>
           <button className="save-button" type="button" onClick={() => openWorkspace("community", "community", "latest")}>
+            <Search aria-hidden="true" />
             Search notes
           </button>
         </div>
@@ -877,6 +900,7 @@ export function App() {
         </div>
         <form className="composer" onSubmit={(event) => { event.preventDefault(); setActionMessage("Profile saved on this device."); }}>
           <input
+            aria-label="Display name"
             ref={profileNameRef}
             value={profile.displayName}
             onChange={(event) => persistProfile({ ...profile, displayName: event.target.value })}
@@ -884,11 +908,13 @@ export function App() {
           />
           <div className="form-row">
             <input
+              aria-label="City"
               value={profile.city}
               onChange={(event) => persistProfile({ ...profile, city: event.target.value })}
               placeholder="City"
             />
             <select
+              aria-label="Garage role"
               value={profile.garageRole}
               onChange={(event) => persistProfile({ ...profile, garageRole: event.target.value as Profile["garageRole"] })}
             >
@@ -901,13 +927,13 @@ export function App() {
             Posting as {profile.displayName.trim() || "Anonymous garage member"}
             {profile.city.trim() ? ` from ${profile.city}` : ""}.
           </p>
-          <button className="primary-action workspace-task-action" type="submit"><span aria-hidden="true">✓</span>Save profile</button>
+          <button className="primary-action workspace-task-action" type="submit"><Check aria-hidden="true" />Save profile</button>
         </form>
         <nav className="profile-utility-list" aria-label="Profile sections">
-          <button type="button" onClick={() => openAccountView("saved")}><span aria-hidden="true">☆</span><span><strong>Saved notes</strong><small>{saved.size} note{saved.size === 1 ? "" : "s"}</small></span><span aria-hidden="true">›</span></button>
-          <button type="button" onClick={() => openAccountView("following")}><span aria-hidden="true">◴</span><span><strong>Following</strong><small>{follows.models.length + follows.topics.length} cars and topics</small></span><span aria-hidden="true">›</span></button>
-          <button type="button" onClick={() => openAccountView("notifications")}><span aria-hidden="true">!</span><span><strong>Notifications</strong><small>Weekly updates and quiet hours</small></span><span aria-hidden="true">›</span></button>
-          <button type="button" onClick={() => openAccountView("settings")}><span aria-hidden="true">⚙</span><span><strong>Settings & privacy</strong><small>Local data and privacy details</small></span><span aria-hidden="true">›</span></button>
+          <button type="button" onClick={() => openAccountView("saved")}><Bookmark aria-hidden="true" /><span><strong>Saved notes</strong><small>{saved.size} note{saved.size === 1 ? "" : "s"}</small></span><ChevronRight aria-hidden="true" /></button>
+          <button type="button" onClick={() => openAccountView("following")}><UsersRound aria-hidden="true" /><span><strong>Following</strong><small>{follows.models.length + follows.topics.length} cars and topics</small></span><ChevronRight aria-hidden="true" /></button>
+          <button type="button" onClick={() => openAccountView("notifications")}><Bell aria-hidden="true" /><span><strong>Notifications</strong><small>Weekly updates and quiet hours</small></span><ChevronRight aria-hidden="true" /></button>
+          <button type="button" onClick={() => openAccountView("settings")}><Settings aria-hidden="true" /><span><strong>Settings & privacy</strong><small>Local data and privacy details</small></span><ChevronRight aria-hidden="true" /></button>
         </nav>
       </section>
       ) : null}
@@ -1016,7 +1042,7 @@ export function App() {
               </span>
             </label>
           </div>
-          <button className="primary-action workspace-task-action" type="button" onClick={() => setActionMessage("Notification settings saved on this device.")}><span aria-hidden="true">✓</span>Save notification settings</button>
+          <button className="primary-action workspace-task-action" type="button" onClick={() => setActionMessage("Notification settings saved on this device.")}><Check aria-hidden="true" />Save notification settings</button>
         </div>
         <div className="notification-grid">
           {notificationPreview.map((preview) => (
@@ -1026,7 +1052,7 @@ export function App() {
       </section>
       ) : null}
 
-      <section className="panel screen-community" id="feed">
+      <section className={`panel screen-community ${postDetailOpen ? "is-detail-open" : ""}`} id="feed">
         <div className="section-head">
           <div>
             <p className="app-kicker">Search notes</p>
@@ -1233,7 +1259,7 @@ export function App() {
           ) : (
             <div className="empty-state">
               <p>Add a car to compare owner notes and inspection checks.</p>
-              <button className="primary-action workspace-task-action" type="button" onClick={openShortlistComposer}><span aria-hidden="true">+</span>Add first candidate</button>
+              <button className="primary-action workspace-task-action" type="button" onClick={openShortlistComposer}><Plus aria-hidden="true" />Add first candidate</button>
             </div>
           )}
         </div>
@@ -1242,7 +1268,7 @@ export function App() {
           <form className="composer" id="shortlist-form" onSubmit={addShortlistItem}>
             <h3>Add model to compare</h3>
             <div className="form-row">
-              <select value={shortlistDraft.brand} onChange={(event) => setShortlistDraft({ ...shortlistDraft, brand: event.target.value })}>
+              <select aria-label="Car brand" value={shortlistDraft.brand} onChange={(event) => setShortlistDraft({ ...shortlistDraft, brand: event.target.value })}>
                 {brands.map((brand) => (
                   <option key={brand}>{brand}</option>
                 ))}
@@ -1259,11 +1285,13 @@ export function App() {
               <input
                 min="0"
                 type="number"
+                aria-label="Target budget"
                 value={shortlistDraft.budget || ""}
                 onChange={(event) => setShortlistDraft({ ...shortlistDraft, budget: Number(event.target.value) })}
                 placeholder="Budget"
               />
               <select
+                aria-label="Shortlist status"
                 value={shortlistDraft.status}
                 onChange={(event) => setShortlistDraft({ ...shortlistDraft, status: event.target.value as ShortlistItem["status"] })}
               >
@@ -1273,6 +1301,7 @@ export function App() {
               </select>
             </div>
             <textarea
+              aria-label="Decision notes"
               rows={4}
               value={shortlistDraft.notes}
               onChange={(event) => setShortlistDraft({ ...shortlistDraft, notes: event.target.value })}
@@ -1318,6 +1347,7 @@ export function App() {
                     </div>
                     <div className="form-row">
                       <select
+                        aria-label={`Status for ${comparison.item.brand} ${comparison.item.model}`}
                         value={comparison.item.status}
                         onChange={(event) =>
                           updateShortlistItem(comparison.item.id, { status: event.target.value as ShortlistItem["status"] })
@@ -1332,6 +1362,7 @@ export function App() {
                       </button>
                     </div>
                     <textarea
+                      aria-label={`Decision notes for ${comparison.item.brand} ${comparison.item.model}`}
                       rows={3}
                       value={comparison.item.notes}
                       onChange={(event) => updateShortlistItem(comparison.item.id, { notes: event.target.value })}
@@ -1385,18 +1416,19 @@ export function App() {
           />
           <div className="form-row">
             <input
+              aria-label="Garage name"
               value={draft.author}
               onChange={(event) => setDraft({ ...draft, author: event.target.value })}
               placeholder="Your garage name"
             />
-            <select value={draft.label} onChange={(event) => setDraft({ ...draft, label: event.target.value as KnowledgeLabel })}>
+            <select aria-label="Note type" value={draft.label} onChange={(event) => setDraft({ ...draft, label: event.target.value as KnowledgeLabel })}>
               {knowledgeLabels.map((label) => (
                 <option key={label}>{label}</option>
               ))}
             </select>
           </div>
           <div className="form-row">
-            <select value={draft.brand} onChange={(event) => setDraft({ ...draft, brand: event.target.value })}>
+            <select aria-label="Car brand" value={draft.brand} onChange={(event) => setDraft({ ...draft, brand: event.target.value })}>
               {brands.map((brand) => (
                 <option key={brand}>{brand}</option>
               ))}
@@ -1423,11 +1455,13 @@ export function App() {
           <input
             min="0"
             type="number"
+            aria-label="Odometer in kilometres"
             value={draft.odometerKm || ""}
             onChange={(event) => setDraft({ ...draft, odometerKm: Number(event.target.value) })}
             placeholder="Odometer km"
           />
           <textarea
+            aria-label="Owner note details"
             required
             rows={7}
             value={draft.body}
@@ -1448,6 +1482,7 @@ export function App() {
             <h2 ref={garageHeadingRef} tabIndex={-1}>{currentVehicle?.nickname || "Car records"}</h2>
           </div>
           <button className="save-button" type="button" onClick={exportGarage}>
+            <Download aria-hidden="true" />
             Export garage
           </button>
         </div>
@@ -1465,7 +1500,7 @@ export function App() {
         ) : (
           <div className="empty-state garage-empty-state">
             <p>Add your car to see service due dates and running costs.</p>
-            <button className="primary-action workspace-task-action" type="button" onClick={openVehicleComposer}><span aria-hidden="true">+</span>Add your vehicle</button>
+            <button className="primary-action workspace-task-action" type="button" onClick={openVehicleComposer}><Plus aria-hidden="true" />Add your vehicle</button>
           </div>
         )}
         {garageForm ? (
@@ -1474,13 +1509,14 @@ export function App() {
           <form className="composer" id="vehicle-form" onSubmit={addVehicle}>
             <h3>Add vehicle</h3>
             <input
+              aria-label="Vehicle nickname"
               ref={vehicleNicknameRef}
               value={vehicleDraft.nickname}
               onChange={(event) => setVehicleDraft({ ...vehicleDraft, nickname: event.target.value })}
               placeholder="Nickname"
             />
             <div className="form-row">
-              <select value={vehicleDraft.brand} onChange={(event) => setVehicleDraft({ ...vehicleDraft, brand: event.target.value })}>
+              <select aria-label="Vehicle brand" value={vehicleDraft.brand} onChange={(event) => setVehicleDraft({ ...vehicleDraft, brand: event.target.value })}>
                 {brands.map((brand) => (
                   <option key={brand}>{brand}</option>
                 ))}
@@ -1508,6 +1544,7 @@ export function App() {
               <input
                 min="0"
                 type="number"
+                aria-label="Current odometer"
                 value={vehicleDraft.odometerKm || ""}
                 onChange={(event) => setVehicleDraft({ ...vehicleDraft, odometerKm: Number(event.target.value) })}
                 placeholder="Current odometer"
@@ -1529,6 +1566,7 @@ export function App() {
           <form className="composer" id="timeline-form" onSubmit={addTimelineNote}>
             <h3>Add service or cost record</h3>
             <select
+              aria-label="Vehicle"
               required
               value={timelineDraft.vehicleId}
               onChange={(event) => setTimelineDraft({ ...timelineDraft, vehicleId: event.target.value })}
@@ -1541,6 +1579,7 @@ export function App() {
             </select>
             <div className="form-row">
               <select
+                aria-label="Record type"
                 value={timelineDraft.kind}
                 onChange={(event) => setTimelineDraft({ ...timelineDraft, kind: event.target.value as TimelineEntryKind })}
               >
@@ -1566,6 +1605,7 @@ export function App() {
               <input
                 min="0"
                 type="number"
+                aria-label="Amount paid"
                 value={timelineDraft.amount || ""}
                 onChange={(event) => setTimelineDraft({ ...timelineDraft, amount: Number(event.target.value) })}
                 placeholder="Amount paid"
@@ -1573,12 +1613,14 @@ export function App() {
               <input
                 min="0"
                 type="number"
+                aria-label="Record odometer"
                 value={timelineDraft.odometerKm || ""}
                 onChange={(event) => setTimelineDraft({ ...timelineDraft, odometerKm: Number(event.target.value) })}
                 placeholder="Odometer"
               />
             </div>
             <textarea
+              aria-label="Service record details"
               rows={4}
               value={timelineDraft.note}
               onChange={(event) => setTimelineDraft({ ...timelineDraft, note: event.target.value })}
@@ -1745,21 +1787,21 @@ export function App() {
 
       <nav className="mobile-dock" aria-label="Primary mobile navigation">
         <a className={activeNav === "home" ? "is-active" : ""} href="#top" aria-current={activeNav === "home" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("home", "home"); }}>
-          <span className="shell-icon" aria-hidden="true">⌂</span>
+          <House className="shell-icon" aria-hidden="true" />
           <span>Today</span>
         </a>
         <a className={activeNav === "shortlist" ? "is-active" : ""} href="#shortlist" aria-current={activeNav === "shortlist" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("shortlist"); }}>
-          <span className="shell-icon" aria-hidden="true">▤</span>
+          <ListChecks className="shell-icon" aria-hidden="true" />
           <span>Shortlist</span>
           {shortlist.length ? <strong>{shortlist.length}</strong> : null}
         </a>
         <a className={activeNav === "garage" ? "is-active" : ""} href="#garage" aria-current={activeNav === "garage" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("garage"); }}>
-          <span className="shell-icon" aria-hidden="true">▣</span>
+          <CarFront className="shell-icon" aria-hidden="true" />
           <span>Garage</span>
           {garage.length ? <strong>{garage.length}</strong> : null}
         </a>
         <a className={activeNav === "community" ? "is-active" : ""} href="#feed" aria-current={activeNav === "community" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("community", "community", "latest"); }}>
-          <span className="shell-icon" aria-hidden="true">◉</span>
+          <MessageCircle className="shell-icon" aria-hidden="true" />
           <span>Community</span>
         </a>
       </nav>

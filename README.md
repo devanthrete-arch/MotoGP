@@ -6,6 +6,20 @@ The current active MVP path is a TypeScript webapp designed for Vercel-first
 iteration. The Kotlin/Ktor and Android work remains in the repo as the later
 backend/mobile conversion path.
 
+## Current product experience
+
+The web app is organized around four stable tasks:
+
+- **Today** — see the selected vehicle, the next useful action, costs, and recent owner evidence.
+- **Shortlist** — compare candidates, inspect risk, and keep decision notes.
+- **Garage** — maintain the ownership ledger, reminders, service records, and costs.
+- **Community** — search owner notes, inspect evidence, save useful posts, and contribute a note.
+
+The interface is responsive, keyboard-accessible, reduced-motion aware, and
+honest about its current local-first persistence. Product rationale is recorded
+in `docs/AUTOFLEX_DESIGN_REPORT.docx`; the client, API, persistence, and
+deployment boundaries are recorded in `docs/AUTOFLEX_SYSTEM_DESIGN.docx`.
+
 ## Project brief
 
 Autoflex is being built as a new-age, ownership-first automotive community:
@@ -123,6 +137,8 @@ Service-center integration is intentionally kept separate under
 - `docs/COMMUNITY_RULES.md` — posting and moderation standard
 - `docs/SERVICE_CENTER_INTEGRATION.md` — separate service-center integration boundary
 - `docs/RELEASE_CHECKLIST.md` — web MVP release checks
+- `docs/AUTOFLEX_DESIGN_REPORT.docx` — product, interaction, and visual design rationale
+- `docs/AUTOFLEX_SYSTEM_DESIGN.docx` — client, API, persistence, and deployment architecture
 - `docs/PENDING_PRIORITIES.md` — prioritized remaining production work
 - `docs/HOSTED_BACKEND_DECISION.md` — TypeScript/Fastify-first backend decision
 - `docs/STAGING_DEPLOYMENT.md` — Docker staging runbook
