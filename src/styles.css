@@ -1247,16 +1247,45 @@ textarea:focus {
 }
 
 .timeline-entry {
-  grid-template-columns: 12px minmax(0, 1fr) auto;
+  align-items: start;
+  column-gap: 12px;
+  grid-template-columns: 12px minmax(0, 1fr);
+  row-gap: 4px;
 }
 
 .timeline-entry::before {
   background: var(--petrol);
   border-radius: 50%;
   content: "";
+  grid-column: 1;
+  grid-row: 1;
   height: 8px;
-  margin-top: 7px;
+  margin-top: 6px;
   width: 8px;
+}
+
+.timeline-entry > strong,
+.timeline-entry > span,
+.timeline-entry > p {
+  grid-column: 2;
+  min-width: 0;
+}
+
+.timeline-entry > strong {
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.timeline-entry > span {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.timeline-entry > p {
+  line-height: 1.55;
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
 }
 
 .garage-selected-record {
