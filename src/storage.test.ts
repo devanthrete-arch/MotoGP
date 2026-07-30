@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { FeedbackNote } from "./domain";
 import {
+  clearAutoflexData,
   createTesterRun,
   normalizeFeedbackNotes,
   parseAutoflexBackup,
@@ -39,6 +40,18 @@ describe("Autoflex storage safety", () => {
 
     expect(readStoredJson("profile", { displayName: "" }, storage)).toEqual({ displayName: "" });
     expect(() => writeStoredJson("profile", { displayName: "Owner" }, storage)).not.toThrow();
+  });
+
+  it("clears only Autoflex-owned browser data", () => {
+    const removed: string[] = [];
+    clearAutoflexData({
+      removeItem: (key) => removed.push(key),
+    });
+
+    expect(removed).toContain("autoflex.web.profile.v1");
+    expect(removed).toContain("autoflex.web.garage.v1");
+    expect(removed).toContain("autoflex.web.shortlist.v1");
+    expect(removed.every((key) => key.startsWith("autoflex.web."))).toBe(true);
   });
 
   it("persists checked QA session ids through the storage adapter", () => {

@@ -6,6 +6,25 @@ The current active MVP path is a TypeScript webapp designed for Vercel-first
 iteration. The Kotlin/Ktor and Android work remains in the repo as the later
 backend/mobile conversion path.
 
+## Current product experience
+
+The web app is organized around four stable tasks:
+
+- **Today** — see the selected vehicle, the next useful action, costs, and recent owner evidence.
+- **Shortlist** — compare candidates, inspect risk, and keep decision notes.
+- **Garage** — maintain the ownership ledger, reminders, service records, and costs.
+- **Community** — search owner notes, inspect evidence, save useful posts, and contribute a note.
+
+The interface is responsive, keyboard-accessible, reduced-motion aware, and
+honest about its current local-first persistence. Stable hash routes support
+direct links and browser navigation, while a generated service worker keeps the
+last production app shell available when the network is unavailable. Product
+rationale is recorded in `docs/AUTOFLEX_DESIGN_REPORT.docx`; the client, API,
+persistence, and deployment boundaries are recorded in
+`docs/AUTOFLEX_SYSTEM_DESIGN.docx`. The generated Stitch exploration and the
+implementation decisions taken from it are recorded in
+`docs/STITCH_DESIGN_REFERENCE.md`.
+
 ## Project brief
 
 Autoflex is being built as a new-age, ownership-first automotive community:
@@ -82,13 +101,14 @@ Service-center integration is intentionally kept separate under
 - [x] Added the first TypeScript/Fastify API foundation for profiles, posts, comments, reports, moderation, follows, saved posts, garage vehicles, timeline entries, shortlist items, inspection sessions, and feedback ingestion.
 - [x] Added API tests that verify core hosted routes and confirm service-center routes remain reserved for the separate owning team.
 - [x] Added optional JSON-backed API persistence, `/api/health`, configurable CORS, admin-token protection for internal queues, and persistence tests.
+- [x] Added stable workspace deep links, browser Back support, production security headers, current install icons, and a versioned offline app shell.
 
 ### Yet to be done
 
 - [x] Merged the TypeScript web MVP feature PRs through post quality meter into `master`.
 - [ ] Deploy the TypeScript webapp on Vercel and record the production URL in the launch panel.
 - [ ] Run a visual responsive QA pass on the deployed Vercel URL, including the starter route, QA checklist, responsive QA matrix, and install prompt.
-- [ ] Run an offline-mode smoke check in the deployed browser.
+- [x] Run a server-disconnected offline reload against the production build.
 - [ ] Choose the production persistence backend after validating the JSON-backed beta API path.
 - [ ] Replace local backup/restore with hosted account sync once persistence exists.
 - [ ] Replace local subscription previews with real hosted notification jobs after accounts/persistence exist.
@@ -114,6 +134,7 @@ Service-center integration is intentionally kept separate under
 
 - `src` — active TypeScript webapp MVP
 - `server-ts` — first TypeScript/Fastify hosted API foundation for the web MVP
+- `scripts/build-service-worker.mjs` — generates the versioned production offline shell
 - `index.html`, `vite.config.ts`, `package.json` — Vercel-ready web build
 - `server-kotlin/src/main/resources/web` — previous Kotlin-served webapp retained for reference/conversion
 - `server-kotlin` — Ktor REST API and SQLite database
@@ -123,6 +144,8 @@ Service-center integration is intentionally kept separate under
 - `docs/COMMUNITY_RULES.md` — posting and moderation standard
 - `docs/SERVICE_CENTER_INTEGRATION.md` — separate service-center integration boundary
 - `docs/RELEASE_CHECKLIST.md` — web MVP release checks
+- `docs/AUTOFLEX_DESIGN_REPORT.docx` — product, interaction, and visual design rationale
+- `docs/AUTOFLEX_SYSTEM_DESIGN.docx` — client, API, persistence, and deployment architecture
 - `docs/PENDING_PRIORITIES.md` — prioritized remaining production work
 - `docs/HOSTED_BACKEND_DECISION.md` — TypeScript/Fastify-first backend decision
 - `docs/STAGING_DEPLOYMENT.md` — Docker staging runbook
@@ -183,11 +206,13 @@ summarize owner signals and buyer checks from the same typed post data.
 The write flow includes a detail quality meter so new posts become more useful
 before they reach the community feed.
 
-The web shell includes `public/manifest.json` and `public/icon.svg` so
+The web shell includes `public/manifest.json`, SVG/PNG install icons, and a
+generated service worker so
 Chrome/Android and supporting desktop browsers can present Autoflex as an
-installable app surface.
-The webapp also shows online/offline status so testers know local notes,
-garage entries, saved notes, and shortlist work still work when connectivity drops.
+installable app surface. Production builds precache the exact generated shell;
+the browser uses the last valid shell when connectivity drops. User-created
+notes, garage entries, saved notes, and shortlist data remain local to the
+current browser until hosted account sync is implemented.
 
 Run the web release gate before deploying:
 

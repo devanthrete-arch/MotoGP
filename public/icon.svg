@@ -1,10 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
   <title id="title">Autoflex app icon</title>
-  <desc id="desc">A warm garage notebook icon with a road line and Autoflex mark.</desc>
-  <rect width="512" height="512" rx="112" fill="#241912" />
-  <path d="M92 354c70-90 118-134 164-134s94 44 164 134" fill="none" stroke="#ffb36b" stroke-width="34" stroke-linecap="round" />
-  <path d="M256 96v278" stroke="#fff8ed" stroke-width="28" stroke-linecap="round" stroke-dasharray="2 52" />
-  <circle cx="256" cy="220" r="70" fill="#4b2418" stroke="#fff8ed" stroke-width="26" />
-  <path d="M220 220h72M256 184v72" stroke="#ffb36b" stroke-width="24" stroke-linecap="round" />
-  <path d="M128 408h256" stroke="#fff8ed" stroke-width="24" stroke-linecap="round" opacity=".72" />
+  <desc id="desc">A precision workshop mark with the Autoflex A and ownership ledger lines.</desc>
+  <rect width="512" height="512" fill="#101b17" />
+  <rect x="72" y="72" width="206" height="206" rx="12" fill="#f4c64e" />
+  <path d="M116 238 169 112h38l53 126h-39l-10-29h-48l-10 29h-37Zm57-61h28l-14-43-14 43Z" fill="#101b17" />
+  <path d="M326 122h112M326 174h112M326 226h76" fill="none" stroke="#eef2f0" stroke-width="18" stroke-linecap="square" />
+  <path d="M76 358h360M76 420h250" fill="none" stroke="#4fa393" stroke-width="22" stroke-linecap="square" />
+  <circle cx="408" cy="420" r="28" fill="#f4c64e" />
 </svg>
