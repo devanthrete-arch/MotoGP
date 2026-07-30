@@ -21,7 +21,9 @@ direct links and browser navigation, while a generated service worker keeps the
 last production app shell available when the network is unavailable. Product
 rationale is recorded in `docs/AUTOFLEX_DESIGN_REPORT.docx`; the client, API,
 persistence, and deployment boundaries are recorded in
-`docs/AUTOFLEX_SYSTEM_DESIGN.docx`.
+`docs/AUTOFLEX_SYSTEM_DESIGN.docx`. The generated Stitch exploration and the
+implementation decisions taken from it are recorded in
+`docs/STITCH_DESIGN_REFERENCE.md`.
 
 ## Project brief
 

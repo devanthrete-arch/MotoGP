@@ -36,6 +36,24 @@ const productionLaunchKey = "autoflex.web.production-launch.v1";
 const productionUrlKey = "autoflex.web.production-url.v1";
 const testerRunsKey = "autoflex.web.tester-runs.v1";
 const productionOpsKey = "autoflex.web.production-ops.v1";
+const autoflexStorageKeys = [
+  postsKey,
+  savedKey,
+  feedbackKey,
+  followKey,
+  garageKey,
+  timelineKey,
+  subscriptionKey,
+  profileKey,
+  reportsKey,
+  shortlistKey,
+  qaSessionKey,
+  responsiveQaKey,
+  productionLaunchKey,
+  productionUrlKey,
+  testerRunsKey,
+  productionOpsKey,
+];
 
 export type StorageLike = Pick<Storage, "getItem" | "setItem">;
 
@@ -196,6 +214,16 @@ export const restoreAutoflexBackup = (backup: AutoflexBackup): void => {
   saveSubscriptionSettings(backup.data.subscriptionSettings);
   saveTesterRuns(backup.data.testerRuns);
   saveTimeline(backup.data.timeline);
+};
+
+export const clearAutoflexData = (storage?: Pick<Storage, "removeItem"> | null): void => {
+  try {
+    const target = storage === undefined ? globalThis.localStorage : storage;
+    if (!target) return;
+    autoflexStorageKeys.forEach((key) => target.removeItem(key));
+  } catch {
+    // A blocked browser store should not prevent the current screen from remaining usable.
+  }
 };
 
 export const loadPosts = (): OwnerPost[] => {

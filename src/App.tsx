@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
   Bookmark,
@@ -16,12 +16,14 @@ import {
   Plus,
   Search,
   Settings,
+  ShieldCheck,
+  Trash2,
+  Upload,
   UsersRound,
   Wrench,
 } from "lucide-react";
 import {
   knowledgeLabels,
-  privacyReadinessItems,
   shortlistStatuses,
   timelineKinds,
   type DraftPost,
@@ -51,7 +53,6 @@ import {
   buildModerationSummary,
   buildNotificationPreview,
   buildPostSharePayload,
-  buildPrivacyReadinessSummary,
   buildShortlistComparisons,
   buildShortlistDecisionLanes,
   filterPostsByMode,
@@ -60,6 +61,8 @@ import {
   modelKeyFor,
 } from "./insights";
 import {
+  buildAutoflexBackup,
+  clearAutoflexData,
   createPost,
   createReport,
   createShortlistItem,
@@ -74,6 +77,8 @@ import {
   loadShortlist,
   loadSubscriptionSettings,
   loadTimeline,
+  parseAutoflexBackup,
+  restoreAutoflexBackup,
   saveFollows,
   saveGarage,
   savePosts,
@@ -179,6 +184,7 @@ export function App() {
   const [vehicleMenuOpen, setVehicleMenuOpen] = useState(false);
   const [shortlistFormOpen, setShortlistFormOpen] = useState(false);
   const [garageForm, setGarageForm] = useState<"vehicle" | "record" | null>(null);
+  const [confirmClearData, setConfirmClearData] = useState(false);
   const [postComposerOpen, setPostComposerOpen] = useState(Boolean(initialRoute.current.openComposer));
   const [activeNav, setActiveNav] = useState(initialRoute.current.nav);
   const [activeScreen, setActiveScreen] = useState<WorkspaceScreen>(initialRoute.current.screen);
@@ -193,6 +199,9 @@ export function App() {
   const garageHeadingRef = useRef<HTMLHeadingElement>(null);
   const profileNameRef = useRef<HTMLInputElement>(null);
   const settingsHeadingRef = useRef<HTMLHeadingElement>(null);
+  const restoreBackupRef = useRef<HTMLInputElement>(null);
+  const clearDataTriggerRef = useRef<HTMLButtonElement>(null);
+  const clearDataCancelRef = useRef<HTMLButtonElement>(null);
   const notificationsFirstRef = useRef<HTMLInputElement>(null);
   const accountHeaderRef = useRef<HTMLHeadingElement>(null);
   const profileTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -228,7 +237,6 @@ export function App() {
   const garageReminders = useMemo(() => buildGarageReminders(garage, timeline), [garage, timeline]);
   const cityCircles = useMemo(() => buildCityCircles(posts, garage), [garage, posts]);
   const moderationSummary = useMemo(() => buildModerationSummary(reports), [reports]);
-  const privacySummary = useMemo(() => buildPrivacyReadinessSummary(privacyReadinessItems), []);
   const shortlistComparisons = useMemo(() => buildShortlistComparisons(shortlist, posts), [posts, shortlist]);
   const shortlistDecisionLanes = useMemo(() => buildShortlistDecisionLanes(shortlist, posts), [posts, shortlist]);
   const inspectionChecklists = useMemo(() => buildInspectionChecklists(shortlist, posts), [posts, shortlist]);
@@ -473,6 +481,49 @@ export function App() {
       title: "Autoflex garage export",
       text: buildGarageExportMarkdown(garage, timeline),
     });
+  };
+
+  const downloadBackup = () => {
+    try {
+      const payload = JSON.stringify(buildAutoflexBackup(), null, 2);
+      const url = URL.createObjectURL(new Blob([payload], { type: "application/json" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `autoflex-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 0);
+      setActionMessage("Autoflex backup downloaded.");
+    } catch {
+      setActionMessage("The backup could not be downloaded in this browser.");
+    }
+  };
+
+  const restoreBackup = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    if (!file) return;
+
+    try {
+      const backup = parseAutoflexBackup(await file.text());
+      if (!backup) {
+        setActionMessage("That file is not a valid Autoflex backup.");
+        return;
+      }
+
+      restoreAutoflexBackup(backup);
+      setActionMessage("Backup restored. Reloading Autoflex.");
+      window.setTimeout(() => window.location.reload(), 500);
+    } catch {
+      setActionMessage("That backup could not be read.");
+    }
+  };
+
+  const clearAllData = () => {
+    clearAutoflexData();
+    setConfirmClearData(false);
+    window.location.reload();
   };
 
   const addShortlistItem = (event: FormEvent<HTMLFormElement>) => {
@@ -729,7 +780,7 @@ export function App() {
             ? { eyebrow: "Profile", title: "Following", detail: "Cars and topics you follow." }
         : accountView === "notifications"
           ? { eyebrow: "Account", title: "Notifications", detail: "Choose which updates appear on this device." }
-          : { eyebrow: "Account", title: "Settings & privacy", detail: "Review what Autoflex stores on this device." },
+          : { eyebrow: "Account", title: "Settings", detail: "Manage your data and app preferences." },
   };
   const accountBackLabel =
     accountView !== "profile"
@@ -993,7 +1044,7 @@ export function App() {
           <button type="button" onClick={() => openAccountView("saved")}><Bookmark aria-hidden="true" /><span><strong>Saved notes</strong><small>{saved.size} note{saved.size === 1 ? "" : "s"}</small></span><ChevronRight aria-hidden="true" /></button>
           <button type="button" onClick={() => openAccountView("following")}><UsersRound aria-hidden="true" /><span><strong>Following</strong><small>{follows.models.length + follows.topics.length} cars and topics</small></span><ChevronRight aria-hidden="true" /></button>
           <button type="button" onClick={() => openAccountView("notifications")}><Bell aria-hidden="true" /><span><strong>Notifications</strong><small>Weekly updates and quiet hours</small></span><ChevronRight aria-hidden="true" /></button>
-          <button type="button" onClick={() => openAccountView("settings")}><Settings aria-hidden="true" /><span><strong>Settings & privacy</strong><small>Local data and privacy details</small></span><ChevronRight aria-hidden="true" /></button>
+          <button type="button" onClick={() => openAccountView("settings")}><Settings aria-hidden="true" /><span><strong>Settings</strong><small>Data, privacy, and app preferences</small></span><ChevronRight aria-hidden="true" /></button>
         </nav>
       </section>
       ) : null}
@@ -1028,26 +1079,108 @@ export function App() {
       ) : null}
 
       {accountView === "settings" ? (
-      <section className="panel privacy-panel screen-more" id="privacy">
-        <div className="section-head">
-          <div>
-            <p className="eyebrow">Settings & privacy</p>
-            <h2 ref={settingsHeadingRef} tabIndex={-1}>What Autoflex stores on this device</h2>
+      <section className="panel settings-panel screen-more" id="privacy">
+        <div className="settings-group">
+          <div className="settings-group-heading">
+            <ShieldCheck aria-hidden="true" />
+            <div>
+              <h2 ref={settingsHeadingRef} tabIndex={-1}>Your data stays on this device</h2>
+              <p>Autoflex does not require an account. Your garage, shortlist, notes, and preferences remain in this browser.</p>
+            </div>
           </div>
-          <div className="privacy-stats" aria-label="Privacy readiness summary">
-            <span>{privacySummary["Stored for MVP"]} stored</span>
-            <span>{privacySummary["Not collected"]} not collected</span>
-            <span>{privacySummary["Deletion baseline"]} deletion</span>
+          <dl className="settings-data-summary">
+            <div><dt>Garage</dt><dd>{garage.length} car{garage.length === 1 ? "" : "s"} · {timeline.length} service record{timeline.length === 1 ? "" : "s"}</dd></div>
+            <div><dt>Buying</dt><dd>{shortlist.length} shortlisted · {saved.size} saved note{saved.size === 1 ? "" : "s"}</dd></div>
+            <div><dt>Profile</dt><dd>{profile.displayName.trim() || "No display name"} · {profile.city.trim() || "No city"}</dd></div>
+          </dl>
+        </div>
+
+        <div className="settings-group">
+          <div className="settings-group-title">
+            <div>
+              <h3>Backup and restore</h3>
+              <p>Keep a copy before clearing browser data or moving to another device.</p>
+            </div>
+          </div>
+          <div className="settings-action-list">
+            <button type="button" onClick={downloadBackup}>
+              <Download aria-hidden="true" />
+              <span><strong>Download my data</strong><small>Save one Autoflex backup file</small></span>
+              <ChevronRight aria-hidden="true" />
+            </button>
+            <button type="button" onClick={() => restoreBackupRef.current?.click()}>
+              <Upload aria-hidden="true" />
+              <span><strong>Restore from backup</strong><small>Replace this browser's Autoflex data</small></span>
+              <ChevronRight aria-hidden="true" />
+            </button>
+            <input
+              accept="application/json,.json"
+              aria-hidden="true"
+              className="visually-hidden"
+              hidden
+              onChange={restoreBackup}
+              ref={restoreBackupRef}
+              tabIndex={-1}
+              type="file"
+            />
           </div>
         </div>
-        <div className="privacy-grid">
-          {privacyReadinessItems.map((item) => (
-            <article className={item.stance.toLowerCase().replaceAll(" ", "-")} key={item.id}>
-              <span>{item.stance}</span>
-              <h3>{item.label}</h3>
-              <p>{item.detail}</p>
-            </article>
-          ))}
+
+        <div className="settings-group">
+          <div className="settings-group-title">
+            <div>
+              <h3>Preferences</h3>
+              <p>Choose how Autoflex behaves on this device.</p>
+            </div>
+          </div>
+          <div className="settings-action-list">
+            <button type="button" onClick={() => openAccountView("notifications")}>
+              <Bell aria-hidden="true" />
+              <span><strong>Notifications</strong><small>Weekly updates, browser alerts, and quiet hours</small></span>
+              <ChevronRight aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+
+        <div className="settings-group settings-danger-zone">
+          <div className="settings-group-title">
+            <div>
+              <h3>Clear Autoflex data</h3>
+              <p>Removes your profile, garage, shortlist, saved notes, and preferences from this browser.</p>
+            </div>
+          </div>
+          {confirmClearData ? (
+            <div className="settings-confirm" role="alert">
+              <strong>This cannot be undone unless you downloaded a backup.</strong>
+              <div>
+                <button
+                  className="save-button"
+                  ref={clearDataCancelRef}
+                  type="button"
+                  onClick={() => {
+                    setConfirmClearData(false);
+                    window.requestAnimationFrame(() => clearDataTriggerRef.current?.focus());
+                  }}
+                >
+                  Cancel
+                </button>
+                <button className="danger-action" type="button" onClick={clearAllData}><Trash2 aria-hidden="true" />Clear all data</button>
+              </div>
+            </div>
+          ) : (
+            <button
+              className="danger-link"
+              ref={clearDataTriggerRef}
+              type="button"
+              onClick={() => {
+                setConfirmClearData(true);
+                window.requestAnimationFrame(() => clearDataCancelRef.current?.focus());
+              }}
+            >
+              <Trash2 aria-hidden="true" />
+              Clear data on this device
+            </button>
+          )}
         </div>
       </section>
       ) : null}

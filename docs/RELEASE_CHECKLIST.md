@@ -1,4 +1,4 @@
-# Autoflex TypeScript web MVP release checklist
+# Autoflex webapp release checklist
 
 ## Active webapp checks
 
@@ -10,18 +10,19 @@
 6. Confirm each workspace has one clear primary action: Add vehicle, Add candidate, Add service record, and Write a note.
 7. Confirm Profile opens directly from the account control, its utility screens return correctly, and no duplicate account menu appears.
 8. Confirm shortlist decisions, vehicle records, community search/detail/save/report, city filters, and profile settings retain local state across workspace changes and reloads.
-9. Confirm the deployed Vercel URL loads the current public MVP.
-10. Confirm `#top`, `#shortlist`, `#garage`, `#feed`, `#write`, and Profile utility links survive refresh and browser Back/Forward navigation.
-11. Confirm production responses include the configured content-type, referrer, permissions, framing, opener, resource, transport-security, and content-security headers.
-12. Complete production operations outside the public UI: backup restore drill, non-default admin token, client-error path, release logs, monitoring owner, and HTTPS-only link.
-13. Confirm return-user nudges appear after following a model/topic, saving a note, or adding a garage vehicle.
-14. Check 390px phone, tablet, and 1280px desktop layouts; confirm the mobile dock, desktop rail, forms, details, lists, and primary actions remain readable, tappable, and free of horizontal overflow.
-15. Confirm blocked, unavailable, or corrupt browser storage falls back safely without breaking the page.
-16. Confirm app-level crash recovery shows a reload/try-again path instead of a blank page.
-17. On a fresh browser/profile, confirm the starter route shows pending first actions and marks profile, follows, garage, and saved/shortlist steps complete as users interact.
-18. Confirm `/manifest.json` loads, references the SVG and PNG install icons, uses standalone display, and exposes working shortcuts for write, shortlist, and garage.
-19. Build and serve the production output, load it once, stop the server, and confirm a browser reload still renders the selected workspace from the generated offline shell.
-20. Confirm the Vercel project is owned by the intended team, GitHub authors have deployment access, and the production branch targets the repository default branch.
+9. Confirm Settings downloads a valid backup, opens the restore file picker, rejects invalid backups, and requires a second explicit action before clearing local data.
+10. Confirm the deployed Vercel URL loads the current public MVP.
+11. Confirm `#top`, `#shortlist`, `#garage`, `#feed`, `#write`, and Profile utility links survive refresh and browser Back/Forward navigation.
+12. Confirm production responses include the configured content-type, referrer, permissions, framing, opener, resource, transport-security, and content-security headers.
+13. Complete production operations outside the public UI: backup restore drill, non-default admin token, client-error path, release logs, monitoring owner, and HTTPS-only link.
+14. Confirm return-user nudges appear after following a model/topic, saving a note, or adding a garage vehicle.
+15. Check 390px phone, tablet, and 1280px desktop layouts; confirm the mobile dock, desktop rail, forms, details, lists, and primary actions remain readable, tappable, and free of horizontal overflow.
+16. Confirm blocked, unavailable, or corrupt browser storage falls back safely without breaking the page.
+17. Confirm app-level crash recovery shows a reload/try-again path instead of a blank page.
+18. On a fresh browser/profile, confirm the starter route shows pending first actions and marks profile, follows, garage, and saved/shortlist steps complete as users interact.
+19. Confirm `/manifest.json` loads, references the SVG and PNG install icons, uses standalone display, and exposes working shortcuts for write, shortlist, and garage.
+20. Build and serve the production output, load it once, stop the server, and confirm a browser reload still renders the selected workspace from the generated offline shell.
+21. Confirm the Vercel project is owned by the intended team, GitHub authors have deployment access, and the production branch targets the repository default branch.
 
 ## Required environment
 
