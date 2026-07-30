@@ -84,10 +84,17 @@ import {
   saveSubscriptionSettings,
   saveTimeline,
 } from "./storage";
+import {
+  accountHashes,
+  getInitialRoute,
+  routeFromHash,
+  workspaceHashes,
+  type AccountView,
+  type AppRoute,
+  type WorkspaceScreen,
+} from "./routing";
 
 type FeedMode = "latest" | "helpful" | "saved" | "following";
-type WorkspaceScreen = "home" | "shortlist" | "garage" | "community" | "account";
-type AccountView = "profile" | "saved" | "following" | "notifications" | "settings";
 
 const brands = ["Tata", "Honda", "Kia", "Mahindra", "Maruti Suzuki", "Hyundai", "Toyota", "Skoda", "Volkswagen"];
 
@@ -143,6 +150,7 @@ const getInitialOnlineStatus = (): boolean => {
 };
 
 export function App() {
+  const initialRoute = useRef<AppRoute>(getInitialRoute());
   const [posts, setPosts] = useState<OwnerPost[]>(() => loadPosts());
   const [profile, setProfile] = useState<Profile>(() => loadProfile());
   const [reports, setReports] = useState<ReportRecord[]>(() => loadReports());
@@ -167,13 +175,13 @@ export function App() {
   const [commentDraft, setCommentDraft] = useState("");
   const [reportDraft, setReportDraft] = useState("");
   const [actionMessage, setActionMessage] = useState("");
-  const [accountView, setAccountView] = useState<AccountView>("profile");
+  const [accountView, setAccountView] = useState<AccountView>(initialRoute.current.accountView ?? "profile");
   const [vehicleMenuOpen, setVehicleMenuOpen] = useState(false);
   const [shortlistFormOpen, setShortlistFormOpen] = useState(false);
   const [garageForm, setGarageForm] = useState<"vehicle" | "record" | null>(null);
-  const [postComposerOpen, setPostComposerOpen] = useState(false);
-  const [activeNav, setActiveNav] = useState("home");
-  const [activeScreen, setActiveScreen] = useState<WorkspaceScreen>("home");
+  const [postComposerOpen, setPostComposerOpen] = useState(Boolean(initialRoute.current.openComposer));
+  const [activeNav, setActiveNav] = useState(initialRoute.current.nav);
+  const [activeScreen, setActiveScreen] = useState<WorkspaceScreen>(initialRoute.current.screen);
   const [isOnline, setIsOnline] = useState(getInitialOnlineStatus);
   const communitySearchRef = useRef<HTMLInputElement>(null);
   const postTitleRef = useRef<HTMLInputElement>(null);
@@ -257,6 +265,40 @@ export function App() {
       window.removeEventListener("offline", updateOffline);
     };
   }, []);
+
+  useEffect(() => {
+    const syncRoute = () => {
+      const route = routeFromHash(window.location.hash);
+      setActiveScreen(route.screen);
+      setActiveNav(route.nav);
+      if (route.accountView) setAccountView(route.accountView);
+      setPostComposerOpen(Boolean(route.openComposer));
+      setPostDetailOpen(false);
+      window.scrollTo(0, 0);
+    };
+
+    window.addEventListener("hashchange", syncRoute);
+    window.addEventListener("popstate", syncRoute);
+    return () => {
+      window.removeEventListener("hashchange", syncRoute);
+      window.removeEventListener("popstate", syncRoute);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!actionMessage) return;
+    const timeout = window.setTimeout(() => setActionMessage(""), 4200);
+    return () => window.clearTimeout(timeout);
+  }, [actionMessage]);
+
+  useEffect(() => {
+    if (!postComposerOpen) return;
+    const timeout = window.setTimeout(() => {
+      postTitleRef.current?.scrollIntoView({ block: "center" });
+      postTitleRef.current?.focus({ preventScroll: true });
+    }, 80);
+    return () => window.clearTimeout(timeout);
+  }, [postComposerOpen]);
 
   useEffect(() => {
     if (!vehicleMenuOpen) return;
@@ -530,10 +572,22 @@ export function App() {
     setActionMessage("Service or cost record saved.");
   };
 
-  const openWorkspace = (screen: WorkspaceScreen, nav: string = screen, nextMode?: FeedMode) => {
+  const updateRoute = (hash: string) => {
+    if (window.location.hash !== hash) window.history.pushState(null, "", hash);
+  };
+
+  const openWorkspace = (
+    screen: Exclude<WorkspaceScreen, "account">,
+    nav: string = screen,
+    nextMode?: FeedMode,
+    hash: string = workspaceHashes[screen],
+  ) => {
     if (nextMode) setMode(nextMode);
     setActiveScreen(screen);
     setActiveNav(nav);
+    setPostComposerOpen(false);
+    setPostDetailOpen(false);
+    updateRoute(hash);
     window.scrollTo(0, 0);
   };
 
@@ -546,6 +600,7 @@ export function App() {
   const openAccountView = (view: AccountView) => {
     setAccountView(view);
     setActiveScreen("account");
+    updateRoute(accountHashes[view]);
     window.scrollTo(0, 0);
     window.requestAnimationFrame(() => {
       if (view === "profile") profileNameRef.current?.focus();
@@ -560,8 +615,8 @@ export function App() {
       openAccountView("profile");
       return;
     }
-    setActiveScreen(accountReturnScreenRef.current);
-    window.scrollTo(0, 0);
+    const returnScreen = accountReturnScreenRef.current;
+    openWorkspace(returnScreen === "account" ? "home" : returnScreen);
     window.requestAnimationFrame(() => profileTriggerRef.current?.focus());
   };
 
@@ -613,12 +668,8 @@ export function App() {
   };
 
   const openPostComposer = () => {
-    openWorkspace("community", "community");
+    openWorkspace("community", "community", undefined, "#write");
     setPostComposerOpen(true);
-    window.requestAnimationFrame(() => {
-      document.getElementById("write")?.scrollIntoView({ block: "start" });
-      postTitleRef.current?.focus({ preventScroll: true });
-    });
   };
 
   const openShortlistComposer = () => {
@@ -655,6 +706,7 @@ export function App() {
   const returnToCommunityFeed = () => {
     setPostComposerOpen(false);
     setPostDetailOpen(false);
+    updateRoute("#feed");
     document.getElementById("feed")?.scrollIntoView({ block: "start" });
     communitySearchRef.current?.focus({ preventScroll: true });
   };
@@ -686,7 +738,7 @@ export function App() {
   return (
     <main className="app-shell" data-screen={activeScreen}>
       <aside className="desktop-rail" aria-label="Autoflex navigation">
-        <a className="rail-brand" href="#top" aria-label="Autoflex Today" onClick={() => openWorkspace("home", "home")}>
+        <a className="rail-brand" href="#top" aria-label="Autoflex Today" onClick={(event) => { event.preventDefault(); openWorkspace("home", "home"); }}>
           <span className="brand-mark" aria-hidden="true">A</span>
           <span className="brand-word">Auto<strong>flex</strong></span>
         </a>
@@ -827,7 +879,15 @@ export function App() {
                   {currentVehicle ? "Open service records" : "Add your vehicle"}
                 </button>
               </div>
-              <img className="vehicle-visual" src="/autoflex-garage.jpg" alt="Petrol teal compact SUV in a clean service bay" />
+              <img
+                alt="Petrol teal compact SUV in a clean service bay"
+                className="vehicle-visual"
+                decoding="async"
+                fetchPriority="high"
+                height="941"
+                src="/autoflex-garage.jpg"
+                width="1672"
+              />
             </article>
             <aside className="home-readout" aria-label="Current car summary">
               <div><Gauge aria-hidden="true" /><span className="readout-label">Odometer</span><strong>{currentVehicle ? `${currentVehicle.odometerKm.toLocaleString("en-IN")} km` : "--"}</strong></div>
@@ -840,7 +900,7 @@ export function App() {
       </section>
 
       {actionMessage ? (
-        <div className="action-message" role="status">
+        <div aria-atomic="true" className="action-message" role="status">
           {actionMessage}
         </div>
       ) : null}
@@ -1152,9 +1212,12 @@ export function App() {
                 <p>{selectedPost.body}</p>
                 {selectedPostQuality ? (
                   <div className={`quality-card ${selectedPostQuality.grade.toLowerCase().replace(/\s+/g, "-")}`}>
-                    <div className="quality-meter">
-                      <span style={{ width: `${(selectedPostQuality.score / selectedPostQuality.maxScore) * 100}%` }} />
-                    </div>
+                    <progress
+                      aria-label={`Owner note detail quality ${selectedPostQuality.score} of ${selectedPostQuality.maxScore}`}
+                      className="quality-meter"
+                      max={selectedPostQuality.maxScore}
+                      value={selectedPostQuality.score}
+                    />
                     <strong>
                       {selectedPostQuality.grade} · {selectedPostQuality.score}/{selectedPostQuality.maxScore}
                     </strong>
@@ -1389,9 +1452,12 @@ export function App() {
             symptoms, costs, and outcomes.
           </p>
           <div className={`quality-card ${draftQuality.grade.toLowerCase().replace(/\s+/g, "-")}`}>
-            <div className="quality-meter" aria-label={`Draft detail quality ${draftQuality.score} of ${draftQuality.maxScore}`}>
-              <span style={{ width: `${(draftQuality.score / draftQuality.maxScore) * 100}%` }} />
-            </div>
+            <progress
+              aria-label={`Draft detail quality ${draftQuality.score} of ${draftQuality.maxScore}`}
+              className="quality-meter"
+              max={draftQuality.maxScore}
+              value={draftQuality.score}
+            />
             <strong>
               Detail meter: {draftQuality.grade} · {draftQuality.score}/{draftQuality.maxScore}
             </strong>
@@ -1408,6 +1474,7 @@ export function App() {
         <form className="composer" onSubmit={publishPost}>
           <input
             aria-label="Post title"
+            autoFocus={postComposerOpen}
             required
             ref={postTitleRef}
             value={draft.title}

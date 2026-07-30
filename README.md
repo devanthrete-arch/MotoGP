@@ -16,9 +16,12 @@ The web app is organized around four stable tasks:
 - **Community** — search owner notes, inspect evidence, save useful posts, and contribute a note.
 
 The interface is responsive, keyboard-accessible, reduced-motion aware, and
-honest about its current local-first persistence. Product rationale is recorded
-in `docs/AUTOFLEX_DESIGN_REPORT.docx`; the client, API, persistence, and
-deployment boundaries are recorded in `docs/AUTOFLEX_SYSTEM_DESIGN.docx`.
+honest about its current local-first persistence. Stable hash routes support
+direct links and browser navigation, while a generated service worker keeps the
+last production app shell available when the network is unavailable. Product
+rationale is recorded in `docs/AUTOFLEX_DESIGN_REPORT.docx`; the client, API,
+persistence, and deployment boundaries are recorded in
+`docs/AUTOFLEX_SYSTEM_DESIGN.docx`.
 
 ## Project brief
 
@@ -96,13 +99,14 @@ Service-center integration is intentionally kept separate under
 - [x] Added the first TypeScript/Fastify API foundation for profiles, posts, comments, reports, moderation, follows, saved posts, garage vehicles, timeline entries, shortlist items, inspection sessions, and feedback ingestion.
 - [x] Added API tests that verify core hosted routes and confirm service-center routes remain reserved for the separate owning team.
 - [x] Added optional JSON-backed API persistence, `/api/health`, configurable CORS, admin-token protection for internal queues, and persistence tests.
+- [x] Added stable workspace deep links, browser Back support, production security headers, current install icons, and a versioned offline app shell.
 
 ### Yet to be done
 
 - [x] Merged the TypeScript web MVP feature PRs through post quality meter into `master`.
 - [ ] Deploy the TypeScript webapp on Vercel and record the production URL in the launch panel.
 - [ ] Run a visual responsive QA pass on the deployed Vercel URL, including the starter route, QA checklist, responsive QA matrix, and install prompt.
-- [ ] Run an offline-mode smoke check in the deployed browser.
+- [x] Run a server-disconnected offline reload against the production build.
 - [ ] Choose the production persistence backend after validating the JSON-backed beta API path.
 - [ ] Replace local backup/restore with hosted account sync once persistence exists.
 - [ ] Replace local subscription previews with real hosted notification jobs after accounts/persistence exist.
@@ -128,6 +132,7 @@ Service-center integration is intentionally kept separate under
 
 - `src` — active TypeScript webapp MVP
 - `server-ts` — first TypeScript/Fastify hosted API foundation for the web MVP
+- `scripts/build-service-worker.mjs` — generates the versioned production offline shell
 - `index.html`, `vite.config.ts`, `package.json` — Vercel-ready web build
 - `server-kotlin/src/main/resources/web` — previous Kotlin-served webapp retained for reference/conversion
 - `server-kotlin` — Ktor REST API and SQLite database
@@ -199,11 +204,13 @@ summarize owner signals and buyer checks from the same typed post data.
 The write flow includes a detail quality meter so new posts become more useful
 before they reach the community feed.
 
-The web shell includes `public/manifest.json` and `public/icon.svg` so
+The web shell includes `public/manifest.json`, SVG/PNG install icons, and a
+generated service worker so
 Chrome/Android and supporting desktop browsers can present Autoflex as an
-installable app surface.
-The webapp also shows online/offline status so testers know local notes,
-garage entries, saved notes, and shortlist work still work when connectivity drops.
+installable app surface. Production builds precache the exact generated shell;
+the browser uses the last valid shell when connectivity drops. User-created
+notes, garage entries, saved notes, and shortlist data remain local to the
+current browser until hosted account sync is implemented.
 
 Run the web release gate before deploying:
 

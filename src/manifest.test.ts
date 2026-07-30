@@ -8,10 +8,15 @@ describe("Autoflex web manifest", () => {
       name: "Autoflex",
       start_url: "/",
     });
-    expect(manifest.icons[0]).toMatchObject({
+    expect(manifest.icons[1]).toMatchObject({
       purpose: "any maskable",
-      src: "/icon.svg",
+      sizes: "512x512",
+      src: "/icon-512.png",
     });
-    expect(manifest.shortcuts.map((shortcut) => shortcut.url)).toEqual(["/#write", "/#garage", "/#notebooks"]);
+    expect(manifest).toMatchObject({
+      background_color: "#eef2f0",
+      theme_color: "#101b17",
+    });
+    expect(manifest.shortcuts.map((shortcut) => shortcut.url)).toEqual(["/#write", "/#shortlist", "/#garage"]);
   });
 });

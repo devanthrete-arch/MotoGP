@@ -16,6 +16,26 @@
         {
           "key": "Permissions-Policy",
           "value": "camera=(), microphone=(), geolocation=()"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "Cross-Origin-Opener-Policy",
+          "value": "same-origin"
+        },
+        {
+          "key": "Cross-Origin-Resource-Policy",
+          "value": "same-origin"
+        },
+        {
+          "key": "Strict-Transport-Security",
+          "value": "max-age=63072000; includeSubDomains; preload"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; base-uri 'self'; connect-src 'self'; font-src 'self'; form-action 'self'; frame-ancestors 'none'; img-src 'self' data: blob:; object-src 'none'; script-src 'self'; style-src 'self'; upgrade-insecure-requests"
         }
       ],
       "source": "/(.*)"
@@ -30,12 +50,12 @@
       "source": "/assets/(.*)"
     }
   ],
-  "installCommand": "npm install",
+  "installCommand": "npm ci",
   "outputDirectory": "dist",
   "rewrites": [
     {
       "destination": "/index.html",
-      "source": "/((?!assets/|vite.svg|favicon.ico|manifest.json|icon.svg).*)"
+      "source": "/((?!assets/|.*\\..*).*)"
     }
   ]
 }

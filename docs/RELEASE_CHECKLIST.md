@@ -6,21 +6,22 @@
 2. Run `npm run dev` and open `http://localhost:8080`.
 3. Run `npm run test`.
 4. Run `npm run release:check`.
-5. Confirm the public MVP surfaces work: feed, filters, saved posts, following mode, starter route, city circles, ownership playbooks, post detail quality meter, buyer shortlist, buyer inspection checklists, profile form, privacy readiness panel, comments, reports, moderator queue, write form, subscriptions, model notebooks, post sharing, notebook sharing, garage export, garage timeline, garage reminders, garage running-cost ledger, garage insights, build loop, install metadata, and connection status.
-6. Confirm the service-center integration boundary is visible and still treated as a separate workstream.
-7. Confirm the next-team handoff docs list community, profile, garage, buyer, sharing, notification, and service-center boundaries without assigning service-center work to the webapp team.
-8. Confirm the privacy readiness panel states what is stored for the local MVP, what is not collected, the deletion baseline, and the service-center privacy boundary.
+5. Confirm the four primary workspaces work: Today, Shortlist, Garage, and Community.
+6. Confirm each workspace has one clear primary action: Add vehicle, Add candidate, Add service record, and Write a note.
+7. Confirm Profile opens directly from the account control, its utility screens return correctly, and no duplicate account menu appears.
+8. Confirm shortlist decisions, vehicle records, community search/detail/save/report, city filters, and profile settings retain local state across workspace changes and reloads.
 9. Confirm the deployed Vercel URL loads the current public MVP.
-10. Confirm direct refresh on deep paths falls back to the app instead of a Vercel 404.
-11. Confirm production responses include `X-Content-Type-Options`, `Referrer-Policy`, and `Permissions-Policy`.
+10. Confirm `#top`, `#shortlist`, `#garage`, `#feed`, `#write`, and Profile utility links survive refresh and browser Back/Forward navigation.
+11. Confirm production responses include the configured content-type, referrer, permissions, framing, opener, resource, transport-security, and content-security headers.
 12. Complete production operations outside the public UI: backup restore drill, non-default admin token, client-error path, release logs, monitoring owner, and HTTPS-only link.
 13. Confirm return-user nudges appear after following a model/topic, saving a note, or adding a garage vehicle.
-14. Check responsive layout at phone, tablet, and desktop widths; confirm nav, forms, feed detail, shortlist cards, inspection checklists, and action buttons remain readable and tappable.
+14. Check 390px phone, tablet, and 1280px desktop layouts; confirm the mobile dock, desktop rail, forms, details, lists, and primary actions remain readable, tappable, and free of horizontal overflow.
 15. Confirm blocked, unavailable, or corrupt browser storage falls back safely without breaking the page.
 16. Confirm app-level crash recovery shows a reload/try-again path instead of a blank page.
 17. On a fresh browser/profile, confirm the starter route shows pending first actions and marks profile, follows, garage, and saved/shortlist steps complete as users interact.
-18. Confirm `/manifest.json` loads, references `/icon.svg`, uses standalone display, and exposes shortcuts for write, garage, and model notebooks.
-19. Toggle the browser offline and confirm the connection strip explains that local posts, garage notes, saved notes, and shortlist work still work.
+18. Confirm `/manifest.json` loads, references the SVG and PNG install icons, uses standalone display, and exposes working shortcuts for write, shortlist, and garage.
+19. Build and serve the production output, load it once, stop the server, and confirm a browser reload still renders the selected workspace from the generated offline shell.
+20. Confirm the Vercel project is owned by the intended team, GitHub authors have deployment access, and the production branch targets the repository default branch.
 
 ## Required environment
 

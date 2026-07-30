@@ -7,7 +7,7 @@
     "api:dev": "tsx server-ts/index.ts",
     "api:start": "tsx server-ts/index.ts",
     "dev": "vite --host 0.0.0.0 --port 8080",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/build-service-worker.mjs",
     "preview": "vite preview --host 0.0.0.0 --port 8080",
     "release:check": "npm run test && npm run build",
     "test": "vitest run"
