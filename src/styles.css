@@ -1190,6 +1190,31 @@ textarea:focus {
   gap: 10px;
 }
 
+.comparison-card {
+  display: grid;
+  gap: 16px;
+}
+
+.comparison-card > h3,
+.comparison-card > p,
+.comparison-card > .inspection-list,
+.comparison-card > .comparison-stats {
+  margin: 0;
+}
+
+.comparison-card > .confidence {
+  margin-bottom: -6px;
+}
+
+.comparison-card > .form-row {
+  gap: 12px;
+  margin-top: 2px;
+}
+
+.comparison-card > textarea {
+  margin-top: 2px;
+}
+
 .decision-lane.high {
   border-top-color: var(--alert);
 }
