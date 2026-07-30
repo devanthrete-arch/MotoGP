@@ -98,10 +98,9 @@ import {
   type AppRoute,
   type WorkspaceScreen,
 } from "./routing";
+import { modelsForBrand, vehicleBrands } from "./vehicleCatalog";
 
 type FeedMode = "latest" | "helpful" | "saved" | "following";
-
-const brands = ["Tata", "Honda", "Kia", "Mahindra", "Maruti Suzuki", "Hyundai", "Toyota", "Skoda", "Volkswagen"];
 
 const initialDraft: DraftPost = {
   title: "",
@@ -1464,18 +1463,25 @@ export function App() {
           <form className="composer" id="shortlist-form" onSubmit={addShortlistItem}>
             <h3>Add model to compare</h3>
             <div className="form-row">
-              <select aria-label="Car brand" value={shortlistDraft.brand} onChange={(event) => setShortlistDraft({ ...shortlistDraft, brand: event.target.value })}>
-                {brands.map((brand) => (
+              <select aria-label="Car brand" value={shortlistDraft.brand} onChange={(event) => setShortlistDraft({ ...shortlistDraft, brand: event.target.value, model: "" })}>
+                {vehicleBrands.map((brand) => (
                   <option key={brand}>{brand}</option>
                 ))}
               </select>
               <input
+                aria-label="Car model"
+                list="shortlist-model-suggestions"
                 required
                 ref={shortlistModelRef}
                 value={shortlistDraft.model}
                 onChange={(event) => setShortlistDraft({ ...shortlistDraft, model: event.target.value })}
                 placeholder="Model"
               />
+              <datalist id="shortlist-model-suggestions">
+                {modelsForBrand(shortlistDraft.brand).map((model) => (
+                  <option key={model} value={model} />
+                ))}
+              </datalist>
             </div>
             <div className="form-row">
               <input
@@ -1629,7 +1635,7 @@ export function App() {
           </div>
           <div className="form-row">
             <select aria-label="Car brand" value={draft.brand} onChange={(event) => setDraft({ ...draft, brand: event.target.value })}>
-              {brands.map((brand) => (
+              {vehicleBrands.map((brand) => (
                 <option key={brand}>{brand}</option>
               ))}
             </select>
@@ -1716,17 +1722,24 @@ export function App() {
               placeholder="Nickname"
             />
             <div className="form-row">
-              <select aria-label="Vehicle brand" value={vehicleDraft.brand} onChange={(event) => setVehicleDraft({ ...vehicleDraft, brand: event.target.value })}>
-                {brands.map((brand) => (
+              <select aria-label="Vehicle brand" value={vehicleDraft.brand} onChange={(event) => setVehicleDraft({ ...vehicleDraft, brand: event.target.value, model: "" })}>
+                {vehicleBrands.map((brand) => (
                   <option key={brand}>{brand}</option>
                 ))}
               </select>
               <input
+                aria-label="Vehicle model"
+                list="vehicle-model-suggestions"
                 required
                 value={vehicleDraft.model}
                 onChange={(event) => setVehicleDraft({ ...vehicleDraft, model: event.target.value })}
                 placeholder="Model"
               />
+              <datalist id="vehicle-model-suggestions">
+                {modelsForBrand(vehicleDraft.brand).map((model) => (
+                  <option key={model} value={model} />
+                ))}
+              </datalist>
             </div>
             <div className="form-row">
               <input
