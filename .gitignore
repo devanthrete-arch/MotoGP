@@ -1,5 +1,7 @@
 node_modules/
 dist/
+.env.local
+.env.*.local
 *.tsbuildinfo
 data/*.db
 data/*.db-shm

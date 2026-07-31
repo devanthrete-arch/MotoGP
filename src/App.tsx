@@ -7,21 +7,37 @@ import {
   ChevronDown,
   ChevronRight,
   CircleUserRound,
+  Cloud,
   Download,
   Gauge,
   House,
   IndianRupee,
   ListChecks,
+  LogOut,
   MessageCircle,
   Plus,
+  RefreshCw,
   Search,
   Settings,
-  ShieldCheck,
   Trash2,
   Upload,
   UsersRound,
   Wrench,
 } from "lucide-react";
+import {
+  loadCloudCommunity,
+  publishCloudComment,
+  publishCloudPost,
+  publishCloudReport,
+  setCloudSavedPost,
+} from "./communityApi";
+import {
+  getCloudSession,
+  loadCloudBackup,
+  saveCloudBackup,
+  sendCloudSignInLink,
+  signOutCloud,
+} from "./cloudSync";
 import {
   knowledgeLabels,
   shortlistStatuses,
@@ -99,8 +115,28 @@ import {
   type WorkspaceScreen,
 } from "./routing";
 import { modelsForBrand, vehicleBrands } from "./vehicleCatalog";
+import { getSupabaseClient, isCloudSyncConfigured } from "./supabase";
 
 type FeedMode = "latest" | "helpful" | "saved" | "following";
+
+const cloudOwnerKey = "autoflex.cloud-owner.v1";
+
+const readCloudOwner = (): string => {
+  try {
+    return window.localStorage.getItem(cloudOwnerKey) ?? "";
+  } catch {
+    return "";
+  }
+};
+
+const writeCloudOwner = (userId: string | null): void => {
+  try {
+    if (userId) window.localStorage.setItem(cloudOwnerKey, userId);
+    else window.localStorage.removeItem(cloudOwnerKey);
+  } catch {
+    // Account sync remains usable for the current session when browser storage is blocked.
+  }
+};
 
 const initialDraft: DraftPost = {
   title: "",
@@ -188,6 +224,12 @@ export function App() {
   const [activeNav, setActiveNav] = useState(initialRoute.current.nav);
   const [activeScreen, setActiveScreen] = useState<WorkspaceScreen>(initialRoute.current.screen);
   const [isOnline, setIsOnline] = useState(getInitialOnlineStatus);
+  const [cloudEmail, setCloudEmail] = useState("");
+  const [cloudUser, setCloudUser] = useState<{ email: string; id: string } | null>(null);
+  const [cloudBackupUpdatedAt, setCloudBackupUpdatedAt] = useState<string | null>(null);
+  const [cloudBusy, setCloudBusy] = useState(false);
+  const [cloudReadyToSync, setCloudReadyToSync] = useState(false);
+  const [cloudPostIds, setCloudPostIds] = useState<Set<string>>(new Set());
   const communitySearchRef = useRef<HTMLInputElement>(null);
   const postTitleRef = useRef<HTMLInputElement>(null);
   const shortlistModelRef = useRef<HTMLInputElement>(null);
@@ -272,6 +314,76 @@ export function App() {
       window.removeEventListener("offline", updateOffline);
     };
   }, []);
+
+  useEffect(() => {
+    const client = getSupabaseClient();
+    if (!client) return;
+    let active = true;
+
+    const syncSession = async (session: Awaited<ReturnType<typeof getCloudSession>>) => {
+      if (!active) return;
+      const user = session?.user;
+      setCloudUser(user ? { email: user.email ?? "Signed-in user", id: user.id } : null);
+      if (!user) {
+        setCloudBackupUpdatedAt(null);
+        setCloudReadyToSync(false);
+        return;
+      }
+      try {
+        const backup = await loadCloudBackup(user.id);
+        if (active) {
+          if (!backup) writeCloudOwner(user.id);
+          setCloudBackupUpdatedAt(backup?.updatedAt ?? null);
+          setCloudReadyToSync(!backup || readCloudOwner() === user.id);
+        }
+      } catch {
+        if (active) setActionMessage("Account sync status could not be loaded.");
+      }
+    };
+
+    void getCloudSession().then(syncSession).catch(() => {
+      if (active) setActionMessage("Sign-in status could not be loaded.");
+    });
+    const { data } = client.auth.onAuthStateChange((_event, session) => {
+      window.setTimeout(() => void syncSession(session), 0);
+    });
+
+    return () => {
+      active = false;
+      data.subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isCloudSyncConfigured) return;
+    let active = true;
+    void loadCloudCommunity()
+      .then((community) => {
+        if (!active) return;
+        setCloudPostIds(community.postIds);
+        if (!community.posts.length) return;
+        setPosts((current) => {
+          const remoteIds = community.postIds;
+          const merged = [...community.posts, ...current.filter((post) => !remoteIds.has(post.id))];
+          savePosts(merged);
+          return merged;
+        });
+      })
+      .catch(() => setActionMessage("Community updates could not be loaded. Showing saved notes instead."));
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!cloudUser || !cloudReadyToSync) return;
+    const timeout = window.setTimeout(() => {
+      void saveCloudBackup(cloudUser.id, buildAutoflexBackup())
+        .then((updatedAt) => setCloudBackupUpdatedAt(updatedAt))
+        .catch(() => setActionMessage("Changes are safe on this device, but account sync is temporarily unavailable."));
+    }, 900);
+    return () => window.clearTimeout(timeout);
+  }, [cloudReadyToSync, cloudUser, follows, garage, posts, profile, reports, saved, shortlist, subscriptionSettings, timeline]);
 
   useEffect(() => {
     const syncRoute = () => {
@@ -382,6 +494,11 @@ export function App() {
     setSaved(next);
     saveSaved(next);
     setActionMessage(wasSaved ? "Removed from saved notes." : "Note saved.");
+    if (cloudUser && cloudPostIds.has(postId)) {
+      void setCloudSavedPost(cloudUser.id, postId, !wasSaved).catch(() => {
+        setActionMessage("Saved on this device. Account sync will retry later.");
+      });
+    }
   };
 
   const toggleFollowModel = (brand: string, model: string) => {
@@ -421,7 +538,14 @@ export function App() {
     persistPosts(next);
     setSelectedPost(next.find((post) => post.id === selectedPost.id) ?? null);
     setCommentDraft("");
-    setActionMessage("Comment posted.");
+    if (cloudUser && cloudPostIds.has(selectedPost.id)) {
+      void publishCloudComment(cloudUser.id, selectedPost.id, author, commentDraft.trim()).catch(() => {
+        setActionMessage("Comment saved on this device, but could not be shared yet.");
+      });
+      setActionMessage("Comment posted.");
+    } else {
+      setActionMessage("Comment saved on this device. Sign in to share it with Community.");
+    }
   };
 
   const reportSelectedPost = (event: FormEvent<HTMLFormElement>) => {
@@ -435,7 +559,14 @@ export function App() {
     });
     persistReports([report, ...reports]);
     setReportDraft("");
-    setActionMessage("Report sent to moderators.");
+    if (cloudUser && cloudPostIds.has(selectedPost.id)) {
+      void publishCloudReport(cloudUser.id, report).catch(() => {
+        setActionMessage("Report saved on this device, but could not be sent yet.");
+      });
+      setActionMessage("Report sent to moderators.");
+    } else {
+      setActionMessage("Report saved on this device. Sign in to send it to moderators.");
+    }
   };
 
   const setReportStatus = (reportId: string, status: ReportRecord["status"]) => {
@@ -493,9 +624,9 @@ export function App() {
       link.click();
       link.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 0);
-      setActionMessage("Autoflex backup downloaded.");
+      setActionMessage("Your Autoflex data copy was downloaded.");
     } catch {
-      setActionMessage("The backup could not be downloaded in this browser.");
+      setActionMessage("Your data copy could not be downloaded in this browser.");
     }
   };
 
@@ -507,15 +638,15 @@ export function App() {
     try {
       const backup = parseAutoflexBackup(await file.text());
       if (!backup) {
-        setActionMessage("That file is not a valid Autoflex backup.");
+        setActionMessage("That file is not a valid Autoflex data copy.");
         return;
       }
 
       restoreAutoflexBackup(backup);
-      setActionMessage("Backup restored. Reloading Autoflex.");
+      setActionMessage("Data imported. Reloading Autoflex.");
       window.setTimeout(() => window.location.reload(), 500);
     } catch {
-      setActionMessage("That backup could not be read.");
+      setActionMessage("That data copy could not be read.");
     }
   };
 
@@ -523,6 +654,75 @@ export function App() {
     clearAutoflexData();
     setConfirmClearData(false);
     window.location.reload();
+  };
+
+  const requestCloudSignIn = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const email = cloudEmail.trim();
+    if (!email) return;
+    setCloudBusy(true);
+    try {
+      await sendCloudSignInLink(email);
+      setActionMessage("Sign-in link sent. Check your email.");
+    } catch {
+      setActionMessage("The sign-in link could not be sent. Try again.");
+    } finally {
+      setCloudBusy(false);
+    }
+  };
+
+  const uploadCloudBackup = async () => {
+    if (!cloudUser) return;
+    setCloudBusy(true);
+    try {
+      const updatedAt = await saveCloudBackup(cloudUser.id, buildAutoflexBackup());
+      writeCloudOwner(cloudUser.id);
+      setCloudReadyToSync(true);
+      setCloudBackupUpdatedAt(updatedAt);
+      setActionMessage("Your Autoflex data is saved to your account.");
+    } catch {
+      setActionMessage("Account sync failed. Your data is still safe on this device.");
+    } finally {
+      setCloudBusy(false);
+    }
+  };
+
+  const restoreCloudData = async () => {
+    if (!cloudUser) return;
+    setCloudBusy(true);
+    try {
+      const cloudBackup = await loadCloudBackup(cloudUser.id);
+      const backup = cloudBackup ? parseAutoflexBackup(JSON.stringify(cloudBackup.payload)) : null;
+      if (!backup) {
+        setActionMessage("No saved account data was found.");
+        return;
+      }
+      restoreAutoflexBackup(backup);
+      writeCloudOwner(cloudUser.id);
+      setCloudReadyToSync(true);
+      setActionMessage("Account data restored. Reloading Autoflex.");
+      window.setTimeout(() => window.location.reload(), 500);
+    } catch {
+      setActionMessage("Account restore failed. This device was not changed.");
+    } finally {
+      setCloudBusy(false);
+    }
+  };
+
+  const disconnectCloud = async () => {
+    setCloudBusy(true);
+    try {
+      await signOutCloud();
+      writeCloudOwner(null);
+      setCloudUser(null);
+      setCloudBackupUpdatedAt(null);
+      setCloudReadyToSync(false);
+      setActionMessage("Signed out. Local Autoflex data remains on this device.");
+    } catch {
+      setActionMessage("Could not sign out. Try again.");
+    } finally {
+      setCloudBusy(false);
+    }
   };
 
   const addShortlistItem = (event: FormEvent<HTMLFormElement>) => {
@@ -578,11 +778,16 @@ export function App() {
     });
     const next = [post, ...posts];
     persistPosts(next);
+    if (cloudUser) {
+      void publishCloudPost(cloudUser.id, post)
+        .then(() => setCloudPostIds((current) => new Set(current).add(post.id)))
+        .catch(() => setActionMessage("Note saved on this device, but could not be shared yet."));
+    }
     setSelectedPost(post);
     setPostDetailOpen(true);
     setPostComposerOpen(false);
     setDraft(initialDraft);
-    setActionMessage("Owner note published.");
+    setActionMessage(cloudUser ? "Owner note published." : "Note saved on this device. Sign in to publish it to Community.");
     window.requestAnimationFrame(() => postDetailHeadingRef.current?.focus());
   };
 
@@ -779,7 +984,7 @@ export function App() {
             ? { eyebrow: "Profile", title: "Following", detail: "Cars and topics you follow." }
         : accountView === "notifications"
           ? { eyebrow: "Account", title: "Notifications", detail: "Choose which updates appear on this device." }
-          : { eyebrow: "Account", title: "Settings", detail: "Manage your data and app preferences." },
+          : { eyebrow: "Account", title: "Settings", detail: "Account, notifications, and privacy." },
   };
   const accountBackLabel =
     accountView !== "profile"
@@ -959,7 +1164,12 @@ export function App() {
         <div>
           {activeScreen === "account" ? <button className="detail-back" type="button" onClick={returnFromAccount}>{accountBackLabel}</button> : null}
           <p className="app-kicker">{workspaceCopy[activeScreen].eyebrow}</p>
-          <h2 ref={activeScreen === "account" ? accountHeaderRef : undefined} tabIndex={activeScreen === "account" ? -1 : undefined}>{workspaceCopy[activeScreen].title}</h2>
+          <h2
+            ref={activeScreen === "account" ? (accountView === "settings" ? settingsHeadingRef : accountHeaderRef) : undefined}
+            tabIndex={activeScreen === "account" ? -1 : undefined}
+          >
+            {workspaceCopy[activeScreen].title}
+          </h2>
           <p>{workspaceCopy[activeScreen].detail}</p>
         </div>
         <div className="workspace-header-actions">
@@ -1079,37 +1289,79 @@ export function App() {
 
       {accountView === "settings" ? (
       <section className="panel settings-panel screen-more" id="privacy">
-        <div className="settings-group">
-          <div className="settings-group-heading">
-            <ShieldCheck aria-hidden="true" />
+        {isCloudSyncConfigured ? (
+        <div className="settings-group cloud-sync-group">
+          <div className="settings-group-title cloud-sync-title">
+            <Cloud aria-hidden="true" />
             <div>
-              <h2 ref={settingsHeadingRef} tabIndex={-1}>Your data stays on this device</h2>
-              <p>Autoflex does not require an account. Your garage, shortlist, notes, and preferences remain in this browser.</p>
+              <h3>Use Autoflex on another device</h3>
+              <p>Sign in with your email to keep your garage, shortlist, and saved notes with your account.</p>
             </div>
           </div>
-          <dl className="settings-data-summary">
-            <div><dt>Garage</dt><dd>{garage.length} car{garage.length === 1 ? "" : "s"} · {timeline.length} service record{timeline.length === 1 ? "" : "s"}</dd></div>
-            <div><dt>Buying</dt><dd>{shortlist.length} shortlisted · {saved.size} saved note{saved.size === 1 ? "" : "s"}</dd></div>
-            <div><dt>Profile</dt><dd>{profile.displayName.trim() || "No display name"} · {profile.city.trim() || "No city"}</dd></div>
-          </dl>
+          {cloudUser ? (
+            <div className="cloud-sync-account">
+              <div className="cloud-sync-status">
+                <span>Signed in as</span>
+                <strong>{cloudUser.email}</strong>
+                <small>
+                  {cloudBackupUpdatedAt
+                    ? `Last saved ${new Date(cloudBackupUpdatedAt).toLocaleString()}`
+                    : "Nothing saved to this account yet"}
+                </small>
+              </div>
+              <div className="cloud-sync-actions">
+                <button className="primary-action" disabled={cloudBusy} type="button" onClick={uploadCloudBackup}>
+                  <Cloud aria-hidden="true" />
+                  {cloudBackupUpdatedAt ? "Save latest changes" : "Save to my account"}
+                </button>
+                <button className="save-button" disabled={cloudBusy || !cloudBackupUpdatedAt} type="button" onClick={restoreCloudData}>
+                  <RefreshCw aria-hidden="true" />Use saved data here
+                </button>
+                <button className="cloud-sign-out" disabled={cloudBusy} type="button" onClick={disconnectCloud}>
+                  <LogOut aria-hidden="true" />Sign out
+                </button>
+              </div>
+            </div>
+          ) : (
+            <form className="cloud-sync-form" onSubmit={requestCloudSignIn}>
+              <label htmlFor="cloud-email">Email address</label>
+              <div>
+                <input
+                  autoComplete="email"
+                  id="cloud-email"
+                  inputMode="email"
+                  onChange={(event) => setCloudEmail(event.target.value)}
+                  placeholder="you@example.com"
+                  required
+                  type="email"
+                  value={cloudEmail}
+                />
+                <button className="primary-action" disabled={cloudBusy} type="submit">
+                  <Cloud aria-hidden="true" />Email me a sign-in link
+                </button>
+              </div>
+              <small>No password required. We will email you a secure sign-in link.</small>
+            </form>
+          )}
         </div>
+        ) : null}
 
         <div className="settings-group">
           <div className="settings-group-title">
             <div>
-              <h3>Backup and restore</h3>
-              <p>Keep a copy before clearing browser data or moving to another device.</p>
+              <h3>Move your data</h3>
+              <p>Download a copy for your records or bring an Autoflex copy onto this device.</p>
             </div>
           </div>
           <div className="settings-action-list">
             <button type="button" onClick={downloadBackup}>
               <Download aria-hidden="true" />
-              <span><strong>Download my data</strong><small>Save one Autoflex backup file</small></span>
+              <span><strong>Download a copy</strong><small>Keep your Autoflex data as a file</small></span>
               <ChevronRight aria-hidden="true" />
             </button>
             <button type="button" onClick={() => restoreBackupRef.current?.click()}>
               <Upload aria-hidden="true" />
-              <span><strong>Restore from backup</strong><small>Replace this browser's Autoflex data</small></span>
+              <span><strong>Import a copy</strong><small>Use Autoflex data from another device</small></span>
               <ChevronRight aria-hidden="true" />
             </button>
             <input
