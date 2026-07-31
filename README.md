@@ -102,6 +102,7 @@ Service-center integration is intentionally kept separate under
 - [x] Added API tests that verify core hosted routes and confirm service-center routes remain reserved for the separate owning team.
 - [x] Added optional JSON-backed API persistence, `/api/health`, configurable CORS, admin-token protection for internal queues, and persistence tests.
 - [x] Added stable workspace deep links, browser Back support, production security headers, current install icons, and a versioned offline app shell.
+- [x] Added Supabase email sign-in, automatic private workspace sync, shared Community storage, and recovery snapshots.
 
 ### Yet to be done
 
@@ -109,12 +110,12 @@ Service-center integration is intentionally kept separate under
 - [ ] Deploy the TypeScript webapp on Vercel and record the production URL in the launch panel.
 - [ ] Run a visual responsive QA pass on the deployed Vercel URL, including the starter route, QA checklist, responsive QA matrix, and install prompt.
 - [x] Run a server-disconnected offline reload against the production build.
-- [ ] Choose the production persistence backend after validating the JSON-backed beta API path.
-- [ ] Replace local backup/restore with hosted account sync once persistence exists.
+- [x] Choose Supabase as the first production persistence backend for private account sync.
+- [x] Add hosted account sync and recovery while preserving local-first and offline behavior.
 - [ ] Replace local subscription previews with real hosted notification jobs after accounts/persistence exist.
 - [ ] Wire the webapp to the hosted profile/report/comment/moderation APIs after durable persistence exists.
 - [ ] Replace share/copy fallbacks with hosted deep links and Open Graph metadata after deployment.
-- [ ] Replace local shortlist with hosted buyer workspace and cross-device sync.
+- [x] Replace local shortlist with a hosted buyer workspace and cross-device sync.
 - [ ] Replace local inspection checklists with hosted buyer inspection sessions and saved outcomes.
 - [ ] Replace local city circles with hosted city pages and city follows.
 - [ ] Replace local ownership playbooks with hosted model playbook pages and richer evidence scoring.
@@ -192,6 +193,23 @@ npm run dev
 
 Open `http://localhost:8080`.
 
+The production Supabase project URL and browser-safe publishable key are the
+application defaults. `.env.local` can override them for another environment.
+Never place a secret or `service_role` key in a `VITE_` variable. Apply the
+tracked migrations with the linked Supabase CLI before deploying:
+
+```bash
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your_key
+```
+
+The migrations explicitly grant Data API access and enable row-level security
+on every application table. Profile, Garage, Timeline, Shortlist, follows,
+preferences, saves, reports, and recovery rows are owner-only. Community posts
+and comments are publicly readable while writes remain tied to the signed-in
+author. Removals from Garage, Timeline, and Shortlist use reversible soft
+deletion during synchronization.
+
 The current TypeScript MVP is local-first so it can move quickly on Vercel while
 the hosted backend path is implemented. It includes owner posts, saved notes,
 followed models/topics, a following feed, garage vehicles, timeline entries,
@@ -211,8 +229,10 @@ generated service worker so
 Chrome/Android and supporting desktop browsers can present Autoflex as an
 installable app surface. Production builds precache the exact generated shell;
 the browser uses the last valid shell when connectivity drops. User-created
-notes, garage entries, saved notes, and shortlist data remain local to the
-current browser until hosted account sync is implemented.
+notes, garage entries, saved notes, and shortlist data remain local while
+signed out. After sign-in, changes sync automatically to owner-only normalized
+tables and a recovery snapshot. Shared Community notes and comments load from
+Supabase while the bundled starter content remains available offline.
 
 Run the web release gate before deploying:
 

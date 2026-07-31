@@ -1572,18 +1572,18 @@ textarea:focus {
   padding: 24px 0;
 }
 
-.settings-group-heading {
+.settings-group-title {
   align-items: start;
-  display: grid;
-  gap: 14px;
-  grid-template-columns: 28px minmax(0, 1fr);
+  display: flex;
+  gap: 12px;
 }
 
-.settings-group-heading > svg {
+.settings-group-title > svg {
   color: var(--petrol);
-  height: 25px;
-  margin-top: 2px;
-  width: 25px;
+  flex: 0 0 auto;
+  height: 21px;
+  margin-top: 1px;
+  width: 21px;
 }
 
 .settings-group h2,
@@ -1607,29 +1607,83 @@ textarea:focus {
   max-width: 650px;
 }
 
-.settings-data-summary {
-  display: grid;
-  margin: 22px 0 0 42px;
-}
-
-.settings-data-summary > div {
-  align-items: baseline;
+.cloud-sync-form,
+.cloud-sync-account {
   border-top: 1px solid var(--line);
-  display: grid;
-  gap: 12px;
-  grid-template-columns: minmax(90px, 0.35fr) minmax(0, 1fr);
-  padding: 13px 0;
+  margin-top: 18px;
+  padding-top: 18px;
 }
 
-.settings-data-summary dt {
+.cloud-sync-form {
+  display: grid;
+  gap: 8px;
+}
+
+.cloud-sync-form label,
+.cloud-sync-status > span {
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.cloud-sync-form > div {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.cloud-sync-form input {
+  min-width: 0;
+}
+
+.cloud-sync-form small,
+.cloud-sync-status small {
   color: var(--ink-soft);
   font-size: 0.78rem;
-  font-weight: 750;
+  line-height: 1.45;
 }
 
-.settings-data-summary dd {
-  font-weight: 700;
-  margin: 0;
+.cloud-sync-account {
+  display: grid;
+  gap: 16px;
+}
+
+.cloud-sync-status {
+  display: grid;
+  gap: 4px;
+}
+
+.cloud-sync-status strong {
+  overflow-wrap: anywhere;
+}
+
+.cloud-sync-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.cloud-sign-out {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--ink-soft);
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 750;
+  gap: 7px;
+  min-height: 44px;
+  padding: 9px 10px;
+}
+
+.cloud-sign-out svg {
+  height: 17px;
+  width: 17px;
+}
+
+.cloud-sync-group button:disabled {
+  cursor: wait;
+  opacity: 0.55;
 }
 
 .settings-action-list {
@@ -2181,13 +2235,16 @@ textarea:focus {
     padding: 20px 0;
   }
 
-  .settings-data-summary {
-    margin-left: 0;
+  .cloud-sync-form > div,
+  .cloud-sync-actions {
+    align-items: stretch;
+    display: grid;
+    grid-template-columns: 1fr;
   }
 
-  .settings-data-summary > div {
-    grid-template-columns: 1fr;
-    gap: 3px;
+  .cloud-sync-actions button,
+  .cloud-sync-form button {
+    width: 100%;
   }
 
   .primary-action,
