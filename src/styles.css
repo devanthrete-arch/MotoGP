@@ -2108,6 +2108,11 @@ textarea:hover {
     padding: 22px 20px;
   }
 
+  .home-toolbar-actions {
+    align-items: stretch;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .first-run-actions {
     grid-template-columns: minmax(0, 1fr);
   }
