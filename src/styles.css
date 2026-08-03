@@ -372,12 +372,17 @@ textarea:focus-visible {
   padding: 30px var(--content-gutter) 0;
 }
 
-.home-workbench,
+.home-workbench {
+  margin-inline: auto;
+  max-width: var(--content-max);
+  width: 100%;
+}
+
 .workspace-header,
 .panel {
   margin-inline: auto;
   max-width: var(--content-max);
-  width: 100%;
+  width: calc(100% - (var(--content-gutter) * 2));
 }
 
 .home-workbench {
