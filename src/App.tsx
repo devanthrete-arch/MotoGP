@@ -337,7 +337,7 @@ export function App() {
           setCloudReadyToSync(!backup || readCloudOwner() === user.id);
         }
       } catch {
-        if (active) setActionMessage("Account sync status could not be loaded.");
+        if (active) setActionMessage("We could not check your saved account data just now.");
       }
     };
 
@@ -380,7 +380,7 @@ export function App() {
     const timeout = window.setTimeout(() => {
       void saveCloudBackup(cloudUser.id, buildAutoflexBackup())
         .then((updatedAt) => setCloudBackupUpdatedAt(updatedAt))
-        .catch(() => setActionMessage("Changes are safe on this device, but account sync is temporarily unavailable."));
+        .catch(() => setActionMessage("Changes are safe on this device. We could not update your account just now."));
     }, 900);
     return () => window.clearTimeout(timeout);
   }, [cloudReadyToSync, cloudUser, follows, garage, posts, profile, reports, saved, shortlist, subscriptionSettings, timeline]);
@@ -496,7 +496,7 @@ export function App() {
     setActionMessage(wasSaved ? "Removed from saved notes." : "Note saved.");
     if (cloudUser && cloudPostIds.has(postId)) {
       void setCloudSavedPost(cloudUser.id, postId, !wasSaved).catch(() => {
-        setActionMessage("Saved on this device. Account sync will retry later.");
+        setActionMessage("Saved on this device. We will try your account again later.");
       });
     }
   };
@@ -651,6 +651,8 @@ export function App() {
   };
 
   const clearAllData = () => {
+    setCloudReadyToSync(false);
+    writeCloudOwner(null);
     clearAutoflexData();
     setConfirmClearData(false);
     window.location.reload();
@@ -681,7 +683,7 @@ export function App() {
       setCloudBackupUpdatedAt(updatedAt);
       setActionMessage("Your Autoflex data is saved to your account.");
     } catch {
-      setActionMessage("Account sync failed. Your data is still safe on this device.");
+      setActionMessage("Your data is safe on this device, but we could not update your account.");
     } finally {
       setCloudBusy(false);
     }
@@ -958,6 +960,25 @@ export function App() {
     });
   };
 
+  const openInsuranceRecordComposer = () => {
+    if (!currentVehicle) {
+      openVehicleComposer();
+      return;
+    }
+    setTimelineDraft((current) => ({
+      ...current,
+      vehicleId: currentVehicle.id,
+      kind: "Insurance",
+      title: "Insurance renewal",
+    }));
+    openWorkspace("garage");
+    setGarageForm("record");
+    window.requestAnimationFrame(() => {
+      document.getElementById("timeline-form")?.scrollIntoView({ block: "start" });
+      timelineTitleRef.current?.focus({ preventScroll: true });
+    });
+  };
+
   const returnToCommunityFeed = () => {
     setPostComposerOpen(false);
     setPostDetailOpen(false);
@@ -972,19 +993,19 @@ export function App() {
   const isFirstRun = garage.length === 0 && shortlist.length === 0;
   const workspaceCopy: Record<WorkspaceScreen, { eyebrow: string; title: string; detail: string }> = {
     home: { eyebrow: "Today", title: "Today", detail: "Your car's next task." },
-    shortlist: { eyebrow: "Buyer tools", title: "Shortlist", detail: `${shortlist.length} car${shortlist.length === 1 ? "" : "s"} saved with owner notes and inspection steps.` },
-    garage: { eyebrow: "Ownership", title: "Garage", detail: currentVehicle ? `${currentVehicle.nickname || `${currentVehicle.brand} ${currentVehicle.model}`}: service, costs, and records.` : "Add your car to track service and costs." },
-    community: { eyebrow: "Owner network", title: "Community", detail: `${filteredPosts.length} note${filteredPosts.length === 1 ? "" : "s"} match the current search.` },
+    shortlist: { eyebrow: "Choosing a car", title: "Shortlist", detail: `${shortlist.length} car${shortlist.length === 1 ? "" : "s"} saved to compare.` },
+    garage: { eyebrow: "My cars", title: "Garage", detail: currentVehicle ? "Service, costs, and records." : "Add a car to get started." },
+    community: { eyebrow: "From owners", title: "Community", detail: `${filteredPosts.length} matching note${filteredPosts.length === 1 ? "" : "s"}.` },
     account:
       accountView === "profile"
-        ? { eyebrow: "Account", title: "Profile", detail: "Your local name, city, and owner role." }
+        ? { eyebrow: "Account", title: "Profile", detail: "Your name, city, and role." }
         : accountView === "saved"
-          ? { eyebrow: "Profile", title: "Saved notes", detail: "Owner notes you kept for later." }
+          ? { eyebrow: "Profile", title: "Saved notes", detail: "Notes saved for later." }
           : accountView === "following"
             ? { eyebrow: "Profile", title: "Following", detail: "Cars and topics you follow." }
         : accountView === "notifications"
-          ? { eyebrow: "Account", title: "Notifications", detail: "Choose which updates appear on this device." }
-          : { eyebrow: "Account", title: "Settings", detail: "Account, notifications, and privacy." },
+          ? { eyebrow: "Account", title: "Notifications", detail: "Choose your updates." }
+          : { eyebrow: "Account", title: "Settings", detail: "Data, privacy, and preferences." },
   };
   const accountBackLabel =
     accountView !== "profile"
@@ -1022,7 +1043,7 @@ export function App() {
           <span className={`status-dot ${connectionStatus.tone}`} aria-hidden="true" />
           <div>
             <strong>{connectionStatus.label}</strong>
-            <small>Local records stay on this device.</small>
+            <small>Your records stay available offline.</small>
           </div>
         </div>
       </aside>
@@ -1047,19 +1068,19 @@ export function App() {
           <div className="home-toolbar">
             <div>
               <p className="app-kicker">Today</p>
-              <h1>{currentVehicle ? `${currentVehicle.nickname || currentVehicle.model}, at a glance` : "Start with your next car decision"}</h1>
-              <p className="home-status">{currentVehicle ? "Maintenance, costs, and owner evidence in one place." : "Track a car you own or build a shortlist before you buy."}</p>
+              <h1>{currentVehicle ? `${currentVehicle.nickname || currentVehicle.model}, at a glance` : "How do you want to use Autoflex?"}</h1>
+              <p className="home-status">{currentVehicle ? "Maintenance, costs, and what owners report in one place." : "Start with the car you own or the cars you are considering."}</p>
             </div>
             <div className="home-toolbar-actions">
               {isFirstRun ? (
                 <div className="first-run-actions" aria-label="Choose how to start">
                   <button className="primary-action first-run-action" type="button" onClick={openVehicleComposer}>
                     <CarFront aria-hidden="true" />
-                    <span><small>I own a car</small>Add vehicle</span>
+                    <span><small>I already own a car</small>Add my car</span>
                   </button>
                   <button className="save-button first-run-action" type="button" onClick={openShortlistComposer}>
                     <ListChecks aria-hidden="true" />
-                    <span><small>I'm choosing a car</small>Add candidate</span>
+                    <span><small>I'm buying a car</small>Start my shortlist</span>
                   </button>
                 </div>
               ) : garage.length === 1 && currentVehicle ? (
@@ -1113,25 +1134,29 @@ export function App() {
                 </div>
               ) : null}
               {!isFirstRun ? (
-                <button className="primary-action workspace-task-action" type="button" onClick={openVehicleComposer}>
+                <button className="save-button workspace-task-action" type="button" onClick={openVehicleComposer}>
                   <Plus aria-hidden="true" />
-                  Add vehicle
+                  Add another car
                 </button>
               ) : null}
             </div>
           </div>
           {isFirstRun ? (
-            <div className="first-run-note">Add one car to see its next maintenance task or inspection check.</div>
+            <div className="first-run-note">Choose one path to begin. You can add the other later.</div>
           ) : (
           <div className="home-work-grid">
             <article className="next-action-card">
               <div className="next-action-copy">
                 <span className="readout-label">Next action</span>
-                <h2>{currentReminder?.title ?? "Add your vehicle"}</h2>
+                <h2>{currentReminder?.title ?? "Add your car"}</h2>
                 <p>{currentReminder?.detail ?? "Add one vehicle to track service, repairs, and costs."}</p>
-                <button className="save-button" type="button" onClick={() => openWorkspace("garage")}>
+                <button
+                  className="save-button"
+                  type="button"
+                  onClick={currentReminder?.title.toLowerCase().includes("insurance") ? openInsuranceRecordComposer : openGarageRecordComposer}
+                >
                   <Wrench aria-hidden="true" />
-                  {currentVehicle ? "Open service records" : "Add your vehicle"}
+                  {currentReminder?.title.toLowerCase().includes("insurance") ? "Log insurance details" : "Add service record"}
                 </button>
               </div>
               <img
@@ -1146,8 +1171,8 @@ export function App() {
             </article>
             <aside className="home-readout" aria-label="Current car summary">
               <div><Gauge aria-hidden="true" /><span className="readout-label">Odometer</span><strong>{currentVehicle ? `${currentVehicle.odometerKm.toLocaleString("en-IN")} km` : "--"}</strong></div>
-              <div><IndianRupee aria-hidden="true" /><span className="readout-label">Logged cost</span><strong>{currentLedger ? formatMoney(currentLedger.totalSpend) : "--"}</strong></div>
-              <div><ListChecks aria-hidden="true" /><span className="readout-label">Items to check</span><strong>{shortlistDecisionLanes.filter((lane) => lane.priority === "High").length + garageReminders.filter((reminder) => reminder.urgency === "Soon").length}</strong></div>
+              <div><IndianRupee aria-hidden="true" /><span className="readout-label">Total spent</span><strong>{currentLedger ? formatMoney(currentLedger.totalSpend) : "--"}</strong></div>
+              <div><ListChecks aria-hidden="true" /><span className="readout-label">Things due soon</span><strong>{shortlistDecisionLanes.filter((lane) => lane.priority === "High").length + garageReminders.filter((reminder) => reminder.urgency === "Soon").length}</strong></div>
             </aside>
           </div>
           )}
@@ -1173,7 +1198,7 @@ export function App() {
           <p>{workspaceCopy[activeScreen].detail}</p>
         </div>
         <div className="workspace-header-actions">
-          {activeScreen === "shortlist" && shortlist.length && !shortlistFormOpen ? <button className="primary-action workspace-task-action" type="button" onClick={openShortlistComposer}><Plus aria-hidden="true" />Add candidate</button> : null}
+          {activeScreen === "shortlist" && shortlist.length && !shortlistFormOpen ? <button className="primary-action workspace-task-action" type="button" onClick={openShortlistComposer}><Plus aria-hidden="true" />Add car</button> : null}
           {activeScreen === "garage" && currentVehicle && garageForm === null ? <button className="primary-action workspace-task-action" type="button" onClick={openGarageRecordComposer}><Plus aria-hidden="true" />Add service record</button> : null}
           {activeScreen === "community" && !postComposerOpen && !postDetailOpen ? <button className="primary-action workspace-task-action" type="button" onClick={openPostComposer}><Plus aria-hidden="true" />Write a note</button> : null}
         </div>
@@ -1267,7 +1292,7 @@ export function App() {
               <span><strong>{post.title}</strong><small>{post.brand} {post.model} · {post.city}</small></span>
             </button>
           ))}
-          {!saved.size ? <div className="empty-state">No saved notes yet. Save an owner note to find it here.</div> : null}
+          {!saved.size ? <div className="empty-state">Nothing saved yet. Save a useful note from Community to keep it here.</div> : null}
         </div>
       </section>
       ) : null}
@@ -1282,7 +1307,7 @@ export function App() {
             </button>
           ))}
           {follows.topics.map((topic) => <div className="profile-follow-row" key={topic}><span aria-hidden="true">#</span><strong>{topic}</strong></div>)}
-          {!follows.models.length && !follows.topics.length ? <div className="empty-state">You are not following a car or topic yet.</div> : null}
+          {!follows.models.length && !follows.topics.length ? <div className="empty-state">Nothing followed yet. Follow a car or topic from Community to see it here.</div> : null}
         </div>
       </section>
       ) : null}
@@ -1577,8 +1602,8 @@ export function App() {
               ))
             ) : (
               <div className="empty-state">
-                <p>No notes match the current search.</p>
-                <button className="save-button" type="button" onClick={() => { setQuery(""); setSelectedLabel("All"); setMode("latest"); }}>Clear note filters</button>
+                <p>No notes match these filters.</p>
+                <button className="save-button" type="button" onClick={() => { setQuery(""); setSelectedLabel("All"); setMode("latest"); }}>Show all notes</button>
               </div>
             )}
           </div>
@@ -1668,7 +1693,7 @@ export function App() {
                 </form>
               </>
             ) : (
-              <p>Select a post to inspect owner details.</p>
+              <p>Choose a note to read what the owner reported.</p>
             )}
           </aside>
         </div>
@@ -1705,8 +1730,8 @@ export function App() {
             ))
           ) : (
             <div className="empty-state">
-              <p>Add a car to compare owner notes and inspection checks.</p>
-              <button className="primary-action workspace-task-action" type="button" onClick={openShortlistComposer}><Plus aria-hidden="true" />Add first candidate</button>
+              <p>Start with a car you are considering. We will show what owners report and what to inspect.</p>
+              <button className="primary-action workspace-task-action" type="button" onClick={openShortlistComposer}><Plus aria-hidden="true" />Add a car</button>
             </div>
           )}
         </div>
@@ -1826,7 +1851,7 @@ export function App() {
                 );
               })
             ) : (
-              <div className="empty-state">Add a car to compare price, owner notes, and inspection checks.</div>
+              <div className="empty-state">Add a car to compare price, what owners report, and what to inspect.</div>
             )}
           </div>
           ) : null}
@@ -1837,10 +1862,10 @@ export function App() {
       <section className="panel split-panel screen-community" id="write">
         <div>
           <p className="eyebrow">Publish</p>
-          <h2>Write like the next owner depends on it.</h2>
+          <h2>Share what another owner should know.</h2>
           <p>
-            The form pushes users toward the context that makes ownership advice useful: variant, city, odometer, real
-            symptoms, costs, and outcomes.
+            Include the exact car, city, mileage, symptoms, costs, and outcome so others can judge whether your note applies
+            to them.
           </p>
           <div className={`quality-card ${draftQuality.grade.toLowerCase().replace(/\s+/g, "-")}`}>
             <progress
@@ -1952,13 +1977,13 @@ export function App() {
               <p>{currentVehicle.brand} {currentVehicle.model} {currentVehicle.variant ? `· ${currentVehicle.variant}` : ""}</p>
             </div>
             <div><span className="readout-label">Odometer</span><strong>{currentVehicle.odometerKm.toLocaleString("en-IN")} km</strong></div>
-            <div><span className="readout-label">Logged cost</span><strong>{currentLedger ? formatMoney(currentLedger.totalSpend) : "No spend yet"}</strong></div>
+            <div><span className="readout-label">Total spent</span><strong>{currentLedger ? formatMoney(currentLedger.totalSpend) : "No spend yet"}</strong></div>
             <div><span className="readout-label">Service due</span><strong>{currentReminder?.title ?? "Nothing due"}</strong></div>
           </div>
         ) : (
           <div className="empty-state garage-empty-state">
-            <p>Add your car to see service due dates and running costs.</p>
-            <button className="primary-action workspace-task-action" type="button" onClick={openVehicleComposer}><Plus aria-hidden="true" />Add your vehicle</button>
+            <p>Add your car to track service dates, repairs, and total spend.</p>
+            <button className="primary-action workspace-task-action" type="button" onClick={openVehicleComposer}><Plus aria-hidden="true" />Add my car</button>
           </div>
         )}
         {garageForm ? (
@@ -2029,7 +2054,7 @@ export function App() {
 
           {garageForm === "record" && currentVehicle ? (
           <form className="composer" id="timeline-form" onSubmit={addTimelineNote}>
-            <h3>Add service or cost record</h3>
+            <h3>{timelineDraft.kind === "Insurance" ? "Log insurance details" : "Add service or cost record"}</h3>
             <select
               aria-label="Vehicle"
               required
@@ -2113,7 +2138,7 @@ export function App() {
               </article>
             ))
           ) : (
-            <div className="empty-state">Nothing is due. Add a service or insurance record to keep dates current.</div>
+            <div className="empty-state">No upcoming reminders. Add a service or insurance record to keep this current.</div>
           )}
         </div>
 
