@@ -1846,6 +1846,26 @@ textarea:hover {
     grid-template-columns: minmax(0, 1fr) minmax(280px, 0.9fr);
   }
 
+  .home-readout {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 0 18px;
+  }
+
+  .home-readout div {
+    border-bottom: 0;
+    border-right: 1px solid var(--line);
+    grid-template-columns: 20px minmax(0, 1fr);
+    padding: 18px 12px;
+  }
+
+  .home-readout div:last-child {
+    border-right: 0;
+  }
+
+  .home-readout strong {
+    font-size: 1.05rem;
+  }
+
   .decision-lane-board {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2319,6 +2339,19 @@ textarea:hover {
   .mobile-dock .shell-icon {
     height: 19px;
     width: 19px;
+  }
+}
+
+@media (min-width: 700px) and (max-width: 860px) {
+  .next-action-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 0.9fr);
+  }
+
+  .vehicle-visual {
+    aspect-ratio: auto;
+    height: 100%;
+    min-height: 300px;
   }
 }
 
