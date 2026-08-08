@@ -17,7 +17,7 @@
 :root {
   --ink: #17211e;
   --ink-soft: #52605b;
-  --ink-faint: #74807b;
+  --ink-faint: #5f6b66;
   --canvas: #edf2ef;
   --surface: #ffffff;
   --surface-soft: #f6f8f7;
@@ -50,6 +50,34 @@
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+.skip-link {
+  background: #101b17;
+  color: #fff;
+  left: 1rem;
+  padding: 0.75rem 1rem;
+  position: fixed;
+  top: 1rem;
+  transform: translateY(-200%);
+  z-index: 1000;
+}
+
+.skip-link:focus { transform: translateY(0); }
+
+.offline-banner {
+  background: #fff3cf;
+  border-bottom: 1px solid #d59a24;
+  color: #3f3217;
+  font-weight: 700;
+  padding: 0.75rem var(--content-gutter);
+  position: sticky;
+  top: var(--topbar-h, 72px);
+  z-index: 20;
+}
+
+:where(h1, h2, h3, [id]) {
+  scroll-margin-top: calc(var(--topbar-h, 72px) + 1rem);
 }
 
 * {
@@ -314,6 +342,13 @@ textarea:focus-visible {
   top: 0;
   z-index: 35;
   backdrop-filter: blur(12px);
+}
+
+.app-topbar > nav {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
 }
 
 .brand {
@@ -2026,6 +2061,7 @@ textarea:hover {
     padding: 5px 8px env(safe-area-inset-bottom);
     position: fixed;
     right: 0;
+    width: 100%;
     z-index: 60;
     backdrop-filter: blur(14px);
   }
@@ -2123,7 +2159,34 @@ textarea:hover {
 
   .city-filter-strip {
     flex-wrap: wrap;
+    max-width: 100%;
+    min-width: 0;
     overflow-x: visible;
+  }
+
+  .workspace-header,
+  .panel {
+    max-width: calc(100vw - 32px);
+    min-width: 0;
+  }
+
+  .section-head,
+  .filters,
+  .content-grid,
+  .feed-list {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .mobile-dock {
+    grid-template-columns: repeat(4, 25vw);
+    width: 100vw;
+  }
+
+  .app-shell,
+  .mobile-dock {
+    max-width: 100vw;
+    overflow-x: hidden;
   }
 
   .next-action-card {

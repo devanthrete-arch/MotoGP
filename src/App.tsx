@@ -1,4 +1,5 @@
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Bell,
   Bookmark,
@@ -106,10 +107,12 @@ import {
   saveTimeline,
 } from "./storage";
 import {
-  accountHashes,
+  accountPaths,
   getInitialRoute,
+  routeFromPath,
   routeFromHash,
-  workspaceHashes,
+  titleForPath,
+  workspacePaths,
   type AccountView,
   type AppRoute,
   type WorkspaceScreen,
@@ -190,7 +193,9 @@ const getInitialOnlineStatus = (): boolean => {
 };
 
 export function App() {
-  const initialRoute = useRef<AppRoute>(getInitialRoute());
+  const location = useLocation();
+  const navigate = useNavigate();
+  const initialRoute = useRef<AppRoute>(location.pathname === "/" && location.hash ? getInitialRoute() : routeFromPath(location.pathname));
   const [posts, setPosts] = useState<OwnerPost[]>(() => loadPosts());
   const [profile, setProfile] = useState<Profile>(() => loadProfile());
   const [reports, setReports] = useState<ReportRecord[]>(() => loadReports());
@@ -386,23 +391,32 @@ export function App() {
   }, [cloudReadyToSync, cloudUser, follows, garage, posts, profile, reports, saved, shortlist, subscriptionSettings, timeline]);
 
   useEffect(() => {
-    const syncRoute = () => {
-      const route = routeFromHash(window.location.hash);
+      if (location.hash) {
+        const legacyRoute = routeFromHash(location.hash);
+        const legacyPath = legacyRoute.openComposer
+          ? "/community/new"
+          : legacyRoute.screen === "account"
+            ? accountPaths[legacyRoute.accountView ?? "profile"]
+            : workspacePaths[legacyRoute.screen];
+        navigate(legacyPath, { replace: true });
+        return;
+      }
+      const route = routeFromPath(location.pathname);
       setActiveScreen(route.screen);
       setActiveNav(route.nav);
       if (route.accountView) setAccountView(route.accountView);
       setPostComposerOpen(Boolean(route.openComposer));
-      setPostDetailOpen(false);
+      const noteId = location.pathname.match(/^\/community\/([^/]+)$/)?.[1];
+      const routedPost = noteId ? posts.find((post) => post.id === decodeURIComponent(noteId)) : null;
+      if (routedPost) {
+        setSelectedPost(routedPost);
+        setPostDetailOpen(true);
+      } else {
+        setPostDetailOpen(false);
+      }
+      document.title = titleForPath(location.pathname);
       window.scrollTo(0, 0);
-    };
-
-    window.addEventListener("hashchange", syncRoute);
-    window.addEventListener("popstate", syncRoute);
-    return () => {
-      window.removeEventListener("hashchange", syncRoute);
-      window.removeEventListener("popstate", syncRoute);
-    };
-  }, []);
+  }, [location.hash, location.pathname, navigate, posts]);
 
   useEffect(() => {
     if (!actionMessage) return;
@@ -829,22 +843,22 @@ export function App() {
     setActionMessage("Service or cost record saved.");
   };
 
-  const updateRoute = (hash: string) => {
-    if (window.location.hash !== hash) window.history.pushState(null, "", hash);
+  const updateRoute = (path: string) => {
+    if (`${location.pathname}${location.search}` !== path) navigate(path);
   };
 
   const openWorkspace = (
     screen: Exclude<WorkspaceScreen, "account">,
     nav: string = screen,
     nextMode?: FeedMode,
-    hash: string = workspaceHashes[screen],
+    path: string = workspacePaths[screen],
   ) => {
     if (nextMode) setMode(nextMode);
     setActiveScreen(screen);
     setActiveNav(nav);
     setPostComposerOpen(false);
     setPostDetailOpen(false);
-    updateRoute(hash);
+    updateRoute(path);
     window.scrollTo(0, 0);
   };
 
@@ -857,7 +871,7 @@ export function App() {
   const openAccountView = (view: AccountView) => {
     setAccountView(view);
     setActiveScreen("account");
-    updateRoute(accountHashes[view]);
+    updateRoute(accountPaths[view]);
     window.scrollTo(0, 0);
     window.requestAnimationFrame(() => {
       if (view === "profile") profileNameRef.current?.focus();
@@ -918,6 +932,7 @@ export function App() {
   const openPostDetail = (post: OwnerPost) => {
     setSelectedPost(post);
     setPostDetailOpen(true);
+    updateRoute(`/community/${encodeURIComponent(post.id)}`);
     window.requestAnimationFrame(() => {
       document.querySelector(".detail-card")?.scrollIntoView({ block: "start" });
       postDetailHeadingRef.current?.focus({ preventScroll: true });
@@ -925,7 +940,7 @@ export function App() {
   };
 
   const openPostComposer = () => {
-    openWorkspace("community", "community", undefined, "#write");
+    openWorkspace("community", "community", undefined, "/community/new");
     setPostComposerOpen(true);
   };
 
@@ -982,7 +997,7 @@ export function App() {
   const returnToCommunityFeed = () => {
     setPostComposerOpen(false);
     setPostDetailOpen(false);
-    updateRoute("#feed");
+    updateRoute("/community");
     document.getElementById("feed")?.scrollIntoView({ block: "start" });
     communitySearchRef.current?.focus({ preventScroll: true });
   };
@@ -1012,29 +1027,31 @@ export function App() {
       ? "Back to Profile"
       : `Back to ${accountReturnScreenRef.current === "home" ? "Today" : accountReturnScreenRef.current === "shortlist" ? "Shortlist" : accountReturnScreenRef.current === "garage" ? "Garage" : "Community"}`;
   return (
-    <main className="app-shell" data-screen={activeScreen}>
+    <>
+    <a className="skip-link" href="#main-content">Skip to content</a>
+    <main className="app-shell" data-screen={activeScreen} id="main-content">
       <aside className="desktop-rail" aria-label="Autoflex navigation">
-        <a className="rail-brand" href="#top" aria-label="Autoflex Today" onClick={(event) => { event.preventDefault(); openWorkspace("home", "home"); }}>
+        <a className="rail-brand" href="/" aria-label="Autoflex Today" onClick={(event) => { event.preventDefault(); openWorkspace("home", "home"); }}>
           <span className="brand-mark" aria-hidden="true">A</span>
           <span className="brand-word">Auto<strong>flex</strong></span>
         </a>
         <p className="rail-kicker">Own with confidence</p>
         <nav className="rail-nav" aria-label="Primary destinations">
-          <a className={activeNav === "home" ? "is-active" : ""} href="#top" aria-current={activeNav === "home" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("home", "home"); }}>
+          <a className={activeNav === "home" ? "is-active" : ""} href="/" aria-current={activeNav === "home" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("home", "home"); }}>
             <House className="shell-icon" aria-hidden="true" />
             <span>Today</span>
           </a>
-          <a className={activeNav === "shortlist" ? "is-active" : ""} href="#shortlist" aria-current={activeNav === "shortlist" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("shortlist"); }}>
+          <a className={activeNav === "shortlist" ? "is-active" : ""} href="/shortlist" aria-current={activeNav === "shortlist" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("shortlist"); }}>
             <ListChecks className="shell-icon" aria-hidden="true" />
             <span>Shortlist</span>
             <strong>{shortlist.length}</strong>
           </a>
-          <a className={activeNav === "garage" ? "is-active" : ""} href="#garage" aria-current={activeNav === "garage" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("garage"); }}>
+          <a className={activeNav === "garage" ? "is-active" : ""} href="/garage" aria-current={activeNav === "garage" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("garage"); }}>
             <CarFront className="shell-icon" aria-hidden="true" />
             <span>Garage</span>
             <strong>{garage.length}</strong>
           </a>
-          <a className={activeNav === "community" ? "is-active" : ""} href="#feed" aria-current={activeNav === "community" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("community", "community", "latest"); }}>
+          <a className={activeNav === "community" ? "is-active" : ""} href="/community" aria-current={activeNav === "community" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("community", "community", "latest"); }}>
             <MessageCircle className="shell-icon" aria-hidden="true" />
             <span>Community</span>
           </a>
@@ -1048,9 +1065,9 @@ export function App() {
         </div>
       </aside>
 
-      <nav className="nav app-topbar" aria-label="Primary navigation">
-          <a className="brand" href="#top" aria-label="Autoflex Today" onClick={(event) => { event.preventDefault(); openWorkspace("home", "home"); }}>
-            <span className="brand-mark" aria-hidden="true">A</span>
+      <header className="nav app-topbar">
+        <nav aria-label="Page and account navigation">
+          <a className="brand" href="/" aria-label="Autoflex Today" onClick={(event) => { event.preventDefault(); openWorkspace("home", "home"); }}>
             <span className="brand-word">Auto<strong>flex</strong></span>
           </a>
           <div className="nav-context" aria-label="Today summary">
@@ -1061,7 +1078,10 @@ export function App() {
             <CircleUserRound aria-hidden="true" />
             <strong>Profile</strong>
           </button>
-      </nav>
+        </nav>
+      </header>
+
+      {!isOnline ? <div className="offline-banner" role="status">You are offline. Saved records remain available on this device.</div> : null}
 
       <section className="hero screen-home">
         <div className="home-workbench" id="top">
@@ -1163,8 +1183,9 @@ export function App() {
                 alt="Petrol teal compact SUV in a clean service bay"
                 className="vehicle-visual"
                 decoding="async"
-                fetchPriority="high"
                 height="941"
+                loading="lazy"
+                sizes="(max-width: 600px) 100vw, (max-width: 1080px) 45vw, 385px"
                 src="/autoflex-garage.jpg"
                 width="1672"
               />
@@ -1576,18 +1597,18 @@ export function App() {
                   className={`post-card ${selectedPost?.id === post.id ? "is-selected" : ""}`}
                   key={post.id}
                 >
-                  <button
+                  <Link
                     className="post-open-button"
-                    type="button"
-                    aria-label={`Open owner note: ${post.title}`}
-                    onClick={() => openPostDetail(post)}
+                    to={`/community/${encodeURIComponent(post.id)}`}
+                    aria-label={`Read owner note: ${post.title}`}
+                    onClick={() => setSelectedPost(post)}
                   >
                     <span className="pill">{post.label}</span>
                     <h3>{post.title}</h3>
                     <p>
                       {post.brand} {post.model} · {post.city} · {post.odometerKm.toLocaleString("en-IN")} km
                     </p>
-                  </button>
+                  </Link>
                   <button
                     className="save-button"
                     type="button"
@@ -2276,26 +2297,27 @@ export function App() {
       </section>
 
       <nav className="mobile-dock" aria-label="Primary mobile navigation">
-        <a className={activeNav === "home" ? "is-active" : ""} href="#top" aria-current={activeNav === "home" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("home", "home"); }}>
+        <a className={activeNav === "home" ? "is-active" : ""} href="/" aria-current={activeNav === "home" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("home", "home"); }}>
           <House className="shell-icon" aria-hidden="true" />
           <span>Today</span>
         </a>
-        <a className={activeNav === "shortlist" ? "is-active" : ""} href="#shortlist" aria-current={activeNav === "shortlist" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("shortlist"); }}>
+        <a className={activeNav === "shortlist" ? "is-active" : ""} href="/shortlist" aria-current={activeNav === "shortlist" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("shortlist"); }}>
           <ListChecks className="shell-icon" aria-hidden="true" />
           <span>Shortlist</span>
           {shortlist.length ? <strong>{shortlist.length}</strong> : null}
         </a>
-        <a className={activeNav === "garage" ? "is-active" : ""} href="#garage" aria-current={activeNav === "garage" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("garage"); }}>
+        <a className={activeNav === "garage" ? "is-active" : ""} href="/garage" aria-current={activeNav === "garage" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("garage"); }}>
           <CarFront className="shell-icon" aria-hidden="true" />
           <span>Garage</span>
           {garage.length ? <strong>{garage.length}</strong> : null}
         </a>
-        <a className={activeNav === "community" ? "is-active" : ""} href="#feed" aria-current={activeNav === "community" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("community", "community", "latest"); }}>
+        <a className={activeNav === "community" ? "is-active" : ""} href="/community" aria-current={activeNav === "community" ? "page" : undefined} onClick={(event) => { event.preventDefault(); openWorkspace("community", "community", "latest"); }}>
           <MessageCircle className="shell-icon" aria-hidden="true" />
           <span>Community</span>
         </a>
       </nav>
 
     </main>
+    </>
   );
 }
