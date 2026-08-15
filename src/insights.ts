@@ -239,6 +239,12 @@ export function filterPostsByMode(
     followedTopicSet: Set<string>;
     mode: "latest" | "helpful" | "saved" | "following";
     query: string;
+    /**
+     * Hosted `ranking_score` per post id. When supplied and non-empty the
+     * "Trending" mode orders by it; otherwise the local helpful-count sort is
+     * used unchanged, so a signed-out or offline client behaves as before.
+     */
+    rankingScores?: Map<string, number>;
     saved: Set<string>;
     selectedLabel: KnowledgeLabel | "All";
   },
@@ -254,7 +260,17 @@ export function filterPostsByMode(
     return matchesSaved && matchesFollowing && matchesLabel && (!normalizedQuery || haystack.includes(normalizedQuery));
   });
 
+  const rankingScores = options.rankingScores;
+  const useHostedRanking = options.mode === "helpful" && Boolean(rankingScores && rankingScores.size);
+
   return [...visible].sort((first, second) => {
+    if (useHostedRanking && rankingScores) {
+      const firstScore = rankingScores.get(first.id) ?? 0;
+      const secondScore = rankingScores.get(second.id) ?? 0;
+      if (secondScore !== firstScore) return secondScore - firstScore;
+      if (second.helpful !== first.helpful) return second.helpful - first.helpful;
+      return Date.parse(second.createdAt) - Date.parse(first.createdAt);
+    }
     if (options.mode === "helpful") return second.helpful - first.helpful;
     return Date.parse(second.createdAt) - Date.parse(first.createdAt);
   });
@@ -1050,4 +1066,365 @@ function topValues(values: string[], limit: number): string[] {
 export function formatMoney(amount: number, maximumFractionDigits = 0): string {
   if (!amount) return "No cost logged";
   return new Intl.NumberFormat("en-IN", { currency: "INR", maximumFractionDigits, style: "currency" }).format(amount);
+}
+
+/* -------------------------------------------------------------------------- */
+/* Notification job drafts                                                     */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Locally-declared copies of the hosted notification unions.
+ *
+ * `insights.ts` cannot import from `src/hosted/*` (the hosted mappers import
+ * this module), so the literal unions are restated here. They are structurally
+ * identical to `HostedNotificationKind` / `HostedNotificationChannel`, which is
+ * what `queueHostedNotifications` needs.
+ */
+export type NotificationJobKind = "Digest" | "Model alert" | "Topic alert" | "City alert" | "Reminder" | "Moderation";
+export type NotificationJobChannel = "Email digest" | "Browser alert" | "In-app";
+
+export type NotificationJobDraft = {
+  kind: NotificationJobKind;
+  channel: NotificationJobChannel;
+  payload: Record<string, unknown>;
+  scheduledFor: string;
+};
+
+export type NotificationJobInput = {
+  cityFollows?: string[];
+  follows: FollowState;
+  now?: Date;
+  posts: OwnerPost[];
+  preference: SubscriptionPreference;
+  reminders?: GarageReminder[];
+};
+
+/** The channel a queued job should use, given the user's local preferences. */
+export function notificationChannelFor(preference: SubscriptionPreference): NotificationJobChannel {
+  if (preference.emailDigest) return "Email digest";
+  if (preference.browserAlerts) return "Browser alert";
+  return "In-app";
+}
+
+/**
+ * Real `notification_jobs` rows to queue for the signed-in user, replacing the
+ * local-only digest preview. Returns `[]` when the user has paused every
+ * channel, so a paused account never queues work.
+ */
+export function buildNotificationJobDrafts(input: NotificationJobInput): NotificationJobDraft[] {
+  const preference = input.preference;
+  if (!preference.emailDigest && !preference.browserAlerts) return [];
+
+  const now = input.now ?? new Date();
+  const scheduledFor = now.toISOString();
+  const channel = notificationChannelFor(preference);
+  const followedModelSet = new Set(input.follows.models);
+  const followedTopicSet = new Set(input.follows.topics);
+  const followedCities = (input.cityFollows ?? []).filter(Boolean);
+
+  const modelDrafts = input.posts
+    .filter((post) => followedModelSet.has(modelKeyFor(post.brand, post.model)))
+    .slice(0, 3)
+    .map<NotificationJobDraft>((post) => ({
+      channel,
+      kind: "Model alert",
+      payload: {
+        body: `${post.brand} ${post.model} has a new ${post.label.toLowerCase()}.`,
+        model: modelKeyFor(post.brand, post.model),
+        postId: post.id,
+        title: post.title,
+      },
+      scheduledFor,
+    }));
+
+  const topicDrafts = [...followedTopicSet]
+    .map((topic) => ({ posts: input.posts.filter((post) => post.label === topic), topic }))
+    .filter((entry) => entry.posts.length > 0)
+    .slice(0, 3)
+    .map<NotificationJobDraft>((entry) => ({
+      channel,
+      kind: "Topic alert",
+      payload: {
+        body: `${entry.posts.length} new ${entry.topic.toLowerCase()} note${entry.posts.length === 1 ? "" : "s"} to read.`,
+        noteCount: entry.posts.length,
+        title: `${entry.topic} updates`,
+        topic: entry.topic,
+      },
+      scheduledFor,
+    }));
+
+  const cityDrafts = followedCities.slice(0, 3).map<NotificationJobDraft>((citySlug) => {
+    const cityPosts = input.posts.filter((post) => slugifyCity(post.city) === citySlug);
+    return {
+      channel,
+      kind: "City alert",
+      payload: {
+        body: `${cityPosts.length} owner note${cityPosts.length === 1 ? "" : "s"} from this city circle.`,
+        citySlug,
+        noteCount: cityPosts.length,
+        title: `${citySlug.replace(/-/g, " ")} circle`,
+      },
+      scheduledFor,
+    };
+  });
+
+  const reminderDrafts = (input.reminders ?? [])
+    .filter((reminder) => reminder.urgency !== "Watch")
+    .slice(0, 5)
+    .map<NotificationJobDraft>((reminder) => ({
+      channel,
+      kind: "Reminder",
+      payload: {
+        body: reminder.detail,
+        reminderId: reminder.id,
+        title: `${reminder.vehicleName}: ${reminder.title}`,
+        urgency: reminder.urgency,
+        vehicleId: reminder.vehicleId,
+      },
+      scheduledFor,
+    }));
+
+  const drafts = [...modelDrafts, ...topicDrafts, ...cityDrafts, ...reminderDrafts];
+
+  if (!drafts.length && preference.emailDigest) {
+    return [
+      {
+        channel,
+        kind: "Digest",
+        payload: {
+          body: "Follow a car, topic or city to fill your next Autoflex digest.",
+          title: "Your Autoflex digest",
+        },
+        scheduledFor,
+      },
+    ];
+  }
+
+  return drafts;
+}
+
+function slugifyCity(city: string): string {
+  return city
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/* -------------------------------------------------------------------------- */
+/* Timeline analytics + richer vehicle profile                                 */
+/* -------------------------------------------------------------------------- */
+
+export type TimelineCategorySpend = {
+  kind: TimelineEntry["kind"];
+  amount: number;
+  entryCount: number;
+  share: number;
+};
+
+export type TimelineMonthSpend = {
+  month: string;
+  amount: number;
+  entryCount: number;
+};
+
+export type VehicleProfile = {
+  vehicleId: string;
+  name: string;
+  fuel: string;
+  ageMonths: number | null;
+  ownershipLabel: string;
+  odometerKmPerMonth: number | null;
+  loggedKm: number;
+};
+
+export type TimelineAnalytics = {
+  vehicle: GarageVehicle;
+  profile: VehicleProfile;
+  totalSpend: number;
+  entryCount: number;
+  monthsCovered: number;
+  averageMonthlySpend: number | null;
+  costPerKm: number | null;
+  byCategory: TimelineCategorySpend[];
+  byMonth: TimelineMonthSpend[];
+  busiestMonth: TimelineMonthSpend | null;
+  largestEntry: TimelineEntry | null;
+};
+
+const monthKey = (isoDate: string): string => (isoDate || "").slice(0, 7);
+
+/** Owner-facing profile fields the raw `GarageVehicle` record does not store. */
+export function buildVehicleProfile(vehicle: GarageVehicle, timeline: TimelineEntry[], today = new Date()): VehicleProfile {
+  const haystack = `${vehicle.variant} ${vehicle.model}`.toLowerCase();
+  const fuel = haystack.includes("diesel")
+    ? "Diesel"
+    : haystack.includes("electric") || /\bev\b/.test(haystack)
+      ? "Electric"
+      : haystack.includes("cng")
+        ? "CNG"
+        : haystack.includes("hybrid") || haystack.includes("e:hev")
+          ? "Hybrid"
+          : "Petrol";
+
+  const purchase = /^\d{4}-\d{2}$/.test(vehicle.purchaseMonth) ? new Date(`${vehicle.purchaseMonth}-01T00:00:00.000Z`) : null;
+  const ageMonths = purchase
+    ? Math.max(
+        0,
+        (today.getUTCFullYear() - purchase.getUTCFullYear()) * 12 + (today.getUTCMonth() - purchase.getUTCMonth()),
+      )
+    : null;
+
+  const entries = timeline.filter((entry) => entry.vehicleId === vehicle.id);
+  const loggedKm = entries.reduce((highest, entry) => Math.max(highest, entry.odometerKm), vehicle.odometerKm);
+
+  return {
+    ageMonths,
+    fuel,
+    loggedKm,
+    name: vehicle.nickname || `${vehicle.brand} ${vehicle.model}`,
+    odometerKmPerMonth: ageMonths && ageMonths > 0 ? loggedKm / ageMonths : null,
+    ownershipLabel:
+      ageMonths === null
+        ? "Purchase month not set"
+        : ageMonths < 12
+          ? `${ageMonths} month${ageMonths === 1 ? "" : "s"} owned`
+          : `${Math.floor(ageMonths / 12)} year${Math.floor(ageMonths / 12) === 1 ? "" : "s"} owned`,
+    vehicleId: vehicle.id,
+  };
+}
+
+/**
+ * Per-vehicle running-cost analytics derived from the local timeline.
+ * The hosted `garage_costs` ledger mirrors the same priced entries, so hosted
+ * and local views agree; this stays usable offline and signed-out.
+ */
+export function buildTimelineAnalytics(
+  garage: GarageVehicle[],
+  timeline: TimelineEntry[],
+  today = new Date(),
+): TimelineAnalytics[] {
+  return garage
+    .map((vehicle) => {
+      const entries = timeline
+        .filter((entry) => entry.vehicleId === vehicle.id)
+        .sort((first, second) => Date.parse(second.happenedOn) - Date.parse(first.happenedOn));
+      const totalSpend = entries.reduce((total, entry) => total + Math.max(0, entry.amount), 0);
+      const profile = buildVehicleProfile(vehicle, timeline, today);
+
+      const categoryTotals = entries.reduce<Map<TimelineEntry["kind"], { amount: number; entryCount: number }>>(
+        (totals, entry) => {
+          const current = totals.get(entry.kind) ?? { amount: 0, entryCount: 0 };
+          totals.set(entry.kind, { amount: current.amount + Math.max(0, entry.amount), entryCount: current.entryCount + 1 });
+          return totals;
+        },
+        new Map(),
+      );
+
+      const byCategory = [...categoryTotals.entries()]
+        .map<TimelineCategorySpend>(([kind, value]) => ({
+          amount: value.amount,
+          entryCount: value.entryCount,
+          kind,
+          share: totalSpend > 0 ? value.amount / totalSpend : 0,
+        }))
+        .sort((first, second) => second.amount - first.amount || first.kind.localeCompare(second.kind));
+
+      const monthTotals = entries.reduce<Map<string, { amount: number; entryCount: number }>>((totals, entry) => {
+        const key = monthKey(entry.happenedOn);
+        if (!key) return totals;
+        const current = totals.get(key) ?? { amount: 0, entryCount: 0 };
+        totals.set(key, { amount: current.amount + Math.max(0, entry.amount), entryCount: current.entryCount + 1 });
+        return totals;
+      }, new Map());
+
+      const byMonth = [...monthTotals.entries()]
+        .map<TimelineMonthSpend>(([month, value]) => ({ amount: value.amount, entryCount: value.entryCount, month }))
+        .sort((first, second) => first.month.localeCompare(second.month));
+
+      const busiestMonth =
+        [...byMonth].sort((first, second) => second.amount - first.amount || second.month.localeCompare(first.month))[0] ?? null;
+
+      const usableKm = Math.max(vehicle.odometerKm, profile.loggedKm);
+
+      return {
+        averageMonthlySpend: byMonth.length ? totalSpend / byMonth.length : null,
+        busiestMonth,
+        byCategory,
+        byMonth,
+        costPerKm: usableKm > 0 && totalSpend > 0 ? totalSpend / usableKm : null,
+        entryCount: entries.length,
+        largestEntry: [...entries].sort((first, second) => second.amount - first.amount)[0] ?? null,
+        monthsCovered: byMonth.length,
+        profile,
+        totalSpend,
+        vehicle,
+      };
+    })
+    .sort((first, second) => second.totalSpend - first.totalSpend || first.vehicle.id.localeCompare(second.vehicle.id));
+}
+
+/* -------------------------------------------------------------------------- */
+/* Evidence scoring for city and playbook pages                                */
+/* -------------------------------------------------------------------------- */
+
+export type EvidenceScore = {
+  score: number;
+  maxScore: number;
+  tier: "Thin" | "Useful" | "Strong";
+  reasons: string[];
+};
+
+/**
+ * Richer evidence scoring for a model playbook page: breadth of note types,
+ * corroboration, odometer reach, city spread, and community usefulness.
+ */
+export function scorePlaybookEvidence(posts: OwnerPost[]): EvidenceScore {
+  const labels = new Set(posts.map((post) => post.label));
+  const cities = new Set(posts.map((post) => post.city.trim().toLowerCase()).filter(Boolean));
+  const helpful = posts.reduce((total, post) => total + post.helpful, 0);
+  const confirmed = posts.reduce((total, post) => total + post.fixesConfirmed, 0);
+  const highestOdometer = posts.reduce((highest, post) => Math.max(highest, post.odometerKm), 0);
+
+  const checks = [
+    { detail: `${posts.length} owner note${posts.length === 1 ? "" : "s"} on record.`, passed: posts.length >= 2 },
+    { detail: "Known issues and fixes are both documented.", passed: labels.has("Known issue") && labels.has("Fix") },
+    { detail: "Running-cost evidence is available.", passed: labels.has("Cost note") },
+    { detail: `Notes come from ${cities.size} cit${cities.size === 1 ? "y" : "ies"}.`, passed: cities.size >= 2 },
+    { detail: `Community marked these notes helpful ${helpful} time${helpful === 1 ? "" : "s"}.`, passed: helpful >= 10 },
+    { detail: `${confirmed} owner-confirmed fix${confirmed === 1 ? "" : "es"}.`, passed: confirmed >= 1 },
+    { detail: `Evidence reaches ${highestOdometer.toLocaleString("en-IN")} km.`, passed: highestOdometer >= 20000 },
+  ];
+
+  const passed = checks.filter((check) => check.passed);
+
+  return {
+    maxScore: checks.length,
+    reasons: passed.length ? passed.map((check) => check.detail) : ["Not enough owner evidence yet for this model."],
+    score: passed.length,
+    tier: passed.length >= 5 ? "Strong" : passed.length >= 3 ? "Useful" : "Thin",
+  };
+}
+
+/** Evidence scoring for a city circle page. */
+export function scoreCityEvidence(circle: Pick<CityCircle, "garageVehicles" | "posts" | "topBrands">): EvidenceScore {
+  const helpful = circle.posts.reduce((total, post) => total + post.helpful, 0);
+  const labels = new Set(circle.posts.map((post) => post.label));
+
+  const checks = [
+    { detail: `${circle.posts.length} owner note${circle.posts.length === 1 ? "" : "s"} from this city.`, passed: circle.posts.length >= 2 },
+    { detail: `${circle.topBrands.length} brand${circle.topBrands.length === 1 ? "" : "s"} discussed locally.`, passed: circle.topBrands.length >= 2 },
+    { detail: `${circle.garageVehicles.length} garage vehicle${circle.garageVehicles.length === 1 ? "" : "s"} registered here.`, passed: circle.garageVehicles.length >= 1 },
+    { detail: `${labels.size} different note type${labels.size === 1 ? "" : "s"} represented.`, passed: labels.size >= 3 },
+    { detail: `Local notes marked helpful ${helpful} time${helpful === 1 ? "" : "s"}.`, passed: helpful >= 10 },
+  ];
+
+  const passed = checks.filter((check) => check.passed);
+
+  return {
+    maxScore: checks.length,
+    reasons: passed.length ? passed.map((check) => check.detail) : ["This city circle is still forming."],
+    score: passed.length,
+    tier: passed.length >= 4 ? "Strong" : passed.length >= 2 ? "Useful" : "Thin",
+  };
 }

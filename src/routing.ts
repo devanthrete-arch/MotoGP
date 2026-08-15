@@ -10,12 +10,70 @@ export type WorkspaceScreen =
   | "creators";
 export type AccountView = "profile" | "saved" | "following" | "notifications" | "settings";
 
+/**
+ * Shareable detail collections.
+ *
+ * `share.ts` already emits `/cars/:slug`, `/cities/:slug` and `/playbooks/:slug`;
+ * these are the router entries for them. They deliberately reuse an existing
+ * `WorkspaceScreen` instead of adding a new one, because `sharePaths` in
+ * `share.ts` is spread from `workspacePaths` and a new screen there would change
+ * the public share surface.
+ */
+export type DetailType = "car" | "city" | "playbook";
+
 export type AppRoute = {
   accountView?: AccountView;
+  detailSlug?: string;
+  detailType?: DetailType;
   nav: string;
   openComposer?: boolean;
   screen: WorkspaceScreen;
 };
+
+/** Which workspace screen a detail route renders inside of. */
+export const detailScreens: Record<DetailType, Exclude<WorkspaceScreen, "account">> = {
+  car: "shortlist",
+  city: "community",
+  playbook: "community",
+};
+
+export const detailPathPrefixes: Record<DetailType, string> = {
+  car: "/cars",
+  city: "/cities",
+  playbook: "/playbooks",
+};
+
+/** Same shape `share.ts` validates against: lowercase alphanumerics and single dashes. */
+const detailSlugPattern = /^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/;
+
+export const detailSlugFromPath = (pathname: string, type: DetailType): string | null => {
+  const prefix = `${detailPathPrefixes[type]}/`;
+  if (!pathname.startsWith(prefix)) return null;
+  const raw = pathname.slice(prefix.length);
+  if (!raw || raw.includes("/")) return null;
+  let slug = raw;
+  try {
+    slug = decodeURIComponent(raw);
+  } catch {
+    return null;
+  }
+  return detailSlugPattern.test(slug) ? slug : null;
+};
+
+/** `/cars/:slug`, `/cities/:slug`, `/playbooks/:slug` → a detail route, else null. */
+export const detailRouteFromPath = (pathname: string): AppRoute | null => {
+  const types: DetailType[] = ["car", "city", "playbook"];
+  for (const type of types) {
+    const slug = detailSlugFromPath(pathname, type);
+    if (!slug) continue;
+    const screen = detailScreens[type];
+    return { detailSlug: slug, detailType: type, nav: screen, screen };
+  }
+  return null;
+};
+
+export const detailPathFor = (type: DetailType, slug: string): string =>
+  `${detailPathPrefixes[type]}/${slug}`;
 
 export const workspaceHashes: Record<Exclude<WorkspaceScreen, "account">, string> = {
   analytics: "#analytics",
@@ -56,6 +114,8 @@ export const accountPaths: Record<AccountView, string> = {
 };
 
 export const routeFromPath = (pathname: string): AppRoute => {
+  const detailRoute = detailRouteFromPath(pathname);
+  if (detailRoute) return detailRoute;
   if (pathname === "/shortlist") return { nav: "shortlist", screen: "shortlist" };
   if (pathname === "/garage") return { nav: "garage", screen: "garage" };
   if (pathname === "/kyv") return { nav: "kyv", screen: "kyv" };
@@ -74,6 +134,10 @@ export const routeFromPath = (pathname: string): AppRoute => {
 };
 
 export const titleForPath = (pathname: string): string => {
+  const detailRoute = detailRouteFromPath(pathname);
+  if (detailRoute?.detailType === "car") return "Model dossier · Autoflex";
+  if (detailRoute?.detailType === "city") return "City circle · Autoflex";
+  if (detailRoute?.detailType === "playbook") return "Ownership playbook · Autoflex";
   if (pathname.startsWith("/community/")) return pathname === "/community/new" ? "Write an owner note · Autoflex" : "Owner note · Autoflex";
   if (pathname === "/community") return "Owner notes · Autoflex";
   if (pathname === "/shortlist") return "Shortlist · Autoflex";

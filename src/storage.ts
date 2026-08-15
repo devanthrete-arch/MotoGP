@@ -28,6 +28,7 @@ const garageKey = "autoflex.web.garage.v1";
 const timelineKey = "autoflex.web.timeline.v1";
 const subscriptionKey = "autoflex.web.subscription.v1";
 const profileKey = "autoflex.web.profile.v1";
+const cloudOwnerKey = "autoflex.web.cloud-owner.v1";
 const reportsKey = "autoflex.web.reports.v1";
 const shortlistKey = "autoflex.web.shortlist.v1";
 const qaSessionKey = "autoflex.web.qa-session.v1";
@@ -36,6 +37,8 @@ const productionLaunchKey = "autoflex.web.production-launch.v1";
 const productionUrlKey = "autoflex.web.production-url.v1";
 const testerRunsKey = "autoflex.web.tester-runs.v1";
 const productionOpsKey = "autoflex.web.production-ops.v1";
+const localUpdatedAtKey = "autoflex.web.local-updated-at.v1";
+const cityFollowsKey = "autoflex.web.city-follows.v1";
 const autoflexStorageKeys = [
   postsKey,
   savedKey,
@@ -53,6 +56,8 @@ const autoflexStorageKeys = [
   productionUrlKey,
   testerRunsKey,
   productionOpsKey,
+  localUpdatedAtKey,
+  cityFollowsKey,
 ];
 
 export type StorageLike = Pick<Storage, "getItem" | "setItem">;
@@ -214,6 +219,7 @@ export const restoreAutoflexBackup = (backup: AutoflexBackup): void => {
   saveSubscriptionSettings(backup.data.subscriptionSettings);
   saveTesterRuns(backup.data.testerRuns);
   saveTimeline(backup.data.timeline);
+  markLocalUpdated();
 };
 
 export const clearAutoflexData = (storage?: Pick<Storage, "removeItem"> | null): void => {
@@ -412,3 +418,58 @@ export const createShortlistItem = (draft: DraftShortlistItem): ShortlistItem =>
   ...draft,
   id: `shortlist-${draft.brand}-${draft.model}-${Date.now()}`.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
 });
+
+/* -------------------------------------------------------------------------- */
+/* Last-local-write bookkeeping                                                */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * ISO timestamp of the most recent local mutation.
+ *
+ * `syncAllHosted` treats a hosted record as the winner only when its
+ * `updated_at` is strictly newer than this clock, so every mutating persist
+ * handler bumps it. A missing or unparseable value is reported as `""`, which
+ * makes hosted always win — safe, because the hosted copy is itself derived
+ * from a previous push of this device's data.
+ */
+export const loadLocalUpdatedAt = (storage?: StorageLike | null): string => {
+  const stored = readStoredJson<unknown>(localUpdatedAtKey, "", storage === undefined ? undefined : storage);
+  if (typeof stored !== "string" || !stored.trim()) return "";
+  return Number.isNaN(Date.parse(stored)) ? "" : stored;
+};
+
+/** Records a local write and returns the timestamp that was stored. */
+export const markLocalUpdated = (
+  at: string = new Date().toISOString(),
+  storage?: StorageLike | null,
+): string => {
+  const stamp = Number.isNaN(Date.parse(at)) ? new Date().toISOString() : at;
+  writeStoredJson(localUpdatedAtKey, stamp, storage === undefined ? undefined : storage);
+  return stamp;
+};
+
+export const clearLocalUpdatedAt = (storage?: StorageLike | null): void => {
+  writeStoredJson(localUpdatedAtKey, "", storage === undefined ? undefined : storage);
+};
+
+/* -------------------------------------------------------------------------- */
+/* City follows (hosted `city_follows` mirror; kept out of the v1 backup shape) */
+/* -------------------------------------------------------------------------- */
+
+export const loadCityFollows = (): Set<string> => new Set(readStoredJson<string[]>(cityFollowsKey, []));
+
+export const saveCityFollows = (slugs: Set<string>): void => {
+  writeStoredJson(cityFollowsKey, [...slugs]);
+};
+
+/**
+ * Which signed-in account this device's data belongs to.
+ *
+ * Guards against one account's hosted backup silently overwriting another
+ * account's data on a shared device.
+ */
+export const readCloudOwner = (): string | null => readStoredJson<string | null>(cloudOwnerKey, null);
+
+export const saveCloudOwner = (userId: string | null): void => {
+  writeStoredJson(cloudOwnerKey, userId);
+};

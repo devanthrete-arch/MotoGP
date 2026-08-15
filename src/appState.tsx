@@ -12,19 +12,66 @@ import {
 } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
-  loadCloudCommunity,
-  publishCloudComment,
-  publishCloudPost,
-  publishCloudReport,
-  setCloudSavedPost,
-} from "./communityApi";
-import {
-  getCloudSession,
-  loadCloudBackup,
-  saveCloudBackup,
-  sendCloudSignInLink,
-  signOutCloud,
-} from "./cloudSync";
+  addHostedComment,
+  channelForSettings,
+  checklistToSession,
+  costsFromTimeline,
+  deleteHostedPost,
+  deleteHostedShortlistItem,
+  inspectionSessionIdFor,
+  listHostedCityCircles,
+  listHostedCityFollows,
+  listHostedCosts,
+  listHostedInspections,
+  listHostedNotificationJobs,
+  listHostedPlaybookEntries,
+  listHostedPlaybooks,
+  listHostedPostQuality,
+  listHostedPosts,
+  listHostedReminders,
+  mergePostCollections,
+  publishHostedChecklists,
+  publishHostedCityCircles,
+  publishHostedPostQuality,
+  queueHostedNotifications,
+  saveHostedFollows,
+  saveHostedProfile,
+  saveHostedSubscriptionSettings,
+  setHostedCityFollow,
+  setHostedInspectionItemState,
+  setHostedReminderStatus,
+  setHostedReportStatus,
+  setHostedSavedPost,
+  syncAllHosted,
+  syncHostedCostsFromTimeline,
+  upsertHostedCosts,
+  upsertHostedInspection,
+  upsertHostedPlaybooks,
+  upsertHostedPost,
+  upsertHostedPosts,
+  upsertHostedReminders,
+  upsertHostedReport,
+  upsertHostedReports,
+  upsertHostedShortlistItem,
+  upsertHostedShortlistItems,
+  upsertHostedTimelineEntries,
+  upsertHostedTimelineEntry,
+  upsertHostedVehicle,
+  upsertHostedVehicles,
+  type HostedCityCircle,
+  type HostedGarageCost,
+  type HostedGarageReminder,
+  type HostedInspectionItemState,
+  type HostedInspectionSession,
+  type HostedInspectionVerdict,
+  type HostedNotificationJob,
+  type HostedPlaybookEntry,
+  type HostedPostQuality,
+  type HostedResult,
+  type HostedSyncOutcome,
+} from "./hosted";
+import { shareContent, shareResultMessage, citySlugFor, modelSlugFor, type ShareContent } from "./share";
+import { loadCloudBackup, saveCloudBackup, sendCloudSignInLink, signOutCloud } from "./cloudSync";
 import {
   type DraftPost,
   type DraftShortlistItem,
@@ -48,19 +95,30 @@ import {
   buildGarageExportMarkdown,
   buildGarageReminders,
   buildInspectionChecklists,
-  buildModelSharePayload,
   buildModerationSummary,
+  buildNotificationJobDrafts,
   buildNotificationPreview,
-  buildPostSharePayload,
+  buildOwnershipPlaybooks,
   buildShortlistComparisons,
   buildShortlistDecisionLanes,
+  buildTimelineAnalytics,
   filterPostsByMode,
   groupByModel,
   modelKeyFor,
+  scoreCityEvidence,
+  scorePlaybookEvidence,
+  type CityCircle,
+  type OwnershipPlaybook,
 } from "./insights";
 import {
   buildAutoflexBackup,
   clearAutoflexData,
+  loadCityFollows,
+  loadLocalUpdatedAt,
+  markLocalUpdated,
+  readCloudOwner,
+  saveCloudOwner,
+  saveCityFollows,
   createPost,
   createReport,
   createShortlistItem,
@@ -77,6 +135,7 @@ import {
   loadTimeline,
   parseAutoflexBackup,
   restoreAutoflexBackup,
+  saveFeedback,
   saveFollows,
   saveGarage,
   savePosts,
@@ -89,6 +148,7 @@ import {
 } from "./storage";
 import {
   accountPaths,
+  detailPathFor,
   getInitialRoute,
   routeFromPath,
   routeFromHash,
@@ -96,30 +156,73 @@ import {
   workspacePaths,
   type AccountView,
   type AppRoute,
+  type DetailType,
   type WorkspaceScreen,
 } from "./routing";
 import { getSupabaseClient, isCloudSyncConfigured } from "./supabase";
 
 export type FeedMode = "latest" | "helpful" | "saved" | "following";
 
-const cloudOwnerKey = "autoflex.cloud-owner.v1";
+export type CloudUser = { email: string; id: string };
 
-const readCloudOwner = (): string => {
+/* -------------------------------------------------------------------------- */
+/* Auth helpers                                                                */
+/*                                                                             */
+/* The hosted data layer in src/hosted/* deliberately owns no auth. These three */
+/* helpers are the only Supabase auth surface the app uses, and each one        */
+/* degrades to a plain result instead of throwing, so a missing client or a     */
+/* dropped connection can never reach a render.                                 */
+/* -------------------------------------------------------------------------- */
+
+type AuthOutcome = { message: string; ok: boolean };
+
+const authOk: AuthOutcome = { message: "", ok: true };
+
+const describeAuthError = (error: unknown): string =>
+  error instanceof Error && error.message ? error.message : "That did not work. Try again.";
+
+const readCloudUser = async (): Promise<CloudUser | null> => {
   try {
-    return window.localStorage.getItem(cloudOwnerKey) ?? "";
+    const client = getSupabaseClient();
+    if (!client) return null;
+    const { data, error } = await client.auth.getSession();
+    if (error) return null;
+    const user = data.session?.user;
+    return user ? { email: user.email ?? "Signed-in user", id: user.id } : null;
   } catch {
-    return "";
+    return null;
   }
 };
 
-const writeCloudOwner = (userId: string | null): void => {
+const requestSignInLink = async (email: string): Promise<AuthOutcome> => {
   try {
-    if (userId) window.localStorage.setItem(cloudOwnerKey, userId);
-    else window.localStorage.removeItem(cloudOwnerKey);
-  } catch {
-    // Account sync remains usable for the current session when browser storage is blocked.
+    const client = getSupabaseClient();
+    if (!client) return { message: "Account sync is not configured for this build.", ok: false };
+    const redirectTo = `${window.location.origin}${accountPaths.settings}`;
+    const { error } = await client.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo } });
+    return error ? { message: describeAuthError(error), ok: false } : authOk;
+  } catch (error) {
+    return { message: describeAuthError(error), ok: false };
   }
 };
+
+const signOutOfCloud = async (): Promise<AuthOutcome> => {
+  try {
+    const client = getSupabaseClient();
+    if (!client) return authOk;
+    const { error } = await client.auth.signOut();
+    return error ? { message: describeAuthError(error), ok: false } : authOk;
+  } catch (error) {
+    return { message: describeAuthError(error), ok: false };
+  }
+};
+
+/**
+ * `unconfigured`, `signed-out` and `offline` are ordinary states, not errors.
+ * Only a real request failure produces user-facing copy.
+ */
+const hostedProblemMessage = <Data,>(result: HostedResult<Data>): string =>
+  result.ok || (result.reason !== "request-failed" && result.reason !== "unexpected") ? "" : result.message;
 
 const initialDraft: DraftPost = {
   title: "",
@@ -210,11 +313,34 @@ export function useAutoflexState() {
   const [activeScreen, setActiveScreen] = useState<WorkspaceScreen>(initialRoute.current.screen);
   const [isOnline, setIsOnline] = useState(getInitialOnlineStatus);
   const [cloudEmail, setCloudEmail] = useState("");
-  const [cloudUser, setCloudUser] = useState<{ email: string; id: string } | null>(null);
+  const [cloudUser, setCloudUser] = useState<CloudUser | null>(null);
+
   const [cloudBackupUpdatedAt, setCloudBackupUpdatedAt] = useState<string | null>(null);
-  const [cloudBusy, setCloudBusy] = useState(false);
   const [cloudReadyToSync, setCloudReadyToSync] = useState(false);
-  const [cloudPostIds, setCloudPostIds] = useState<Set<string>>(new Set());
+  const [cloudBusy, setCloudBusy] = useState(false);
+  const [detailType, setDetailType] = useState<DetailType | null>(initialRoute.current.detailType ?? null);
+  const [detailSlug, setDetailSlug] = useState<string>(initialRoute.current.detailSlug ?? "");
+  // Hosted mirrors. Every one of these starts empty and stays empty offline or
+  // signed-out, so first paint never waits on the network.
+  const [hostedQuality, setHostedQuality] = useState<HostedPostQuality[]>([]);
+  const [hostedCities, setHostedCities] = useState<HostedCityCircle[]>([]);
+  const [hostedPlaybooks, setHostedPlaybooks] = useState<OwnershipPlaybook[]>([]);
+  const [hostedPlaybookEntries, setHostedPlaybookEntries] = useState<HostedPlaybookEntry[]>([]);
+  const [hostedInspections, setHostedInspections] = useState<HostedInspectionSession[]>([]);
+  const [hostedReminders, setHostedReminders] = useState<HostedGarageReminder[]>([]);
+  const [hostedCosts, setHostedCosts] = useState<HostedGarageCost[]>([]);
+  const [notificationJobs, setNotificationJobs] = useState<HostedNotificationJob[]>([]);
+  const [cityFollows, setCityFollows] = useState<Set<string>>(() => loadCityFollows());
+  const [hostedSyncing, setHostedSyncing] = useState(false);
+  const localUpdatedAtRef = useRef<string>(loadLocalUpdatedAt());
+  const cloudUserRef = useRef<CloudUser | null>(null);
+  const cloudOwnerRef = useRef<string | null>(readCloudOwner());
+
+  /** Records which account this device's data belongs to. */
+  const writeCloudOwner = (userId: string | null): void => {
+    cloudOwnerRef.current = userId;
+    saveCloudOwner(userId);
+  };
   const communitySearchRef = useRef<HTMLInputElement>(null);
   const postTitleRef = useRef<HTMLInputElement>(null);
   const shortlistModelRef = useRef<HTMLInputElement>(null);
@@ -239,6 +365,17 @@ export function useAutoflexState() {
   const followedModelSet = useMemo(() => new Set(follows.models), [follows.models]);
   const followedTopicSet = useMemo(() => new Set(follows.topics), [follows.topics]);
 
+  /** postId -> hosted `ranking_score`. Empty offline, which keeps the local sort. */
+  const hostedRankingScores = useMemo(
+    () => new Map(hostedQuality.map((quality) => [quality.postId, quality.rankingScore])),
+    [hostedQuality],
+  );
+
+  const hostedQualityByPostId = useMemo(
+    () => new Map(hostedQuality.map((quality) => [quality.postId, quality])),
+    [hostedQuality],
+  );
+
   const filteredPosts = useMemo(
     () =>
       filterPostsByMode(posts, {
@@ -246,11 +383,14 @@ export function useAutoflexState() {
         followedTopicSet,
         mode,
         query,
+        rankingScores: hostedRankingScores,
         saved,
         selectedLabel,
       }),
-    [followedModelSet, followedTopicSet, mode, posts, query, saved, selectedLabel],
+    [followedModelSet, followedTopicSet, hostedRankingScores, mode, posts, query, saved, selectedLabel],
   );
+
+  const feedRankingSource: "hosted" | "local" = hostedRankingScores.size ? "hosted" : "local";
 
   const connectionStatus = useMemo(() => buildConnectionStatusCopy(isOnline), [isOnline]);
 
@@ -260,8 +400,68 @@ export function useAutoflexState() {
   );
 
   const garageCostLedger = useMemo(() => buildGarageCostLedger(garage, timeline), [garage, timeline]);
-  const garageReminders = useMemo(() => buildGarageReminders(garage, timeline), [garage, timeline]);
-  const cityCircles = useMemo(() => buildCityCircles(posts, garage), [garage, posts]);
+  const localReminders = useMemo(() => buildGarageReminders(garage, timeline), [garage, timeline]);
+  const timelineAnalytics = useMemo(() => buildTimelineAnalytics(garage, timeline), [garage, timeline]);
+  const vehicleProfileById = useMemo(
+    () => new Map(timelineAnalytics.map((analytics) => [analytics.vehicle.id, analytics.profile])),
+    [timelineAnalytics],
+  );
+
+  /**
+   * Derived reminders stay the source of truth for *what* is due; the hosted row
+   * only contributes scheduling state (Open / Snoozed / Done / Dismissed).
+   * Reminders the user closed hosted disappear; hosted-only reminders are added.
+   */
+  const garageReminders = useMemo(() => {
+    if (!hostedReminders.length) return localReminders;
+    const hostedById = new Map(hostedReminders.map((reminder) => [reminder.id, reminder]));
+    const localIds = new Set(localReminders.map((reminder) => reminder.id));
+    const merged = localReminders
+      .map((reminder) => {
+        const hosted = hostedById.get(reminder.id);
+        if (!hosted) return reminder;
+        return hosted.status === "Done" || hosted.status === "Dismissed" ? null : { ...reminder, ...hosted, vehicleName: reminder.vehicleName };
+      })
+      .filter((reminder): reminder is NonNullable<typeof reminder> => Boolean(reminder));
+    const hostedOnly = hostedReminders.filter(
+      (reminder) => !localIds.has(reminder.id) && reminder.status !== "Done" && reminder.status !== "Dismissed",
+    );
+    return [...merged, ...hostedOnly];
+  }, [hostedReminders, localReminders]);
+
+  const reminderStatusById = useMemo(
+    () => new Map(hostedReminders.map((reminder) => [reminder.id, reminder.status])),
+    [hostedReminders],
+  );
+
+  /** Local city circles, enriched with the hosted page copy when it exists. */
+  const cityCircles = useMemo(() => {
+    const local = buildCityCircles(posts, garage);
+    if (!hostedCities.length) return local;
+    const localBySlug = new Map(local.map((circle) => [citySlugFor(circle.city) ?? "", circle]));
+    const extras = hostedCities
+      .filter((city) => city.slug && !localBySlug.has(city.slug))
+      .map<CityCircle>((city) => ({
+        city: city.city,
+        garageVehicles: [],
+        hotTopics: city.hotTopics,
+        localSignal: city.localSignal,
+        posts: [],
+        topBrands: city.topBrands,
+      }));
+    return [...local, ...extras];
+  }, [garage, hostedCities, posts]);
+
+  const hostedCityBySlug = useMemo(() => new Map(hostedCities.map((city) => [city.slug, city])), [hostedCities]);
+
+  /** Local playbooks win on shape; hosted rows add models this device has never seen. */
+  const ownershipPlaybooks = useMemo(() => {
+    const local = buildOwnershipPlaybooks(posts);
+    if (!hostedPlaybooks.length) return local;
+    const localKeys = new Set(local.map((playbook) => playbook.key));
+    return [...local, ...hostedPlaybooks.filter((playbook) => !localKeys.has(playbook.key))];
+  }, [hostedPlaybooks, posts]);
+
   const moderationSummary = useMemo(() => buildModerationSummary(reports), [reports]);
   const shortlistComparisons = useMemo(() => buildShortlistComparisons(shortlist, posts), [posts, shortlist]);
   const shortlistDecisionLanes = useMemo(() => buildShortlistDecisionLanes(shortlist, posts), [posts, shortlist]);
@@ -270,6 +470,52 @@ export function useAutoflexState() {
     () => new Map(inspectionChecklists.map((checklist) => [checklist.item.id, checklist])),
     [inspectionChecklists],
   );
+
+  /**
+   * Hosted inspection run per shortlist item.
+   *
+   * The checklist itself is still derived locally, so it renders identically
+   * offline; the hosted session only carries the outcome fields the local
+   * checklist has no room for (per-item state, per-item note, verdict, notes,
+   * completed_at). Signed-out this is the local checklist with everything
+   * Pending, which is exactly what shipped before.
+   */
+  const inspectionSessionByItemId = useMemo(() => {
+    const hostedById = new Map(hostedInspections.map((session) => [session.id, session]));
+    return new Map(
+      inspectionChecklists.map((checklist) => {
+        const shell = checklistToSession(checklist);
+        const hosted = hostedById.get(inspectionSessionIdFor(checklist.item.id));
+        if (!hosted) return [checklist.item.id, shell] as const;
+        const hostedItemById = new Map(hosted.checklist.map((item) => [item.checklistItemId, item]));
+        return [
+          checklist.item.id,
+          {
+            ...shell,
+            checklist: shell.checklist.map((item) => {
+              const hostedItem = hostedItemById.get(item.checklistItemId);
+              return hostedItem
+                ? { ...item, checkedAt: hostedItem.checkedAt, note: hostedItem.note, state: hostedItem.state }
+                : item;
+            }),
+            completedAt: hosted.completedAt,
+            notes: hosted.notes || shell.notes,
+            status: hosted.status,
+            verdict: hosted.verdict,
+          },
+        ] as const;
+      }),
+    );
+  }, [hostedInspections, inspectionChecklists]);
+
+  const hostedCostByVehicleId = useMemo(() => {
+    const totals = new Map<string, { entryCount: number; totalSpend: number }>();
+    hostedCosts.forEach((cost) => {
+      const current = totals.get(cost.vehicleId) ?? { entryCount: 0, totalSpend: 0 };
+      totals.set(cost.vehicleId, { entryCount: current.entryCount + 1, totalSpend: current.totalSpend + cost.amount });
+    });
+    return totals;
+  }, [hostedCosts]);
   const draftQuality = useMemo(() => assessPostQuality(draft), [draft]);
   const selectedPostQuality = useMemo(() => (selectedPost ? assessPostQuality(selectedPost) : null), [selectedPost]);
 
@@ -300,37 +546,114 @@ export function useAutoflexState() {
     };
   }, []);
 
+  /* ---------------------------------------------------------------------- */
+  /* Hosted orchestration                                                     */
+  /*                                                                          */
+  /* Nothing below blocks first paint: local state is already rendered from    */
+  /* localStorage by the time any of these effects run, and every hosted call  */
+  /* returns usable `data` on both arms instead of throwing.                   */
+  /* ---------------------------------------------------------------------- */
+
+  /** Applies a merged hosted workspace to both React state and localStorage. */
+  const applyHostedWorkspace = (workspace: HostedSyncOutcome["workspace"]) => {
+    const savedSet = new Set(workspace.saved);
+    setPosts(workspace.posts);
+    savePosts(workspace.posts);
+    setProfile(workspace.profile);
+    saveProfile(workspace.profile);
+    setReports(workspace.reports);
+    saveReports(workspace.reports);
+    setShortlist(workspace.shortlist);
+    saveShortlist(workspace.shortlist);
+    setSaved(savedSet);
+    saveSaved(savedSet);
+    setFollows(workspace.follows);
+    saveFollows(workspace.follows);
+    setSubscriptionSettings(workspace.subscriptionSettings);
+    saveSubscriptionSettings(workspace.subscriptionSettings);
+    setGarage(workspace.garage);
+    saveGarage(workspace.garage);
+    setTimeline(workspace.timeline);
+    saveTimeline(workspace.timeline);
+    saveFeedback(workspace.feedback);
+  };
+
+  const refreshHostedForUser = async (userId: string, vehicles = loadGarage()) => {
+    const [inspections, reminders, costs, jobs, followedCities] = await Promise.all([
+      listHostedInspections(userId, []),
+      listHostedReminders(userId, vehicles, []),
+      listHostedCosts(userId, []),
+      listHostedNotificationJobs(userId, []),
+      listHostedCityFollows(userId, []),
+    ]);
+    setHostedInspections(inspections.data);
+    setHostedReminders(reminders.data);
+    setHostedCosts(costs.data);
+    setNotificationJobs(jobs.data);
+    if (followedCities.ok) {
+      const slugs = new Set(followedCities.data.map((follow) => follow.citySlug).filter(Boolean));
+      setCityFollows(slugs);
+      saveCityFollows(slugs);
+    }
+  };
+
+  /**
+   * Whole-workspace merge. Runs on sign-in and from the manual "Sync now"
+   * action. The local snapshot is always kept when hosted is unreachable, and
+   * only a genuine request failure produces user-facing copy.
+   */
+  const runHostedSync = async (
+    userId: string | null | undefined,
+    options: { announce?: boolean } = {},
+  ): Promise<HostedResult<HostedSyncOutcome> | null> => {
+    if (!userId) return null;
+    setHostedSyncing(true);
+    try {
+      const result = await syncAllHosted(userId, buildAutoflexBackup().data, {
+        localUpdatedAt: localUpdatedAtRef.current || null,
+      });
+      applyHostedWorkspace(result.data.workspace);
+      if (result.data.syncedAt) {
+        setCloudBackupUpdatedAt(result.data.syncedAt);
+        // After a merge the two copies agree, so the write clock moves to the
+        // sync point. Without this, hosted could never win a later round.
+        localUpdatedAtRef.current = markLocalUpdated(result.data.syncedAt);
+      }
+      const problem = hostedProblemMessage(result);
+      if (problem) setActionMessage(problem);
+      else if (options.announce) {
+        setActionMessage(
+          result.ok ? "Your Autoflex data is in sync." : "Saved on this device. It will sync when you are back online.",
+        );
+      }
+      return result;
+    } finally {
+      setHostedSyncing(false);
+    }
+  };
+
   useEffect(() => {
     const client = getSupabaseClient();
     if (!client) return;
     let active = true;
 
-    const syncSession = async (session: Awaited<ReturnType<typeof getCloudSession>>) => {
-      if (!active) return;
-      const user = session?.user;
-      setCloudUser(user ? { email: user.email ?? "Signed-in user", id: user.id } : null);
-      if (!user) {
-        setCloudBackupUpdatedAt(null);
-        setCloudReadyToSync(false);
-        return;
-      }
-      try {
-        const backup = await loadCloudBackup(user.id);
-        if (active) {
-          if (!backup) writeCloudOwner(user.id);
-          setCloudBackupUpdatedAt(backup?.updatedAt ?? null);
-          setCloudReadyToSync(!backup || readCloudOwner() === user.id);
-        }
-      } catch {
-        if (active) setActionMessage("We could not check your saved account data just now.");
-      }
-    };
-
-    void getCloudSession().then(syncSession).catch(() => {
-      if (active) setActionMessage("Sign-in status could not be loaded.");
+    void readCloudUser().then((user) => {
+      if (active) setCloudUser(user);
     });
+
     const { data } = client.auth.onAuthStateChange((_event, session) => {
-      window.setTimeout(() => void syncSession(session), 0);
+      const user = session?.user;
+      window.setTimeout(() => {
+        if (!active) return;
+        setCloudUser(user ? { email: user.email ?? "Signed-in user", id: user.id } : null);
+        if (!user) {
+          setCloudBackupUpdatedAt(null);
+          setHostedInspections([]);
+          setHostedReminders([]);
+          setHostedCosts([]);
+          setNotificationJobs([]);
+        }
+      }, 0);
     });
 
     return () => {
@@ -339,36 +662,75 @@ export function useAutoflexState() {
     };
   }, []);
 
+  // Anon-readable surfaces: these work signed-out, so the feed, rankings, city
+  // pages and playbooks are populated for a first-time visitor too.
   useEffect(() => {
     if (!isCloudSyncConfigured) return;
     let active = true;
-    void loadCloudCommunity()
-      .then((community) => {
-        if (!active) return;
-        setCloudPostIds(community.postIds);
-        if (!community.posts.length) return;
-        setPosts((current) => {
-          const remoteIds = community.postIds;
-          const merged = [...community.posts, ...current.filter((post) => !remoteIds.has(post.id))];
-          savePosts(merged);
-          return merged;
-        });
-      })
-      .catch(() => setActionMessage("Community updates could not be loaded. Showing saved notes instead."));
+
+    void listHostedPosts([]).then((result) => {
+      if (!active || !result.data.length) return;
+      setPosts((current) => {
+        const merged = mergePostCollections(current, result.data);
+        // A pull is not a local write: the last-local-write clock stays put.
+        savePosts(merged);
+        return merged;
+      });
+    });
+    void listHostedPostQuality([]).then((result) => {
+      if (active) setHostedQuality(result.data);
+    });
+    void listHostedCityCircles([]).then((result) => {
+      if (active) setHostedCities(result.data);
+    });
+    void listHostedPlaybooks([]).then((result) => {
+      if (active) setHostedPlaybooks(result.data);
+    });
+    void listHostedPlaybookEntries(undefined, []).then((result) => {
+      if (active) setHostedPlaybookEntries(result.data);
+    });
+
     return () => {
       active = false;
     };
   }, []);
 
+  // Sign-in: merge the whole workspace, then pull the per-user side tables.
   useEffect(() => {
-    if (!cloudUser || !cloudReadyToSync) return;
+    const userId = cloudUser?.id;
+    if (!userId) return;
+    let active = true;
+    void runHostedSync(userId).then(() => {
+      if (active) void refreshHostedForUser(userId);
+    });
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cloudUser?.id]);
+
+  // Derived surfaces stay local-first and are published explicitly, debounced so
+  // a burst of edits results in one idempotent write per surface.
+  useEffect(() => {
+    const userId = cloudUser?.id;
+    if (!userId) return;
     const timeout = window.setTimeout(() => {
-      void saveCloudBackup(cloudUser.id, buildAutoflexBackup())
-        .then((updatedAt) => setCloudBackupUpdatedAt(updatedAt))
-        .catch(() => setActionMessage("Changes are safe on this device. We could not update your account just now."));
-    }, 900);
+      void publishHostedCityCircles(userId, cityCircles);
+      void upsertHostedPlaybooks(userId, ownershipPlaybooks);
+      void publishHostedChecklists(userId, inspectionChecklists);
+      void upsertHostedReminders(userId, localReminders);
+      void syncHostedCostsFromTimeline(userId, timeline);
+      void publishHostedPostQuality(userId, posts).then((result) => {
+        if (!result.ok) return;
+        setHostedQuality((current) => {
+          const merged = new Map(current.map((quality) => [quality.postId, quality]));
+          result.data.forEach((quality) => merged.set(quality.postId, quality));
+          return [...merged.values()];
+        });
+      });
+    }, 1200);
     return () => window.clearTimeout(timeout);
-  }, [cloudReadyToSync, cloudUser, follows, garage, posts, profile, reports, saved, shortlist, subscriptionSettings, timeline]);
+  }, [cityCircles, cloudUser?.id, inspectionChecklists, localReminders, ownershipPlaybooks, posts, timeline]);
 
   useEffect(() => {
       if (location.hash) {
@@ -437,39 +799,59 @@ export function useAutoflexState() {
     };
   }, [vehicleMenuOpen]);
 
+  /**
+   * Stamps a local mutation and mirrors it to the hosted tables.
+   *
+   * State and localStorage are written first and unconditionally, so behaviour
+   * is identical with no network, no session, or no Supabase configuration.
+   * The hosted push is fire-and-forget and cannot throw.
+   */
+  const noteLocalWrite = (push?: (userId: string) => void): void => {
+    localUpdatedAtRef.current = markLocalUpdated();
+    const userId = cloudUserRef.current?.id;
+    if (userId && push) push(userId);
+  };
+
   const persistPosts = (nextPosts: OwnerPost[]) => {
     setPosts(nextPosts);
     savePosts(nextPosts);
+    noteLocalWrite((userId) => void upsertHostedPosts(userId, nextPosts));
   };
 
   const persistFollows = (nextFollows: FollowState) => {
     setFollows(nextFollows);
     saveFollows(nextFollows);
+    noteLocalWrite((userId) => void saveHostedFollows(userId, nextFollows));
   };
 
   const persistSubscriptionSettings = (nextSettings: SubscriptionSettings) => {
     setSubscriptionSettings(nextSettings);
     saveSubscriptionSettings(nextSettings);
+    noteLocalWrite((userId) => void saveHostedSubscriptionSettings(userId, nextSettings));
   };
 
   const persistProfile = (nextProfile: Profile) => {
     setProfile(nextProfile);
     saveProfile(nextProfile);
+    noteLocalWrite((userId) => void saveHostedProfile(userId, nextProfile));
   };
 
   const persistReports = (nextReports: ReportRecord[]) => {
     setReports(nextReports);
     saveReports(nextReports);
+    noteLocalWrite((userId) => void upsertHostedReports(userId, nextReports));
   };
 
   const persistShortlist = (nextShortlist: ShortlistItem[]) => {
     setShortlist(nextShortlist);
     saveShortlist(nextShortlist);
+    noteLocalWrite((userId) => void upsertHostedShortlistItems(userId, nextShortlist));
   };
 
   const persistGarage = (nextGarage: GarageVehicle[]) => {
     setGarage(nextGarage);
     saveGarage(nextGarage);
+    noteLocalWrite((userId) => void upsertHostedVehicles(userId, nextGarage));
     if (!timelineDraft.vehicleId && nextGarage[0]) {
       setTimelineDraft({ ...timelineDraft, vehicleId: nextGarage[0].id });
     }
@@ -478,6 +860,10 @@ export function useAutoflexState() {
   const persistTimeline = (nextTimeline: TimelineEntry[]) => {
     setTimeline(nextTimeline);
     saveTimeline(nextTimeline);
+    noteLocalWrite((userId) => {
+      void upsertHostedTimelineEntries(userId, nextTimeline);
+      void syncHostedCostsFromTimeline(userId, nextTimeline);
+    });
   };
 
   const toggleSaved = (postId: string) => {
@@ -488,11 +874,7 @@ export function useAutoflexState() {
     setSaved(next);
     saveSaved(next);
     setActionMessage(wasSaved ? "Removed from saved notes." : "Note saved.");
-    if (cloudUser && cloudPostIds.has(postId)) {
-      void setCloudSavedPost(cloudUser.id, postId, !wasSaved).catch(() => {
-        setActionMessage("Saved on this device. We will try your account again later.");
-      });
-    }
+    noteLocalWrite((userId) => void setHostedSavedPost(userId, postId, !wasSaved));
   };
 
   const toggleFollowModel = (brand: string, model: string) => {
@@ -532,14 +914,10 @@ export function useAutoflexState() {
     persistPosts(next);
     setSelectedPost(next.find((post) => post.id === selectedPost.id) ?? null);
     setCommentDraft("");
-    if (cloudUser && cloudPostIds.has(selectedPost.id)) {
-      void publishCloudComment(cloudUser.id, selectedPost.id, author, commentDraft.trim()).catch(() => {
-        setActionMessage("Comment saved on this device, but could not be shared yet.");
-      });
-      setActionMessage("Comment posted.");
-    } else {
-      setActionMessage("Comment saved on this device. Sign in to share it with Community.");
-    }
+    const comment = commentDraft.trim();
+    const postId = selectedPost.id;
+    noteLocalWrite((userId) => void addHostedComment(userId, postId, author, comment));
+    setActionMessage(cloudUser ? "Comment posted." : "Comment saved on this device. Sign in to share it with Community.");
   };
 
   const reportSelectedPost = (event: FormEvent<HTMLFormElement>) => {
@@ -553,14 +931,10 @@ export function useAutoflexState() {
     });
     persistReports([report, ...reports]);
     setReportDraft("");
-    if (cloudUser && cloudPostIds.has(selectedPost.id)) {
-      void publishCloudReport(cloudUser.id, report).catch(() => {
-        setActionMessage("Report saved on this device, but could not be sent yet.");
-      });
-      setActionMessage("Report sent to moderators.");
-    } else {
-      setActionMessage("Report saved on this device. Sign in to send it to moderators.");
-    }
+    noteLocalWrite((userId) => void upsertHostedReport(userId, report));
+    setActionMessage(
+      cloudUser ? "Report sent to moderators." : "Report saved on this device. Sign in to send it to moderators.",
+    );
   };
 
   const setReportStatus = (reportId: string, status: ReportRecord["status"]) => {
@@ -572,6 +946,11 @@ export function useAutoflexState() {
     persistPosts(nextPosts);
     persistReports(reports.map((item) => (item.id === report.id ? { ...item, status: "Removed" } : item)));
     if (selectedPost?.id === report.postId) setSelectedPost(nextPosts[0] ?? null);
+  };
+
+  /** Share via the deep-link aware ladder: Web Share, clipboard, then manual. */
+  const share = async (content: ShareContent): Promise<void> => {
+    setActionMessage(shareResultMessage(await shareContent(content)));
   };
 
   const shareText = async (payload: { text: string; title: string }) => {
@@ -591,13 +970,24 @@ export function useAutoflexState() {
 
   const shareSelectedPost = () => {
     if (!selectedPost) return;
-    void shareText(buildPostSharePayload(selectedPost));
+    void share({ kind: "post", post: selectedPost });
   };
 
   const shareModelNotebook = (brand: string, model: string) => {
-    const notebook = notebooks.find((item) => item.key === modelKeyFor(brand, model));
+    const key = modelKeyFor(brand, model);
+    const notebook = notebooks.find((item) => item.key === key);
     if (!notebook) return;
-    void shareText(buildModelSharePayload(notebook));
+    const playbook = ownershipPlaybooks.find((item) => item.key === key);
+    void share({
+      kind: "playbook",
+      playbook: {
+        brand,
+        model,
+        confidence: playbook?.confidence ?? "Early signal",
+        evidenceCount: playbook?.evidenceCount ?? notebook.posts.length,
+        headline: playbook?.headline ?? `${brand} ${model} owner notes`,
+      },
+    });
   };
 
   const exportGarage = () => {
@@ -774,11 +1164,10 @@ export function useAutoflexState() {
     });
     const next = [post, ...posts];
     persistPosts(next);
-    if (cloudUser) {
-      void publishCloudPost(cloudUser.id, post)
-        .then(() => setCloudPostIds((current) => new Set(current).add(post.id)))
-        .catch(() => setActionMessage("Note saved on this device, but could not be shared yet."));
-    }
+    noteLocalWrite((userId) => {
+      void upsertHostedPost(userId, post);
+      void publishHostedPostQuality(userId, [post]);
+    });
     setSelectedPost(post);
     setPostDetailOpen(true);
     setPostComposerOpen(false);
