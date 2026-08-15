@@ -1,14 +1,18 @@
 {
-  "name": "Autoflex",
-  "short_name": "Autoflex",
+  "name": "AutoFlex",
+  "short_name": "AutoFlex",
   "description": "A focused workspace for vehicle maintenance, running costs, buying decisions, and trusted owner notes.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#eef2f0",
-  "theme_color": "#101b17",
+  "background_color": "#141313",
+  "theme_color": "#141313",
   "orientation": "portrait-primary",
-  "categories": ["autos", "lifestyle", "productivity"],
+  "categories": [
+    "autos",
+    "lifestyle",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "/icon-192.png",

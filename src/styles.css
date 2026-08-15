@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   Obsidian Velocity — dark cyber-industrial design system.
+   Tokens live in tailwind.config.js; this file holds the base
+   theme, named utility classes, and a small set of app support
+   styles for shell chrome + global form controls.
+   ============================================================ */
+
 :root {
   --primary: #c7c6cb;
   --on-surface: #e5e2e1;
@@ -11,82 +18,254 @@
   --surface-container-high: #2a2a2a;
   --surface-container-low: #1c1b1c;
   --surface-container-lowest: #0e0e0e;
+  --outline: #919095;
   --outline-variant: #46464b;
   --background: #141313;
+  --error: #ffb4ab;
+  color-scheme: dark;
 }
 
-/* Autoflex Stitch-inspired Design System */
-body {
-  font-family: 'Space Grotesk', system-ui, sans-serif;
-  background: #141313;
-  color: #e5e2e1;
+@layer base {
+  html {
+    background: #141313;
+  }
+
+  body {
+    font-family: "Space Grotesk", system-ui, sans-serif;
+    background: #141313;
+    color: #e5e2e1;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100dvh;
+  }
+
+  ::selection {
+    background: rgba(199, 198, 203, 0.85);
+    color: #141313;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #46464b #141313;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #141313;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #46464b;
+    border-radius: 9999px;
+    border: 2px solid #141313;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #919095;
+  }
+
+  :focus-visible {
+    outline: 2px solid #c7c6cb;
+    outline-offset: 2px;
+    border-radius: 0.25rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
-.font-display-lg {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 2.25rem;
-  line-height: 1.1;
-  letter-spacing: -0.025em;
-  text-transform: uppercase;
+@layer components {
+  /* --- Typography roles (DESIGN.md) --- */
+  .label-caps {
+    @apply font-mono text-[10px] font-bold leading-3 tracking-[0.2em] uppercase;
+  }
+
+  .data-sm {
+    @apply font-mono text-xs font-normal leading-4 tracking-[0.1em];
+  }
+
+  .data-lg {
+    @apply font-mono text-xl font-medium leading-7 tracking-[0.05em];
+  }
+
+  .font-display-lg {
+    font-family: "Space Grotesk", sans-serif;
+    font-size: 2.25rem;
+    line-height: 1.1;
+    letter-spacing: -0.025em;
+    text-transform: uppercase;
+  }
+
+  .font-label-caps {
+    @apply font-mono text-[10px] font-bold leading-3 tracking-[0.2em] uppercase;
+  }
+
+  .font-data-lg {
+    @apply font-mono text-xl font-medium leading-7 tracking-[0.05em];
+  }
+
+  .font-data-sm {
+    @apply font-mono text-xs font-normal leading-4 tracking-[0.1em];
+  }
+
+  /* --- Surfaces & effects --- */
+  .glass {
+    background: rgba(20, 19, 19, 0.72);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .scanline {
+    background-image: linear-gradient(to bottom, transparent 50%, rgba(199, 198, 203, 0.04) 51%);
+    background-size: 100% 4px;
+  }
+
+  .glow-text {
+    text-shadow: 0 0 10px rgba(199, 198, 203, 0.4);
+  }
+
+  .glow-ring {
+    box-shadow: 0 0 15px rgba(199, 198, 203, 0.3);
+  }
+
+  .edge-highlight {
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .section-title {
+    @apply font-mono text-[10px] font-bold leading-3 tracking-[0.2em] uppercase text-on-surface-variant;
+  }
+
+  /* --- Buttons (shared shell + screen actions) --- */
+  .primary-btn,
+  .primary-action {
+    @apply inline-flex items-center justify-center gap-2 bg-primary text-on-primary font-mono text-[10px] font-bold tracking-[0.2em] uppercase px-5 py-3 rounded cursor-pointer border border-transparent transition-transform active:scale-95;
+    box-shadow: 0 0 15px rgba(199, 198, 203, 0.25);
+  }
+
+  .secondary-btn,
+  .secondary-action,
+  .detail-back {
+    @apply inline-flex items-center justify-center gap-2 bg-surface-container-high text-on-surface font-mono text-[10px] font-bold tracking-[0.2em] uppercase px-4 py-2.5 rounded cursor-pointer border border-outline-variant transition-colors hover:bg-surface-bright;
+  }
+
+  .danger-action {
+    @apply inline-flex items-center justify-center gap-2 bg-error-container text-on-error-container font-mono text-[10px] font-bold tracking-[0.2em] uppercase px-4 py-2.5 rounded cursor-pointer border border-transparent;
+  }
+
+  .danger-link {
+    @apply inline-flex items-center gap-2 bg-transparent text-error font-mono text-[10px] font-bold tracking-[0.2em] uppercase px-1 py-2 cursor-pointer border-0 underline underline-offset-4;
+  }
+
+  .pill,
+  .confidence {
+    @apply inline-flex items-center gap-1 self-start bg-surface-variant text-primary font-mono text-[10px] font-bold tracking-[0.2em] uppercase px-2 py-1 rounded;
+  }
 }
 
-.font-label-caps {
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.75rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
+/* ============================================================
+   App support styles: shell chrome pieces + global form controls
+   used by screens that render bare input/select/textarea markup.
+   ============================================================ */
 
-.font-data-lg {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 1.5rem;
-  letter-spacing: -0.02em;
-}
-
-.font-data-sm {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-}
-
-.glass {
-  background: rgba(32, 31, 32, 0.8);
-  backdrop-filter: blur(12px);
-}
-
-.post-card, .vehicle-card {
-  transition: transform 0.2s cubic-bezier(0.23, 1, 0.32, 1);
-}
-
-.post-card:hover {
-  transform: translateY(-2px);
-}
-
-.metric-card {
-  background: #201f20;
-  border: 1px solid #46464b;
-}
-
-.section-title {
-  font-size: 0.75rem;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #c7c6cb;
-}
-
-.primary-btn {
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
   background: #c7c6cb;
-  color: #2f3035;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
+  color: #141313;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
 }
 
-.secondary-btn {
+.skip-link:focus {
+  left: 1rem;
+  top: 1rem;
+}
+
+/* Forms */
+input,
+select,
+textarea {
   background: #2a2a2a;
   color: #e5e2e1;
   border: 1px solid #46464b;
+  border-radius: 0.25rem;
+  padding: 0.6rem 0.75rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  width: 100%;
 }
 
-.glow-text {
-  text-shadow: 0 0 10px rgba(199, 198, 203, 0.4);
+input::placeholder,
+textarea::placeholder {
+  color: #919095;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: #c7c6cb;
+  outline: none;
+}
+
+input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: #c7c6cb;
+}
+
+/* Toast for saved/queued action feedback */
+.action-message {
+  position: fixed;
+  bottom: 5.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 80;
+  background: #e5e2e1;
+  color: #141313;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  padding: 0.6rem 1rem;
+  border-radius: 0.25rem;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+}
+
+.offline-banner {
+  background: #93000a;
+  color: #ffdad6;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+  padding: 0.5rem 1rem;
+}
+
+/* Connection status indicator (sidebar footer) */
+.status-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: #c7c6cb;
+  display: inline-block;
+  box-shadow: 0 0 8px rgba(199, 198, 203, 0.7);
+}
+
+.status-dot.offline {
+  background: #ffb4ab;
+  box-shadow: 0 0 8px rgba(255, 180, 171, 0.6);
 }

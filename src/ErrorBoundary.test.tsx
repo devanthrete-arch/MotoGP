@@ -13,6 +13,7 @@ describe("ErrorBoundary", () => {
     if (!isValidElement<{ className?: string }>(fallback)) {
       throw new Error("Expected fallback element");
     }
-    expect(fallback.props.className).toBe("app-shell");
+    expect(fallback.props.className).toContain("min-h-screen");
+    expect(fallback.props.className).toContain("bg-background");
   });
 });

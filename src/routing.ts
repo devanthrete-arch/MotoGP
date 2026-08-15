@@ -1,4 +1,13 @@
-export type WorkspaceScreen = "home" | "shortlist" | "garage" | "community" | "account";
+export type WorkspaceScreen =
+  | "home"
+  | "shortlist"
+  | "garage"
+  | "community"
+  | "account"
+  | "kyv"
+  | "vault"
+  | "analytics"
+  | "creators";
 export type AccountView = "profile" | "saved" | "following" | "notifications" | "settings";
 
 export type AppRoute = {
@@ -9,10 +18,14 @@ export type AppRoute = {
 };
 
 export const workspaceHashes: Record<Exclude<WorkspaceScreen, "account">, string> = {
+  analytics: "#analytics",
   community: "#feed",
+  creators: "#creators",
   garage: "#garage",
   home: "#top",
+  kyv: "#kyv",
   shortlist: "#shortlist",
+  vault: "#vault",
 };
 
 export const accountHashes: Record<AccountView, string> = {
@@ -24,10 +37,14 @@ export const accountHashes: Record<AccountView, string> = {
 };
 
 export const workspacePaths: Record<Exclude<WorkspaceScreen, "account">, string> = {
+  analytics: "/analytics",
   community: "/community",
+  creators: "/creators",
   garage: "/garage",
   home: "/",
+  kyv: "/kyv",
   shortlist: "/shortlist",
+  vault: "/vault",
 };
 
 export const accountPaths: Record<AccountView, string> = {
@@ -41,6 +58,10 @@ export const accountPaths: Record<AccountView, string> = {
 export const routeFromPath = (pathname: string): AppRoute => {
   if (pathname === "/shortlist") return { nav: "shortlist", screen: "shortlist" };
   if (pathname === "/garage") return { nav: "garage", screen: "garage" };
+  if (pathname === "/kyv") return { nav: "kyv", screen: "kyv" };
+  if (pathname === "/vault") return { nav: "vault", screen: "vault" };
+  if (pathname === "/analytics") return { nav: "analytics", screen: "analytics" };
+  if (pathname === "/creators") return { nav: "creators", screen: "creators" };
   if (pathname === "/community/new") return { nav: "community", openComposer: true, screen: "community" };
   if (pathname.startsWith("/community")) return { nav: "community", screen: "community" };
   if (pathname === "/profile/saved") return { accountView: "saved", nav: "account", screen: "account" };
@@ -57,6 +78,10 @@ export const titleForPath = (pathname: string): string => {
   if (pathname === "/community") return "Owner notes · Autoflex";
   if (pathname === "/shortlist") return "Shortlist · Autoflex";
   if (pathname === "/garage") return "Garage · Autoflex";
+  if (pathname === "/kyv") return "Know Your Vehicle · Autoflex";
+  if (pathname === "/vault") return "Document Vault · Autoflex";
+  if (pathname === "/analytics") return "Analytics · Autoflex";
+  if (pathname === "/creators") return "Creator Connect · Autoflex";
   if (pathname.startsWith("/profile")) return "Profile · Autoflex";
   if (pathname === "/moderation") return "Moderation · Autoflex";
   return "Today · Autoflex";

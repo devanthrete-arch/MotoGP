@@ -5,7 +5,7 @@ describe("Autoflex web manifest", () => {
   it("declares an installable standalone app shell", () => {
     expect(manifest).toMatchObject({
       display: "standalone",
-      name: "Autoflex",
+      name: "AutoFlex",
       start_url: "/",
     });
     expect(manifest.icons[1]).toMatchObject({
@@ -13,9 +13,10 @@ describe("Autoflex web manifest", () => {
       sizes: "512x512",
       src: "/icon-512.png",
     });
+    // Obsidian Velocity dark surface — must match index.html theme-color.
     expect(manifest).toMatchObject({
-      background_color: "#eef2f0",
-      theme_color: "#101b17",
+      background_color: "#141313",
+      theme_color: "#141313",
     });
     expect(manifest.shortcuts.map((shortcut) => shortcut.url)).toEqual(["/#write", "/#shortlist", "/#garage"]);
   });
