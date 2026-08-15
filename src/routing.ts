@@ -32,7 +32,11 @@ export type AppRoute = {
 
 /** Which workspace screen a detail route renders inside of. */
 export const detailScreens: Record<DetailType, Exclude<WorkspaceScreen, "account">> = {
-  car: "shortlist",
+  // The model dossier (spec sheet, state-wise on-road pricing, owner signals) is
+  // rendered by CarDetail inside the community workspace, so `/cars/:slug` has to
+  // land there. Pointing it at "shortlist" made every shared car link open a bare
+  // shortlist with nothing about the car in it.
+  car: "community",
   city: "community",
   playbook: "community",
 };

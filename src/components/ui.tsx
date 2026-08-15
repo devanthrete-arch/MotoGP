@@ -127,7 +127,7 @@ export function PrimaryButton({ className = "", children, ...rest }: ButtonProps
   return (
     <button
       className={cx(
-        "inline-flex items-center justify-center gap-2 bg-primary text-on-primary font-mono text-[10px] font-bold tracking-[0.2em] uppercase px-5 py-3 rounded shadow-[0_0_15px_rgba(199,198,203,0.25)] transition-transform active:scale-95 disabled:opacity-50",
+        "inline-flex items-center justify-center gap-2 min-h-[44px] bg-primary text-on-primary font-mono text-[10px] font-bold tracking-[0.2em] uppercase px-5 py-3 rounded shadow-[0_0_15px_rgba(199,198,203,0.25)] transition-transform active:scale-95 disabled:opacity-50",
         className,
       )}
       type="button"
@@ -142,7 +142,7 @@ export function GhostButton({ className = "", children, ...rest }: ButtonProps) 
   return (
     <button
       className={cx(
-        "inline-flex items-center justify-center gap-2 bg-transparent text-on-surface border border-outline-variant hover:border-outline font-mono text-[10px] font-bold tracking-[0.2em] uppercase px-4 py-2.5 rounded transition-colors disabled:opacity-50",
+        "inline-flex items-center justify-center gap-2 min-h-[44px] bg-transparent text-on-surface border border-outline-variant hover:border-outline font-mono text-[10px] font-bold tracking-[0.2em] uppercase px-4 py-2.5 rounded transition-colors disabled:opacity-50",
         className,
       )}
       type="button"

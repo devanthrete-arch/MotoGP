@@ -150,18 +150,19 @@
   /* --- Buttons (shared shell + screen actions) --- */
   .primary-btn,
   .primary-action {
-    @apply inline-flex items-center justify-center gap-2 bg-primary text-on-primary font-mono text-[10px] font-bold tracking-[0.2em] uppercase px-5 py-3 rounded cursor-pointer border border-transparent transition-transform active:scale-95;
+    /* min-h-[44px]: primary workspace actions must clear the 44px touch target. */
+    @apply inline-flex items-center justify-center gap-2 min-h-[44px] bg-primary text-on-primary font-mono text-[10px] font-bold tracking-[0.2em] uppercase px-5 py-3 rounded cursor-pointer border border-transparent transition-transform active:scale-95;
     box-shadow: 0 0 15px rgba(199, 198, 203, 0.25);
   }
 
   .secondary-btn,
   .secondary-action,
   .detail-back {
-    @apply inline-flex items-center justify-center gap-2 bg-surface-container-high text-on-surface font-mono text-[10px] font-bold tracking-[0.2em] uppercase px-4 py-2.5 rounded cursor-pointer border border-outline-variant transition-colors hover:bg-surface-bright;
+    @apply inline-flex items-center justify-center gap-2 min-h-[44px] bg-surface-container-high text-on-surface font-mono text-[10px] font-bold tracking-[0.2em] uppercase px-4 py-2.5 rounded cursor-pointer border border-outline-variant transition-colors hover:bg-surface-bright;
   }
 
   .danger-action {
-    @apply inline-flex items-center justify-center gap-2 bg-error-container text-on-error-container font-mono text-[10px] font-bold tracking-[0.2em] uppercase px-4 py-2.5 rounded cursor-pointer border border-transparent;
+    @apply inline-flex items-center justify-center gap-2 min-h-[44px] bg-error-container text-on-error-container font-mono text-[10px] font-bold tracking-[0.2em] uppercase px-4 py-2.5 rounded cursor-pointer border border-transparent;
   }
 
   .danger-link {
@@ -181,6 +182,9 @@
 
 .skip-link {
   position: absolute;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
   left: -9999px;
   top: 0;
   z-index: 100;

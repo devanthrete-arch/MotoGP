@@ -105,6 +105,7 @@ import {
   filterPostsByMode,
   groupByModel,
   modelKeyFor,
+  slugifyCity,
   scoreCityEvidence,
   scorePlaybookEvidence,
   type CityCircle,
@@ -318,8 +319,6 @@ export function useAutoflexState() {
   const [cloudBackupUpdatedAt, setCloudBackupUpdatedAt] = useState<string | null>(null);
   const [cloudReadyToSync, setCloudReadyToSync] = useState(false);
   const [cloudBusy, setCloudBusy] = useState(false);
-  const [detailType, setDetailType] = useState<DetailType | null>(initialRoute.current.detailType ?? null);
-  const [detailSlug, setDetailSlug] = useState<string>(initialRoute.current.detailSlug ?? "");
   // Hosted mirrors. Every one of these starts empty and stays empty offline or
   // signed-out, so first paint never waits on the network.
   const [hostedQuality, setHostedQuality] = useState<HostedPostQuality[]>([]);
@@ -750,11 +749,25 @@ export function useAutoflexState() {
       setPostComposerOpen(Boolean(route.openComposer));
       const noteId = location.pathname.match(/^\/community\/([^/]+)$/)?.[1];
       const routedPost = noteId ? posts.find((post) => post.id === decodeURIComponent(noteId)) : null;
-      if (routedPost) {
-        setSelectedPost(routedPost);
+      // `/cars/:slug`, `/playbooks/:slug` and `/cities/:slug` used to set only the
+      // document title: the slug was parsed, stored, and never read, so a shared
+      // link landed on the bare parent workspace and contradicted the Open Graph
+      // card that advertised it. Resolve each slug onto the surface that answers it.
+      const detailPost =
+        routedPost ??
+        (route.detailSlug && (route.detailType === "car" || route.detailType === "playbook")
+          ? posts.find((post) => modelKeyFor(post.brand, post.model) === route.detailSlug)
+          : undefined);
+      if (detailPost) {
+        setSelectedPost(detailPost);
         setPostDetailOpen(true);
       } else {
         setPostDetailOpen(false);
+      }
+      if (route.detailType === "city" && route.detailSlug) {
+        const routedCity = posts.find((post) => slugifyCity(post.city) === route.detailSlug)?.city;
+        // Fall back to the de-slugged label so an empty circle still reads as itself.
+        setQuery(routedCity ?? route.detailSlug.replace(/-/g, " "));
       }
       document.title = titleForPath(location.pathname);
       window.scrollTo(0, 0);

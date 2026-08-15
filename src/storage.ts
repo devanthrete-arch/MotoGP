@@ -88,11 +88,28 @@ export type AutoflexBackup = {
   };
 };
 
+/**
+ * A stored value can be valid JSON and still be the wrong shape — a hand-edited
+ * key, a half-finished migration, or another app on the same origin. Parsing
+ * alone used to hand `"a string"` back as a `ShortlistItem[]`, and the first
+ * `.map()` took the whole page down to a blank screen. Compare against the
+ * fallback so the wrong shape degrades exactly like unparseable JSON does.
+ */
+const matchesFallbackShape = <T,>(value: unknown, fallback: T): value is T => {
+  if (Array.isArray(fallback)) return Array.isArray(value);
+  if (fallback !== null && typeof fallback === "object") {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+  }
+  if (fallback === null) return true;
+  return typeof value === typeof fallback;
+};
+
 export const safeJsonParse = <T,>(value: string | null, fallback: T): T => {
   if (!value) return fallback;
 
   try {
-    return JSON.parse(value) as T;
+    const parsed: unknown = JSON.parse(value);
+    return matchesFallbackShape(parsed, fallback) ? parsed : fallback;
   } catch {
     return fallback;
   }

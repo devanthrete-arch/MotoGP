@@ -1203,7 +1203,7 @@ export function buildNotificationJobDrafts(input: NotificationJobInput): Notific
   return drafts;
 }
 
-function slugifyCity(city: string): string {
+export function slugifyCity(city: string): string {
   return city
     .toLowerCase()
     .trim()

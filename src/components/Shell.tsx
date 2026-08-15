@@ -141,7 +141,7 @@ export function Topbar() {
     <header className="sticky top-0 z-30 glass border-b border-outline-variant">
       <nav aria-label="Page and account navigation" className="h-16 px-4 lg:px-6 flex items-center gap-4">
         <a
-          className="lg:hidden flex items-center gap-2 text-on-surface no-underline"
+          className="lg:hidden flex items-center gap-2 min-h-[44px] text-on-surface no-underline"
           href="/"
           aria-label="Autoflex Today"
           onClick={(event) => {
@@ -184,7 +184,7 @@ export function Topbar() {
 
         <button
           aria-label="Open Profile"
-          className="flex items-center gap-2 bg-surface-container-high border border-outline-variant rounded-full px-2 py-1.5 sm:px-3 text-on-surface hover:border-outline transition-colors"
+          className="flex items-center justify-center gap-2 min-h-[44px] min-w-[44px] bg-surface-container-high border border-outline-variant rounded-full px-2 py-1.5 sm:px-3 text-on-surface hover:border-outline transition-colors"
           type="button"
           onClick={(event) => app.openProfile(event.currentTarget)}
         >

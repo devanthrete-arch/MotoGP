@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import vercelConfig from "../vercel.json";
 import type { OwnerPost } from "./domain";
 import { buildPostSharePayload, modelKeyFor } from "./insights";
-import { accountPaths, workspacePaths } from "./routing";
+import { accountPaths, detailPathFor, workspacePaths } from "./routing";
 import {
   buildDeepLink,
   citySlugFor,
@@ -409,6 +409,37 @@ describe("crawler previews stay inside the security posture", () => {
     // Static files (including /og-cover.png) must never be swallowed by the shim.
     expect(crawlerRule.source).toContain("\\.");
     expect(crawlerRule.missing?.[0]).toMatchObject({ key: "og", type: "query" });
+  });
+
+  it("serves every deep route from the SPA fallback instead of a 404", () => {
+    // Regression guard for a production outage: `cleanUrls: true` makes Vercel
+    // emit a `^/(.*)\\.html/?$` -> `/$1` 308 *before* the filesystem handler.
+    // The SPA rewrite re-enters routing with `check: true`, so its `/index.html`
+    // destination hit that redirect instead of the built file and every route
+    // except `/` answered NOT_FOUND. Keep the two settings from coexisting.
+    const spaRule = vercelConfig.rewrites[vercelConfig.rewrites.length - 1];
+    if (spaRule.destination.endsWith(".html")) {
+      expect((vercelConfig as { cleanUrls?: boolean }).cleanUrls ?? false).toBe(false);
+    }
+
+    const spaFallback = new RegExp(`^${spaRule.source}$`);
+    const deepPaths = [
+      ...Object.values(workspacePaths),
+      ...Object.values(accountPaths),
+      "/community/new",
+      "/community/post-123",
+      detailPathFor("car", "hyundai-creta"),
+      detailPathFor("playbook", "maruti-suzuki-swift"),
+      detailPathFor("city", "bengaluru"),
+    ];
+    for (const path of deepPaths) {
+      expect({ matched: spaFallback.test(path), path }).toEqual({ matched: true, path });
+    }
+
+    // Real files must keep falling through to the filesystem, not the shell.
+    for (const asset of ["/manifest.json", "/og-cover.png", "/icon.svg", "/assets/index-abc123.js", "/sw.js"]) {
+      expect({ matched: spaFallback.test(asset), asset }).toEqual({ matched: false, asset });
+    }
   });
 
   it("varies document responses on User-Agent", () => {

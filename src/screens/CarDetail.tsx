@@ -221,7 +221,7 @@ export function CarDetail() {
                         <td className="py-2.5 pr-3">
                           <button
                             aria-pressed={state === pricingState}
-                            className={`font-mono text-xs tracking-[0.1em] text-left min-h-[24px] ${
+                            className={`flex items-center w-full font-mono text-xs tracking-[0.1em] text-left min-h-[44px] ${
                               state === pricingState ? "text-primary" : "text-on-surface-variant"
                             }`}
                             type="button"

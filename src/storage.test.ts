@@ -237,3 +237,20 @@ describe("Autoflex storage safety", () => {
     expect(backup?.data.profile.displayName).toBe("Owner");
   });
 });
+
+describe("stored values that are valid JSON but the wrong shape", () => {
+  it("falls back instead of handing a caller the wrong type", () => {
+    // Regression: a string stored under an array key reached `.map()` and blanked the app.
+    expect(safeJsonParse<string[]>('"not an array"', [])).toEqual([]);
+    expect(safeJsonParse<string[]>("null", [])).toEqual([]);
+    expect(safeJsonParse<string[]>("123", [])).toEqual([]);
+    expect(safeJsonParse<{ city: string }>("[]", { city: "" })).toEqual({ city: "" });
+    expect(safeJsonParse<{ city: string }>('"Pune"', { city: "" })).toEqual({ city: "" });
+    expect(safeJsonParse<string[]>("{not json", [])).toEqual([]);
+  });
+
+  it("still returns well-formed values untouched", () => {
+    expect(safeJsonParse<string[]>('["a","b"]', [])).toEqual(["a", "b"]);
+    expect(safeJsonParse<{ city: string }>('{"city":"Pune"}', { city: "" })).toEqual({ city: "Pune" });
+  });
+});

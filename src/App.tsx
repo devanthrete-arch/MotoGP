@@ -1,4 +1,5 @@
 import { AppStateProvider, useApp } from "./appState";
+import { ErrorBoundary } from "./ErrorBoundary";
 import { MobileDock, Sidebar, Topbar, WorkspaceHeader } from "./components/Shell";
 import { Account } from "./screens/Account";
 import { Analytics } from "./screens/Analytics";
@@ -54,9 +55,14 @@ function AppFrame() {
 }
 
 export function App() {
+  // The boundary wraps the provider, not just the frame: storage reads and route
+  // parsing run inside AppStateProvider, so a crash there has to land on the
+  // recovery screen rather than an empty <div id="root">.
   return (
-    <AppStateProvider>
-      <AppFrame />
-    </AppStateProvider>
+    <ErrorBoundary>
+      <AppStateProvider>
+        <AppFrame />
+      </AppStateProvider>
+    </ErrorBoundary>
   );
 }

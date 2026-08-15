@@ -1,6 +1,5 @@
 {
   "buildCommand": "npm run build",
-  "cleanUrls": true,
   "framework": "vite",
   "headers": [
     {

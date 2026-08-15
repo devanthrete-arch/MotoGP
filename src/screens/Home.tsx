@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useMemo } from "react";
 import {
   BarChart3,
   CarFront,
@@ -17,7 +17,8 @@ import {
   Wrench,
 } from "lucide-react";
 import { useApp } from "../appState";
-import { formatMoney } from "../insights";
+import { buildStarterRouteProgress, formatMoney } from "../insights";
+import { starterRoutes } from "../domain";
 import { Badge, DataText, EdgeGlow, GhostButton, LabelCaps, StatusChip } from "../components/ui";
 
 const Hero3D = lazy(() => import("../components/Hero3D"));
@@ -50,7 +51,30 @@ export function Home() {
     garage,
     vehicleMenuOpen,
     posts,
+    profile,
+    follows,
+    saved,
+    shortlist,
   } = app;
+
+  // Release checklist item 18: the fresh-profile starter route. The progress
+  // builder and its copy already existed in insights/domain but nothing rendered
+  // them, so a first run showed no pending first actions at all.
+  const starterProgress = useMemo(
+    () =>
+      buildStarterRouteProgress({
+        follows,
+        garage,
+        profile,
+        routes: starterRoutes,
+        savedCount: saved.size,
+        shortlistCount: shortlist.length,
+      }),
+    [follows, garage, profile, saved, shortlist],
+  );
+  // Seeded demo data means `isFirstRun` is false on a genuinely fresh profile, so
+  // the checklist is gated on outstanding steps rather than on an empty garage.
+  const starterPending = starterProgress.some((step) => !step.complete);
 
   const dueSoonCount =
     app.shortlistDecisionLanes.filter((lane) => lane.priority === "High").length +
@@ -112,6 +136,40 @@ export function Home() {
                 ? "Maintenance, costs, and what owners report — decoded in one place."
                 : "Start with the car you own or the cars you are considering."}
             </p>
+
+
+            {starterPending ? (
+              <section aria-label="Finish setting up" className="flex flex-col gap-2">
+                <LabelCaps className="text-outline">Finish setting up</LabelCaps>
+              <ol aria-label="First actions" className="flex flex-col gap-2 list-none p-0 m-0">
+                {starterProgress.map((step) => (
+                  <li key={step.id}>
+                    <a
+                      aria-label={`${step.title} — ${step.complete ? "done" : "pending"}`}
+                      className="flex items-start gap-3 min-h-[44px] bg-surface-container border border-outline-variant hover:border-outline rounded-lg px-4 py-3 no-underline text-on-surface transition-colors"
+                      href={step.href}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={`shrink-0 mt-0.5 w-5 h-5 rounded-full border flex items-center justify-center ${
+                          step.complete ? "bg-primary border-primary text-on-primary" : "border-outline text-outline"
+                        }`}
+                      >
+                        {step.complete ? <Check className="w-3 h-3" /> : null}
+                      </span>
+                      <span className="flex flex-col gap-0.5 min-w-0">
+                        <span className="flex items-center gap-2 flex-wrap">
+                          <span className="font-display font-semibold uppercase tracking-tight">{step.title}</span>
+                          <Badge>{step.complete ? "Done" : "Pending"}</Badge>
+                        </span>
+                        <DataText className="text-outline !normal-case !tracking-normal">{step.detail}</DataText>
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ol>
+              </section>
+            ) : null}
 
             {isFirstRun ? (
               <>
