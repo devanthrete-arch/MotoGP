@@ -12,7 +12,7 @@ import { accountPaths, titleForPath, workspacePaths } from "./routing";
  */
 
 /** Last-resort origin. Prefer `VITE_PUBLIC_ORIGIN`; `index.html` canonical must match this. */
-export const defaultShareOrigin = "https://moto-gp-git-master-anthrete-innovation-pvt-ltd.vercel.app";
+export const defaultShareOrigin = "https://moto-gp-chi.vercel.app";
 
 /** Primary screens, taken straight from the router so they cannot drift. */
 export const sharePaths = {

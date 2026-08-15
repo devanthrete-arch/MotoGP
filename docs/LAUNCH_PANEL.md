@@ -16,7 +16,9 @@ Last reviewed: 2026-08-15.
 | Project ID | `prj_9FPJtcBujaE4grCuY7jYNpnc7uPD` |
 | Team | Anthrete Innovation Pvt Ltd (`team_UbuCWuxfzZk7x4lvirkSmkvj`) |
 | Production branch | `master` |
-| Current production host | `moto-gp-git-master-anthrete-innovation-pvt-ltd.vercel.app` |
+| Production URL | https://moto-gp-chi.vercel.app |
+| Branch alias (master) | `moto-gp-git-master-anthrete-innovation-pvt-ltd.vercel.app` — serves `x-robots-tag: noindex`, do not share it |
+| Latest production deployment | `dpl_6kCRWoceaYNjJXXMWdkNR8YpUeQg` (commit `24898cf`) |
 | Framework preset | Vite |
 | Install command | `npm ci` |
 | Build command | `npm run build` (`tsc -b` → `vite build` → service-worker generation) |

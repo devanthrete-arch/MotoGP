@@ -17,7 +17,7 @@
  */
 
 const SITE_NAME = "AutoFlex";
-const DEFAULT_ORIGIN = "https://moto-gp-git-master-anthrete-innovation-pvt-ltd.vercel.app";
+const DEFAULT_ORIGIN = "https://moto-gp-chi.vercel.app";
 const OG_IMAGE_PATH = "/og-cover.png";
 const DEFAULT_TITLE = "AutoFlex — owner notes that survive the showroom pitch";
 const DEFAULT_DESCRIPTION =
