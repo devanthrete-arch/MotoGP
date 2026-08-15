@@ -7,23 +7,54 @@
     <meta name="apple-mobile-web-app-title" content="AutoFlex" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
+    <!-- Obsidian Velocity dark surface. Must match public/manifest.json theme_color. -->
     <meta name="theme-color" content="#141313" />
     <meta
       name="description"
-      content="AutoFlex — Where precision engineering meets digital telemetry. Premium automotive platform for enthusiasts."
+      content="AutoFlex keeps owner notes, running costs, documents and buying decisions for Indian drivers in one place."
     />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
-    <meta property="og:title" content="AUTOFLEX | Precision Engineering Meets Digital Telemetry" />
+    <!--
+      Canonical origin. Keep in sync with `defaultShareOrigin` in src/share.ts
+      (src/share.test.ts asserts they match). Crawlers hitting a detail route are
+      rewritten to /api/og, which re-emits these tags with the live host and the
+      route's own title, description and URL.
+    -->
+    <link rel="canonical" href="https://moto-gp-git-master-anthrete-innovation-pvt-ltd.vercel.app/" />
+    <meta property="og:site_name" content="AutoFlex" />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="en_IN" />
+    <meta property="og:url" content="https://moto-gp-git-master-anthrete-innovation-pvt-ltd.vercel.app/" />
+    <meta property="og:title" content="AutoFlex — owner notes that survive the showroom pitch" />
     <meta
       property="og:description"
-      content="Built for the next generation of gearheads. Raw performance, decoded."
+      content="Owner notes, running costs, service history and document vault for Indian drivers. Local-first, your data stays yours."
     />
-    <meta property="og:type" content="website" />
+    <meta
+      property="og:image"
+      content="https://moto-gp-git-master-anthrete-innovation-pvt-ltd.vercel.app/og-cover.png"
+    />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="AutoFlex — owner notes that survive" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="AutoFlex — owner notes that survive the showroom pitch" />
+    <meta
+      name="twitter:description"
+      content="Owner notes, running costs, service history and document vault for Indian drivers."
+    />
+    <meta
+      name="twitter:image"
+      content="https://moto-gp-git-master-anthrete-innovation-pvt-ltd.vercel.app/og-cover.png"
+    />
+    <meta name="twitter:image:alt" content="AutoFlex — owner notes that survive" />
     <title>AutoFlex</title>
   </head>
-  <body style="background-color: #141313; color: #e5e2e1">
+  <!-- No inline style attribute: the CSP ships `style-src 'self'` with no 'unsafe-inline'. -->
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

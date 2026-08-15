@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.15"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       autoflex_user_backups: {
@@ -66,6 +41,122 @@ export type Database = {
         }
         Relationships: []
       }
+      city_circles: {
+        Row: {
+          city: string
+          computed_at: string
+          created_at: string
+          curated_by: string | null
+          garage_count: number
+          headline: string
+          hot_topics: string[]
+          local_signal: string
+          post_count: number
+          slug: string
+          state: string
+          summary: string
+          top_brands: string[]
+          updated_at: string
+        }
+        Insert: {
+          city: string
+          computed_at?: string
+          created_at?: string
+          curated_by?: string | null
+          garage_count?: number
+          headline?: string
+          hot_topics?: string[]
+          local_signal?: string
+          post_count?: number
+          slug: string
+          state?: string
+          summary?: string
+          top_brands?: string[]
+          updated_at?: string
+        }
+        Update: {
+          city?: string
+          computed_at?: string
+          created_at?: string
+          curated_by?: string | null
+          garage_count?: number
+          headline?: string
+          hot_topics?: string[]
+          local_signal?: string
+          post_count?: number
+          slug?: string
+          state?: string
+          summary?: string
+          top_brands?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      city_follows: {
+        Row: {
+          city_slug: string
+          created_at: string
+          notify: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          city_slug: string
+          created_at?: string
+          notify?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          city_slug?: string
+          created_at?: string
+          notify?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "city_follows_city_slug_fkey"
+            columns: ["city_slug"]
+            isOneToOne: false
+            referencedRelation: "city_circles"
+            referencedColumns: ["slug"]
+          },
+        ]
+      }
+      feedback_entries: {
+        Row: {
+          created_at: string
+          id: string
+          loop_stage: string
+          message: string
+          status: string
+          surface: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          loop_stage?: string
+          message: string
+          status?: string
+          surface?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          loop_stage?: string
+          message?: string
+          status?: string
+          surface?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       follows: {
         Row: {
           created_at: string
@@ -89,6 +180,125 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      garage_costs: {
+        Row: {
+          amount_inr: number
+          category: string
+          created_at: string
+          id: string
+          incurred_on: string
+          note: string
+          odometer_km: number
+          timeline_entry_id: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          vehicle_id: string
+        }
+        Insert: {
+          amount_inr?: number
+          category: string
+          created_at?: string
+          id: string
+          incurred_on: string
+          note?: string
+          odometer_km?: number
+          timeline_entry_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id: string
+          vehicle_id: string
+        }
+        Update: {
+          amount_inr?: number
+          category?: string
+          created_at?: string
+          id?: string
+          incurred_on?: string
+          note?: string
+          odometer_km?: number
+          timeline_entry_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garage_costs_timeline_entry_id_fkey"
+            columns: ["timeline_entry_id"]
+            isOneToOne: false
+            referencedRelation: "timeline_entries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "garage_costs_vehicle_id_user_id_fkey"
+            columns: ["vehicle_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "garage_vehicles"
+            referencedColumns: ["id", "user_id"]
+          },
+        ]
+      }
+      garage_reminders: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          detail: string
+          due_date: string | null
+          due_odometer_km: number | null
+          id: string
+          kind: string
+          last_notified_at: string | null
+          status: string
+          title: string
+          updated_at: string
+          urgency: string
+          user_id: string
+          vehicle_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          detail?: string
+          due_date?: string | null
+          due_odometer_km?: number | null
+          id: string
+          kind?: string
+          last_notified_at?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          urgency?: string
+          user_id: string
+          vehicle_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          detail?: string
+          due_date?: string | null
+          due_odometer_km?: number | null
+          id?: string
+          kind?: string
+          last_notified_at?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          urgency?: string
+          user_id?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garage_reminders_vehicle_id_user_id_fkey"
+            columns: ["vehicle_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "garage_vehicles"
+            referencedColumns: ["id", "user_id"]
+          },
+        ]
       }
       garage_vehicles: {
         Row: {
@@ -135,6 +345,255 @@ export type Database = {
         }
         Relationships: []
       }
+      inspection_items: {
+        Row: {
+          checked_at: string | null
+          checklist_item_id: string
+          created_at: string
+          detail: string
+          id: string
+          note: string
+          priority: string
+          session_id: string
+          state: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          checked_at?: string | null
+          checklist_item_id: string
+          created_at?: string
+          detail?: string
+          id: string
+          note?: string
+          priority?: string
+          session_id: string
+          state?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          checked_at?: string | null
+          checklist_item_id?: string
+          created_at?: string
+          detail?: string
+          id?: string
+          note?: string
+          priority?: string
+          session_id?: string
+          state?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_items_session_id_user_id_fkey"
+            columns: ["session_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "inspection_sessions"
+            referencedColumns: ["id", "user_id"]
+          },
+        ]
+      }
+      inspection_sessions: {
+        Row: {
+          brand: string
+          city: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          model: string
+          notes: string
+          odometer_km: number
+          shortlist_item_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          variant: string
+          verdict: string
+        }
+        Insert: {
+          brand: string
+          city?: string
+          completed_at?: string | null
+          created_at?: string
+          id: string
+          model: string
+          notes?: string
+          odometer_km?: number
+          shortlist_item_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+          variant?: string
+          verdict?: string
+        }
+        Update: {
+          brand?: string
+          city?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          model?: string
+          notes?: string
+          odometer_km?: number
+          shortlist_item_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+          variant?: string
+          verdict?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_sessions_shortlist_item_id_fkey"
+            columns: ["shortlist_item_id"]
+            isOneToOne: false
+            referencedRelation: "shortlist_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      model_playbooks: {
+        Row: {
+          brand: string
+          buyer_checks: string[]
+          computed_at: string
+          confidence: string
+          corroborations: number
+          created_at: string
+          curated_by: string | null
+          evidence_count: number
+          headline: string
+          id: string
+          model: string
+          owner_signals: string[]
+          updated_at: string
+        }
+        Insert: {
+          brand: string
+          buyer_checks?: string[]
+          computed_at?: string
+          confidence?: string
+          corroborations?: number
+          created_at?: string
+          curated_by?: string | null
+          evidence_count?: number
+          headline?: string
+          id: string
+          model: string
+          owner_signals?: string[]
+          updated_at?: string
+        }
+        Update: {
+          brand?: string
+          buyer_checks?: string[]
+          computed_at?: string
+          confidence?: string
+          corroborations?: number
+          created_at?: string
+          curated_by?: string | null
+          evidence_count?: number
+          headline?: string
+          id?: string
+          model?: string
+          owner_signals?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      notification_deliveries: {
+        Row: {
+          channel: string
+          created_at: string
+          delivered_at: string
+          detail: string
+          id: string
+          job_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          delivered_at?: string
+          detail?: string
+          id?: string
+          job_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          delivered_at?: string
+          detail?: string
+          id?: string
+          job_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_deliveries_job_id_user_id_fkey"
+            columns: ["job_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "notification_jobs"
+            referencedColumns: ["id", "user_id"]
+          },
+        ]
+      }
+      notification_jobs: {
+        Row: {
+          attempts: number
+          channel: string
+          created_at: string
+          delivered_at: string | null
+          id: string
+          kind: string
+          last_error: string
+          payload: Json
+          scheduled_for: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          channel?: string
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          kind: string
+          last_error?: string
+          payload?: Json
+          scheduled_for?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          channel?: string
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          kind?: string
+          last_error?: string
+          payload?: Json
+          scheduled_for?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       owner_posts: {
         Row: {
           author: string
@@ -146,8 +605,12 @@ export type Database = {
           helpful: number
           id: string
           label: string
+          last_ranked_at: string | null
           model: string
           odometer_km: number
+          quality_grade: string
+          quality_score: number
+          ranking_score: number
           title: string
           topic: string
           updated_at: string
@@ -164,8 +627,12 @@ export type Database = {
           helpful?: number
           id: string
           label: string
+          last_ranked_at?: string | null
           model: string
           odometer_km?: number
+          quality_grade?: string
+          quality_score?: number
+          ranking_score?: number
           title: string
           topic: string
           updated_at?: string
@@ -182,8 +649,12 @@ export type Database = {
           helpful?: number
           id?: string
           label?: string
+          last_ranked_at?: string | null
           model?: string
           odometer_km?: number
+          quality_grade?: string
+          quality_score?: number
+          ranking_score?: number
           title?: string
           topic?: string
           updated_at?: string
@@ -191,6 +662,66 @@ export type Database = {
           variant?: string
         }
         Relationships: []
+      }
+      playbook_entries: {
+        Row: {
+          confidence: string
+          corroborations: number
+          created_at: string
+          detail: string
+          evidence_count: number
+          id: string
+          kind: string
+          playbook_id: string
+          source_post_id: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          confidence?: string
+          corroborations?: number
+          created_at?: string
+          detail?: string
+          evidence_count?: number
+          id?: string
+          kind: string
+          playbook_id: string
+          source_post_id?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          confidence?: string
+          corroborations?: number
+          created_at?: string
+          detail?: string
+          evidence_count?: number
+          id?: string
+          kind?: string
+          playbook_id?: string
+          source_post_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playbook_entries_playbook_id_fkey"
+            columns: ["playbook_id"]
+            isOneToOne: false
+            referencedRelation: "model_playbooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "playbook_entries_source_post_id_fkey"
+            columns: ["source_post_id"]
+            isOneToOne: false
+            referencedRelation: "owner_posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       post_comments: {
         Row: {
@@ -225,6 +756,59 @@ export type Database = {
             foreignKeyName: "post_comments_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
+            referencedRelation: "owner_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      post_quality_scores: {
+        Row: {
+          components: Json
+          computed_at: string
+          created_at: string
+          grade: string
+          max_score: number
+          missing_prompts: string[]
+          post_id: string
+          ranking_score: number
+          score: number
+          strengths: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          components?: Json
+          computed_at?: string
+          created_at?: string
+          grade?: string
+          max_score?: number
+          missing_prompts?: string[]
+          post_id: string
+          ranking_score?: number
+          score?: number
+          strengths?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          components?: Json
+          computed_at?: string
+          created_at?: string
+          grade?: string
+          max_score?: number
+          missing_prompts?: string[]
+          post_id?: string
+          ranking_score?: number
+          score?: number
+          strengths?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_quality_scores_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
             referencedRelation: "owner_posts"
             referencedColumns: ["id"]
           },
@@ -580,9 +1164,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },

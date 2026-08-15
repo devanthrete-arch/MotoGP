@@ -48,11 +48,37 @@
         }
       ],
       "source": "/assets/(.*)"
+    },
+    {
+      "headers": [
+        {
+          "key": "Vary",
+          "value": "User-Agent"
+        }
+      ],
+      "source": "/((?!assets/|.*\\..*).*)"
     }
   ],
   "installCommand": "npm ci",
   "outputDirectory": "dist",
   "rewrites": [
+    {
+      "destination": "/api/og?path=/:path",
+      "has": [
+        {
+          "key": "user-agent",
+          "type": "header",
+          "value": ".*([Ff]acebookexternalhit|Facebot|[Tt]witterbot|LinkedInBot|[Ss]lackbot|Slack-ImgProxy|[Dd]iscordbot|[Ww]hats[Aa]pp|TelegramBot|Pinterest|redditbot|Applebot|SkypeUriPreview|Embedly|Iframely|[Mm]astodon|vkShare|Snapchat|Flipboard|Tumblr|Nuzzel|Qwantify|bitlybot|Google-Read-Aloud).*"
+        }
+      ],
+      "missing": [
+        {
+          "key": "og",
+          "type": "query"
+        }
+      ],
+      "source": "/:path((?!api/|assets/|.*\\..*).*)"
+    },
     {
       "destination": "/index.html",
       "source": "/((?!assets/|.*\\..*).*)"
