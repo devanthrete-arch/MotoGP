@@ -18,7 +18,7 @@ Last reviewed: 2026-08-15.
 | Production branch | `master` |
 | Production URL | https://moto-gp-chi.vercel.app |
 | Branch alias (master) | `moto-gp-git-master-anthrete-innovation-pvt-ltd.vercel.app` — serves `x-robots-tag: noindex`, do not share it |
-| Latest production deployment | `dpl_6kCRWoceaYNjJXXMWdkNR8YpUeQg` (commit `24898cf`) |
+| Latest production deployment | commit `9d516c8` (verified live: routes 200, OG shim serving, offline shell registered) |
 | Framework preset | Vite |
 | Install command | `npm ci` |
 | Build command | `npm run build` (`tsc -b` → `vite build` → service-worker generation) |
@@ -261,3 +261,22 @@ the brand line changes.
 | Per-route preview copy or enrichment | `api/og.js` |
 | Default social card art | `scripts/generate-og-image.mjs` → `public/og-cover.png` |
 | Static canonical / default OG tags | `index.html` |
+
+## Verified in production
+
+Checked against https://moto-gp-chi.vercel.app after the 9d516c8 deploy:
+
+- Every workspace and detail route returns 200 (a `cleanUrls` + SPA-fallback
+  interaction had been 404ing everything except `/`; `cleanUrls` is now off and
+  a regression test guards the combination).
+- Security headers intact: CSP with `script-src 'self'` and no `unsafe-inline`,
+  HSTS preload, X-Frame-Options DENY, COOP/CORP, Permissions-Policy,
+  `Vary: User-Agent`.
+- Canonical and og:url point at the indexable production domain. The
+  `moto-gp-git-master-…` branch alias carries `x-robots-tag: noindex` and must
+  not be shared.
+- The crawler OG shim returns route-specific cards, e.g. `/cars/hyundai-creta`
+  yields "Hyundai Creta — owner notes and running costs" with its own canonical.
+- Service worker registers and serves an offline shell (64 precached URLs).
+- 231 tests pass; 72 route x width screenshots show no horizontal overflow and
+  no console errors at 360, 390, 768 and 1280px.
