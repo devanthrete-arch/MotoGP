@@ -166,7 +166,8 @@ describe("community mappers", () => {
     odometerKm: 42000,
     title: "Nexon diesel clutch fix",
     topic: "Repairs",
-    variant: "XZ+ Diesel MT",
+    fuel: "Diesel",
+    variant: "XZ+",
   };
 
   it("round trips local → hosted → local", () => {
@@ -217,6 +218,13 @@ describe("community mappers", () => {
     expect(reportRowToLocal({ ...row, ...stamps, created_at: report.createdAt } as ReportRow)).toEqual(report);
     expect(reportRowToLocal({ ...row, ...stamps, status: "Escalated" } as ReportRow).status).toBe("Open");
   });
+  it("keeps an unstated fuel empty instead of guessing one", () => {
+    const withoutFuel: OwnerPost = { ...post, fuel: "", variant: "XZ+" };
+    const row = postToRow("user-1", withoutFuel);
+    expect(row.fuel).toBeNull();
+    expect(postRowToLocal({ ...row, comments: [] } as never).fuel).toBe("");
+  });
+
 });
 
 describe("follow mappers", () => {
@@ -239,12 +247,15 @@ describe("garage mappers", () => {
   const vehicle: GarageVehicle = {
     brand: "Tata",
     city: "Pune",
+    fuel: "Diesel",
     id: "garage-nexon",
     model: "Nexon",
-    nickname: "Daily diesel",
+    nickname: "Daily drive",
     odometerKm: 42000,
+    ownership: "First owner",
     purchaseMonth: "2021-08",
-    variant: "XZ+ Diesel MT",
+    transmission: "MT",
+    variant: "XZ+",
   };
   const entry: TimelineEntry = {
     amount: 8200,
@@ -261,6 +272,16 @@ describe("garage mappers", () => {
     const row = vehicleToRow("user-1", vehicle) as GarageVehicleRow;
     expect(vehicleRowToLocal({ ...row, ...stamps } as GarageVehicleRow)).toEqual(vehicle);
     expect(vehicleRowToLocal({ ...row, ...stamps, purchase_month: "August 2021" } as GarageVehicleRow).purchaseMonth).toBe("");
+  });
+
+  it("keeps unrecorded fuel, transmission and ownership empty rather than guessing", () => {
+    const blank = { ...vehicle, fuel: "" as const, ownership: "" as const, transmission: "" as const };
+    const row = vehicleToRow("user-1", blank) as GarageVehicleRow;
+    expect(row.fuel).toBeNull();
+    expect(row.transmission).toBeNull();
+    expect(row.ownership).toBeNull();
+    const decoded = vehicleRowToLocal({ ...row, ...stamps } as GarageVehicleRow);
+    expect(decoded).toEqual(blank);
   });
 
   it("round trips timeline entries and defaults an unknown kind to Note", () => {
@@ -293,12 +314,12 @@ describe("garage mappers", () => {
       title: "Plan the next service visit",
       urgency: "Soon",
       vehicleId: "garage-nexon",
-      vehicleName: "Daily diesel",
+      vehicleName: "Daily drive",
     };
     const row = reminderToRow("user-1", reminder) as GarageReminderRow;
     expect(row.kind).toBe("Service");
     const decoded = reminderRowToLocal({ ...row, ...stamps } as GarageReminderRow, vehicleNameIndex([vehicle]));
-    expect(decoded.vehicleName).toBe("Daily diesel");
+    expect(decoded.vehicleName).toBe("Daily drive");
     expect(decoded.urgency).toBe("Soon");
     expect(decoded.status).toBe("Open");
     expect(reminderRowToLocal({ ...row, ...stamps, urgency: "Yesterday" } as GarageReminderRow).urgency).toBe("Plan");

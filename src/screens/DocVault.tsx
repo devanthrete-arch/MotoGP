@@ -1,7 +1,7 @@
-import { AlertTriangle, BadgeCheck, CloudUpload, Eye, FolderLock, History, Lock, ReceiptText, Upload } from "lucide-react";
+import { AlertTriangle, BadgeCheck, CloudUpload, Eye, FolderLock, History, Lock, Plus, ReceiptText, Upload } from "lucide-react";
 import { useState, type ChangeEvent } from "react";
 import { useApp } from "../appState";
-import { Card, DataText, EdgeGlow, LabelCaps, StatusChip } from "../components/ui";
+import { Card, DataText, EdgeGlow, EmptyState, LabelCaps, PrimaryButton, StatusChip } from "../components/ui";
 import type { GarageVehicle, TimelineEntry } from "../domain";
 import { readStoredJson, writeStoredJson } from "../storage";
 
@@ -159,6 +159,16 @@ export function DocVault() {
         </div>
       </Card>
 
+      {!vehicle ? (
+        <EmptyState title="No car paired yet">
+          <p>Add a car and the vault keeps its registration, insurance, PUC and licence records together — with expiry dates you can actually see coming.</p>
+          <PrimaryButton className="min-h-[44px]" onClick={app.openVehicleComposer}>
+            <Plus aria-hidden="true" className="w-4 h-4" />
+            Add my car
+          </PrimaryButton>
+        </EmptyState>
+      ) : null}
+
       {/* ---- Document cards ---- */}
       <div className="grid gap-4 md:grid-cols-2">
         {docs.map((doc) => {
@@ -210,7 +220,7 @@ export function DocVault() {
                     {doc.validUntil ? fmtDate(doc.validUntil) : "NO EXPIRY"}
                   </DataText>
                   {stored ? (
-                    <DataText className="text-outline break-all">
+                    <DataText className="text-on-surface-variant break-all">
                       {stored.name} · {fmtSize(stored.size)}
                     </DataText>
                   ) : (
@@ -282,7 +292,7 @@ export function DocVault() {
               <DataText size="lg" className={challanCount ? "text-error" : "text-on-surface"}>
                 {challanCount ? `₹${challanTotal.toLocaleString("en-IN")}` : "₹0"}
               </DataText>
-              <DataText className="text-outline">{vehicle ? "SYNCED FROM KYV REGISTRY MIRROR" : "PAIR A VEHICLE IN GARAGE"}</DataText>
+              <DataText className="text-on-surface-variant">{vehicle ? "SYNCED FROM KYV REGISTRY MIRROR" : "PAIR A VEHICLE IN GARAGE"}</DataText>
             </div>
             <button
               className="min-h-[44px] px-4 rounded-full bg-surface-container-highest border border-outline/20 font-mono text-[10px] font-bold tracking-[0.2em] uppercase text-on-surface hover:text-primary transition-colors"

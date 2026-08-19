@@ -21,6 +21,7 @@ import type {
   TesterRun,
   TimelineEntry,
 } from "./domain";
+import { vehicleFactRows, vehicleFuel } from "./vehicleFacts";
 
 export type SubscriptionPreference = {
   emailDigest: boolean;
@@ -751,7 +752,10 @@ export function buildGarageExportMarkdown(garage: GarageVehicle[], timeline: Tim
       return [
         `## ${vehicle.nickname || `${vehicle.brand} ${vehicle.model}`}`,
         "",
-        `- Vehicle: ${vehicle.brand} ${vehicle.model}${vehicle.variant ? ` ${vehicle.variant}` : ""}`,
+        `- Vehicle: ${vehicle.brand} ${vehicle.model}`,
+        // Each detail is its own labelled line, and an unrecorded one exports as
+        // the placeholder — a reader of the export can tell facts from blanks.
+        ...vehicleFactRows(vehicle).map((row) => `- ${row.label}: ${row.fact.label}`),
         `- City: ${vehicle.city || "Not shared"}`,
         `- Odometer: ${vehicle.odometerKm.toLocaleString("en-IN")} km`,
         `- Purchase month: ${vehicle.purchaseMonth || "Not shared"}`,
@@ -1231,7 +1235,8 @@ export type TimelineMonthSpend = {
 export type VehicleProfile = {
   vehicleId: string;
   name: string;
-  fuel: string;
+  /** `null` when the fuel type is not known — never a guess. */
+  fuel: string | null;
   ageMonths: number | null;
   ownershipLabel: string;
   odometerKmPerMonth: number | null;
@@ -1256,16 +1261,10 @@ const monthKey = (isoDate: string): string => (isoDate || "").slice(0, 7);
 
 /** Owner-facing profile fields the raw `GarageVehicle` record does not store. */
 export function buildVehicleProfile(vehicle: GarageVehicle, timeline: TimelineEntry[], today = new Date()): VehicleProfile {
-  const haystack = `${vehicle.variant} ${vehicle.model}`.toLowerCase();
-  const fuel = haystack.includes("diesel")
-    ? "Diesel"
-    : haystack.includes("electric") || /\bev\b/.test(haystack)
-      ? "Electric"
-      : haystack.includes("cng")
-        ? "CNG"
-        : haystack.includes("hybrid") || haystack.includes("e:hev")
-          ? "Hybrid"
-          : "Petrol";
+  // Fuel is never inferred from the variant string here. It is either recorded
+  // on the vehicle or unambiguous in the catalog; otherwise it stays null and
+  // the interface renders `PLACEHOLDER` instead of a plausible-looking guess.
+  const fuel = vehicleFuel(vehicle).value;
 
   const purchase = /^\d{4}-\d{2}$/.test(vehicle.purchaseMonth) ? new Date(`${vehicle.purchaseMonth}-01T00:00:00.000Z`) : null;
   const ageMonths = purchase

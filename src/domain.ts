@@ -8,7 +8,10 @@ export type OwnerPost = {
   author: string;
   brand: string;
   model: string;
+  /** Trim only, e.g. "XZ+". Fuel is a separate field so it can be labelled. */
   variant: string;
+  /** Fuel as stated by the author; empty means not provided (never guessed). */
+  fuel?: VehicleFuel | "";
   city: string;
   odometerKm: number;
   label: KnowledgeLabel;
@@ -44,15 +47,31 @@ export type TesterRun = {
 
 export type DraftTesterRun = Omit<TesterRun, "id" | "createdAt">;
 
+/** Verified vehicle metadata. Kept as separate fields rather than folded into
+ * `variant`, so the interface can show each one on its own and stay silent when
+ * a value has not actually been confirmed by the owner. */
+export type VehicleFuel = "Petrol" | "Diesel" | "CNG" | "Electric" | "Hybrid";
+export type VehicleTransmission = "MT" | "AMT" | "CVT" | "DCT" | "AT" | "eCVT" | "Single Speed";
+export type VehicleOwnership = "First owner" | "Second owner" | "Third owner or later";
+
+export const vehicleFuels: readonly VehicleFuel[] = ["Petrol", "Diesel", "CNG", "Electric", "Hybrid"];
+export const vehicleTransmissions: readonly VehicleTransmission[] = ["MT", "AMT", "CVT", "DCT", "AT", "eCVT", "Single Speed"];
+export const vehicleOwnerships: readonly VehicleOwnership[] = ["First owner", "Second owner", "Third owner or later"];
+
 export type GarageVehicle = {
   id: string;
   nickname: string;
   brand: string;
   model: string;
+  /** Trim only, e.g. "XZ+". Fuel and transmission live in their own fields. */
   variant: string;
   city: string;
   odometerKm: number;
   purchaseMonth: string;
+  /** Empty string means "not recorded" — never a guess. */
+  fuel?: VehicleFuel | "";
+  transmission?: VehicleTransmission | "";
+  ownership?: VehicleOwnership | "";
 };
 
 export type TimelineEntryKind = "Service" | "Repair" | "Tyres" | "Insurance" | "Fuel" | "Trip" | "Note";
@@ -465,13 +484,16 @@ export const timelineKinds: TimelineEntryKind[] = ["Service", "Repair", "Tyres",
 export const seedGarage: GarageVehicle[] = [
   {
     id: "garage-nexon",
-    nickname: "Daily diesel",
+    nickname: "Daily drive",
     brand: "Tata",
     model: "Nexon",
-    variant: "XZ+ Diesel MT",
+    variant: "XZ+",
     city: "Pune",
     odometerKm: 42000,
     purchaseMonth: "2021-08",
+    fuel: "Diesel",
+    transmission: "MT",
+    ownership: "First owner",
   },
 ];
 
@@ -505,7 +527,8 @@ export const seedPosts: OwnerPost[] = [
     author: "Amit from Pune",
     brand: "Tata",
     model: "Nexon",
-    variant: "XZ+ Diesel MT",
+    variant: "XZ+",
+    fuel: "Diesel",
     city: "Pune",
     odometerKm: 42000,
     label: "Fix",

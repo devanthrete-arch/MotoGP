@@ -231,6 +231,7 @@ const initialDraft: DraftPost = {
   brand: "Tata",
   model: "",
   variant: "",
+  fuel: "",
   city: "",
   odometerKm: 0,
   label: "Owner note",
@@ -246,6 +247,11 @@ const initialVehicleDraft: DraftVehicle = {
   city: "",
   odometerKm: 0,
   purchaseMonth: "",
+  // Empty string is the explicit "Not set" option in the form. The app never
+  // pre-selects a fuel, gearbox or ownership on the owner's behalf.
+  fuel: "",
+  transmission: "",
+  ownership: "",
 };
 
 const initialTimelineDraft: DraftTimelineEntry = {
@@ -1194,6 +1200,7 @@ export function useAutoflexState() {
     const vehicle = createVehicle({
       ...vehicleDraft,
       nickname: vehicleDraft.nickname.trim() || `${vehicleDraft.brand} ${vehicleDraft.model}`,
+      variant: vehicleDraft.variant.trim(),
       odometerKm: Number.isFinite(vehicleDraft.odometerKm) ? vehicleDraft.odometerKm : 0,
     });
     persistGarage([vehicle, ...garage]);
@@ -1389,29 +1396,33 @@ export function useAutoflexState() {
   const currentLedger = garageCostLedger.find((ledger) => ledger.vehicle.id === currentVehicle?.id) ?? null;
   const isFirstRun = garage.length === 0 && shortlist.length === 0;
   const workspaceCopy: Record<WorkspaceScreen, { eyebrow: string; title: string; detail: string }> = {
-    home: { eyebrow: "Cockpit", title: "Today", detail: "Your car's next task." },
-    shortlist: { eyebrow: "Choosing a car", title: "Shortlist", detail: `${shortlist.length} car${shortlist.length === 1 ? "" : "s"} saved to compare.` },
-    garage: { eyebrow: "My cars", title: "Garage", detail: currentVehicle ? "Service, costs, and records." : "Add a car to get started." },
-    community: { eyebrow: "From owners", title: "Community", detail: `${filteredPosts.length} matching note${filteredPosts.length === 1 ? "" : "s"}.` },
-    kyv: { eyebrow: "Know your vehicle", title: "KYV", detail: "Compliance, specs, and health telemetry." },
-    vault: { eyebrow: "Documents", title: "Vault", detail: "Registration, insurance, and licenses." },
-    analytics: { eyebrow: "System telemetry", title: "Analytics", detail: "Usage and performance signals." },
-    creators: { eyebrow: "Creator network", title: "Creator Connect", detail: "Builders, reviewers, and track specialists." },
+    home: { eyebrow: "Cockpit", title: "Today", detail: "Vehicle snapshot, next task, and new owner notes." },
+    community: { eyebrow: "From owners", title: "Community", detail: `${filteredPosts.length} matching note${filteredPosts.length === 1 ? "" : "s"} from owners.` },
+    garage: {
+      eyebrow: "My cars",
+      title: "Garage",
+      detail: currentVehicle ? "Service history, running costs, and vehicle records." : "Add a car to track service, costs, and records.",
+    },
+    shortlist: { eyebrow: "Choosing a car", title: "Compare", detail: `${shortlist.length} car${shortlist.length === 1 ? "" : "s"} saved to compare.` },
+    kyv: { eyebrow: "Know your vehicle", title: "KYV", detail: "Registration, compliance, and hardware specs." },
+    vault: { eyebrow: "Documents", title: "Vault", detail: "Registration, insurance, and licence records." },
+    analytics: { eyebrow: "System telemetry", title: "Analytics", detail: "Usage and performance signals on this device." },
+    creators: { eyebrow: "Creator network", title: "Creators", detail: "Builders, reviewers, and track specialists." },
     account:
       accountView === "profile"
         ? { eyebrow: "Account", title: "Profile", detail: "Your name, city, and role." }
         : accountView === "saved"
-          ? { eyebrow: "Profile", title: "Saved notes", detail: "Notes saved for later." }
+          ? { eyebrow: "Account", title: "Saved notes", detail: "Owner notes you saved for later." }
           : accountView === "following"
-            ? { eyebrow: "Profile", title: "Following", detail: "Cars and topics you follow." }
-        : accountView === "notifications"
-          ? { eyebrow: "Account", title: "Notifications", detail: "Choose your updates." }
-          : { eyebrow: "Account", title: "Settings", detail: "Data, privacy, and preferences." },
+            ? { eyebrow: "Account", title: "Following", detail: "Cars and topics you follow." }
+            : accountView === "notifications"
+              ? { eyebrow: "Account", title: "Notifications", detail: "Updates you want to receive." }
+              : { eyebrow: "Account", title: "Settings", detail: "Data, privacy, and preferences." },
   };
   const accountBackLabel =
     accountView !== "profile"
       ? "Back to Profile"
-      : `Back to ${accountReturnScreenRef.current === "home" ? "Today" : accountReturnScreenRef.current === "shortlist" ? "Shortlist" : accountReturnScreenRef.current === "garage" ? "Garage" : "Community"}`;
+      : `Back to ${accountReturnScreenRef.current === "home" ? "Today" : accountReturnScreenRef.current === "shortlist" ? "Compare" : accountReturnScreenRef.current === "garage" ? "Garage" : "Community"}`;
 
   return {
     // data state

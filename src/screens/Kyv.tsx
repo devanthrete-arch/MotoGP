@@ -2,6 +2,8 @@ import { AlertTriangle, BadgeCheck, Cpu, FileUp, IdCard, Nfc, Plus, Share2, Shie
 import { useApp } from "../appState";
 import { findModel } from "../carData";
 import { Card, DataText, EmptyState, LabelCaps, PrimaryButton, StatusChip } from "../components/ui";
+import { VehicleFactGrid } from "../components/VehicleFactGrid";
+import { PLACEHOLDER, vehicleTitle } from "../vehicleFacts";
 import type { GarageVehicle, TimelineEntry } from "../domain";
 
 /**
@@ -116,7 +118,13 @@ export function Kyv() {
   const today = new Date();
   const record = vehicle ? buildKyvRecord(vehicle, app.timeline, today) : null;
   const spec = vehicle ? findModel(vehicle.brand, vehicle.model) : undefined;
-  const variantSpec = spec?.variants.find((v) => vehicle && vehicle.variant.toLowerCase().includes(v.name.toLowerCase())) ?? spec?.variants[0];
+  // Only an actual trim match counts. Falling back to `variants[0]` used to
+  // print one arbitrary trim's fuel, gearbox and mileage as if they were this
+  // car's — a guess dressed up as registry data.
+  const variantTrim = vehicle?.variant.trim().toLowerCase() ?? "";
+  const variantSpec = variantTrim
+    ? spec?.variants.find((v) => variantTrim === v.name.toLowerCase() || variantTrim.includes(v.name.toLowerCase()))
+    : undefined;
 
   const insuranceDays = record ? daysUntil(record.insuranceUpto, today) : 0;
   const puccDays = record ? daysUntil(record.puccUpto, today) : 0;
@@ -186,23 +194,26 @@ export function Kyv() {
   const hardwareRows = vehicle
     ? [
         {
-          label: "Powertrain / fuel",
-          value: variantSpec
-            ? `${variantSpec.engineCC ? `${variantSpec.engineCC}CC ` : ""}${variantSpec.fuel} ${variantSpec.transmission}`.toUpperCase()
-            : (vehicle.variant || "STOCK SPEC").toUpperCase(),
+          label: "Engine",
+          value: variantSpec?.engineCC ? `${variantSpec.engineCC} CC` : PLACEHOLDER,
+          muted: !variantSpec?.engineCC,
         },
         {
           label: "Output",
           value: variantSpec?.powerBHP
             ? `${variantSpec.powerBHP} BHP${variantSpec.torqueNM ? ` / ${variantSpec.torqueNM} NM` : ""}`
-            : "—",
+            : PLACEHOLDER,
+          muted: !variantSpec?.powerBHP,
         },
         {
           label: "Efficiency (ARAI)",
-          value: variantSpec?.mileageKMPL ? `${variantSpec.mileageKMPL} ${variantSpec.fuel === "Electric" ? "KM/CHARGE" : "KMPL"}` : "—",
+          value: variantSpec?.mileageKMPL
+            ? `${variantSpec.mileageKMPL} ${variantSpec.fuel === "Electric" ? "KM/CHARGE" : "KMPL"}`
+            : PLACEHOLDER,
+          muted: !variantSpec?.mileageKMPL,
         },
-        { label: "Seating", value: variantSpec?.seats ? `${variantSpec.seats} SEATS` : "—" },
-        { label: "Odometer", value: `${vehicle.odometerKm.toLocaleString("en-IN")} KM` },
+        { label: "Seating", value: variantSpec?.seats ? `${variantSpec.seats} SEATS` : PLACEHOLDER, muted: !variantSpec?.seats },
+        { label: "Odometer", value: `${vehicle.odometerKm.toLocaleString("en-IN")} KM`, muted: false },
       ]
     : [];
 
@@ -267,18 +278,17 @@ export function Kyv() {
             </LabelCaps>
           </div>
           <h3 className="font-display text-2xl lg:text-3xl font-semibold text-on-surface mb-3">
-            {vehicle
-              ? `${yearLabel(vehicle)}${vehicle.brand} ${vehicle.model}${vehicle.variant ? ` ${vehicle.variant}` : ""}`
-              : "Pair a vehicle to decode it"}
+            {vehicle ? `${yearLabel(vehicle)}${vehicle.brand} ${vehicle.model}` : "Pair a vehicle to decode it"}
           </h3>
+          {vehicle ? <VehicleFactGrid className="mb-4 max-w-3xl" vehicle={vehicle} /> : null}
           {vehicle && record ? (
             <div className="inline-flex items-center gap-2 bg-surface-container/80 backdrop-blur-md px-4 py-2 rounded shadow-[0_0_0_1px_rgba(199,198,203,0.2)]">
               <IdCard aria-hidden="true" className="w-4 h-4 text-on-surface-variant" />
               <DataText size="lg" className="text-on-surface uppercase tracking-widest">{record.regNumber}</DataText>
             </div>
           ) : (
-            <EmptyState className="mt-2 max-w-md">
-              <p>Add a car in Garage to unlock its registry mirror, compliance telemetry, and hardware specs.</p>
+            <EmptyState className="mt-2 max-w-md" title="No car paired yet">
+              <p>Add a car and KYV keeps its registration, insurance, PUC and FASTag status in one readable place.</p>
               <PrimaryButton className="min-h-[44px]" onClick={app.openVehicleComposer}>
                 <Plus aria-hidden="true" className="w-4 h-4" />
                 Add my car
@@ -345,10 +355,10 @@ export function Kyv() {
               <LabelCaps className="text-on-surface-variant tracking-widest">Registry data</LabelCaps>
               <div aria-hidden="true" className="flex-1 h-px bg-gradient-to-r from-outline/30 to-transparent ml-2" />
             </div>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1.5">
               {registryRows.map((row) => (
                 <div
-                  className="flex flex-wrap justify-between items-center gap-x-4 gap-y-1 p-3 rounded-sm bg-surface-container shadow-[0_0_0_1px_rgba(199,198,203,0.1)]"
+                  className="flex flex-wrap justify-between items-center gap-x-4 gap-y-1.5 p-3 rounded-sm bg-surface-container shadow-[0_0_0_1px_rgba(199,198,203,0.1)]"
                   key={row.label}
                 >
                   <DataText className="text-on-surface-variant uppercase">{row.label}</DataText>
@@ -378,17 +388,20 @@ export function Kyv() {
               <LabelCaps className="text-on-surface-variant tracking-widest">Hardware specifications</LabelCaps>
               <div aria-hidden="true" className="flex-1 h-px bg-gradient-to-r from-outline/30 to-transparent ml-2" />
             </div>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1.5">
               {hardwareRows.map((row) => (
                 <div
-                  className="flex flex-wrap justify-between items-center gap-x-4 gap-y-1 p-3 rounded-sm bg-surface-container shadow-[0_0_0_1px_rgba(199,198,203,0.1)]"
+                  className="flex flex-wrap justify-between items-center gap-x-4 gap-y-1.5 p-3 rounded-sm bg-surface-container shadow-[0_0_0_1px_rgba(199,198,203,0.1)]"
                   key={row.label}
                 >
                   <DataText className="text-on-surface-variant uppercase">{row.label}</DataText>
-                  <DataText className="text-on-surface text-right">{row.value}</DataText>
+                  <DataText className={`text-right ${row.muted ? "text-outline" : "text-on-surface"}`}>{row.value}</DataText>
                 </div>
               ))}
             </div>
+            <p className="text-xs text-on-surface-variant mt-3">
+              Specs come from the model catalog and only appear when your recorded variant matches a known trim.
+            </p>
           </div>
 
           <Card className="flex flex-col gap-2">

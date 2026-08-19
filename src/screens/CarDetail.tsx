@@ -85,13 +85,15 @@ export function CarDetail() {
               <DataText className="text-on-surface-variant uppercase">BY {selectedPost.author}</DataText>
               <span className="inline-flex items-center gap-1.5">
                 <CarFront aria-hidden="true" className="w-3.5 h-3.5 text-outline" />
-                <DataText className="text-outline uppercase">
-                  {selectedPost.brand} {selectedPost.model} {selectedPost.variant}
+                <DataText className="text-on-surface-variant uppercase">
+                  {selectedPost.brand} {selectedPost.model}
+                  {selectedPost.variant ? ` • ${selectedPost.variant}` : ""}
+                  {selectedPost.fuel ? ` • Fuel: ${selectedPost.fuel}` : ""}
                 </DataText>
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <MapPin aria-hidden="true" className="w-3.5 h-3.5 text-outline" />
-                <DataText className="text-outline uppercase">{selectedPost.city}</DataText>
+                <DataText className="text-on-surface-variant uppercase">{selectedPost.city}</DataText>
               </span>
             </div>
           </div>
@@ -153,7 +155,7 @@ export function CarDetail() {
               <div className="bg-surface-container-lowest border border-outline-variant rounded-lg px-4 py-1">
                 {specRows.map((row) => (
                   <div className="flex items-center justify-between gap-4 py-2.5 border-b border-outline-variant/40 last:border-b-0" key={row.label}>
-                    <DataText className="text-outline">{row.label}</DataText>
+                    <DataText className="text-on-surface-variant">{row.label}</DataText>
                     <DataText className="text-on-surface">{row.value}</DataText>
                   </div>
                 ))}
@@ -178,11 +180,11 @@ export function CarDetail() {
               <div className="relative overflow-hidden bg-surface-container-lowest border border-outline-variant rounded-lg p-4 flex flex-col gap-3">
                 <EdgeGlow />
                 <div className="flex items-center justify-between gap-4 border-b border-outline-variant/40 pb-3">
-                  <DataText className="text-outline">EX-SHOWROOM</DataText>
+                  <DataText className="text-on-surface-variant">EX-SHOWROOM</DataText>
                   <DataText className="text-on-surface">{formatINR(exShowroom)}</DataText>
                 </div>
                 <div className="flex items-center justify-between gap-4">
-                  <DataText className="text-outline">RTO + INS + CESS (EST.)</DataText>
+                  <DataText className="text-on-surface-variant">RTO + INS + CESS (EST.)</DataText>
                   <DataText className="text-on-surface-variant">{formatINR(onRoad - exShowroom)}</DataText>
                 </div>
                 <div className="flex items-end justify-between gap-4 border-t border-outline-variant/40 pt-3">
@@ -194,17 +196,17 @@ export function CarDetail() {
                     {formatINR(onRoad)}
                   </DataText>
                 </div>
-                <DataText className="text-outline text-right !text-[10px]">*Approx. Varies by dealership and city.</DataText>
+                <DataText className="text-on-surface-variant text-right !text-[10px]">*Approx. Varies by dealership and city.</DataText>
               </div>
               <div className="overflow-x-auto -mx-1 px-1">
                 <table className="w-full min-w-[300px] border-collapse">
                   <caption className="sr-only">On-road price by state for {catalogModel.brand} {catalogModel.model} {activeVariant.name}</caption>
                   <thead>
                     <tr className="border-b border-outline-variant">
-                      <th className="text-left py-2 pr-3 font-mono text-[10px] font-bold tracking-[0.2em] uppercase text-outline" scope="col">
+                      <th className="text-left py-2 pr-3 font-mono text-[10px] font-bold tracking-[0.2em] uppercase text-on-surface-variant" scope="col">
                         State
                       </th>
-                      <th className="text-right py-2 font-mono text-[10px] font-bold tracking-[0.2em] uppercase text-outline" scope="col">
+                      <th className="text-right py-2 font-mono text-[10px] font-bold tracking-[0.2em] uppercase text-on-surface-variant" scope="col">
                         On-road
                       </th>
                     </tr>
@@ -292,7 +294,7 @@ export function CarDetail() {
                 </p>
               ))
             ) : (
-              <DataText className="text-outline">NO REPLIES YET</DataText>
+              <DataText className="text-on-surface-variant">NO REPLIES YET</DataText>
             )}
           </div>
           <form className="flex flex-col gap-2" onSubmit={app.addComment}>
@@ -332,7 +334,7 @@ export function CarDetail() {
         </>
       ) : (
         <div className="flex flex-col items-start gap-2 py-6">
-          <LabelCaps className="text-outline">Detail feed</LabelCaps>
+          <LabelCaps className="text-on-surface-variant">Detail feed</LabelCaps>
           <p className="text-sm text-on-surface-variant">Choose a note to read what the owner reported.</p>
         </div>
       )}

@@ -102,7 +102,7 @@ export function Account() {
                   </select>
                 </label>
               </div>
-              <DataText className="text-outline">
+              <DataText className="text-on-surface-variant">
                 POSTING AS {(profile.displayName.trim() || "Anonymous garage member").toUpperCase()}
                 {profile.city.trim() ? ` FROM ${profile.city.toUpperCase()}` : ""}
               </DataText>
@@ -114,7 +114,7 @@ export function Account() {
           </Card>
 
           <nav aria-label="Profile sections" className="flex flex-col gap-2">
-            <LabelCaps className="text-outline px-1">Account modules</LabelCaps>
+            <LabelCaps className="text-on-surface-variant px-1">Account modules</LabelCaps>
             {[
               {
                 icon: Bookmark,
@@ -172,7 +172,9 @@ export function Account() {
               </button>
             ))}
           {!saved.size ? (
-            <EmptyState>Nothing saved yet. Save a useful note from Community to keep it here.</EmptyState>
+            <EmptyState title="No saved notes yet">
+              <p>Save any owner note from Community and it stays here for later — on this device, offline included.</p>
+            </EmptyState>
           ) : null}
         </section>
       ) : null}
@@ -208,7 +210,9 @@ export function Account() {
             </div>
           ))}
           {!follows.models.length && !follows.topics.length ? (
-            <EmptyState>Nothing followed yet. Follow a car or topic from Community to see it here.</EmptyState>
+            <EmptyState title="You are not following anything yet">
+              <p>Follow a car or a topic and its model notebook collects every new owner note in one thread.</p>
+            </EmptyState>
           ) : null}
         </section>
       ) : null}
@@ -230,7 +234,7 @@ export function Account() {
               {cloudUser ? (
                 <div className="flex flex-col gap-3">
                   <div className="bg-surface-container-lowest border border-outline-variant/60 rounded-lg p-3">
-                    <LabelCaps className="text-outline block mb-1">Signed in as</LabelCaps>
+                    <LabelCaps className="text-on-surface-variant block mb-1">Signed in as</LabelCaps>
                     <DataText className="text-on-surface block">{cloudUser.email}</DataText>
                     <p className="text-xs text-on-surface-variant mt-1">
                       {cloudBackupUpdatedAt
@@ -484,7 +488,7 @@ export function Account() {
                 </Badge>
                 <h4 className="font-semibold text-on-surface text-sm">{report.postTitle}</h4>
                 <p className="text-sm text-on-surface-variant">{report.reason}</p>
-                <DataText className="text-outline">
+                <DataText className="text-on-surface-variant">
                   {report.reporterName.toUpperCase()} · {new Date(report.createdAt).toLocaleDateString("en-IN")}
                 </DataText>
                 <div className="flex flex-wrap gap-2 mt-1">
@@ -498,8 +502,8 @@ export function Account() {
               </Card>
             ))
           ) : (
-            <EmptyState className="sm:col-span-2 lg:col-span-3">
-              No reports yet. The queue is ready before the community needs it.
+            <EmptyState className="sm:col-span-2 lg:col-span-3" title="No reports yet">
+              <p>Reported notes land here with their reason and status, so nothing waits on someone remembering it.</p>
             </EmptyState>
           )}
         </div>

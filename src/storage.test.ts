@@ -3,6 +3,7 @@ import type { FeedbackNote } from "./domain";
 import {
   clearAutoflexData,
   createTesterRun,
+  createVehicle,
   normalizeFeedbackNotes,
   parseAutoflexBackup,
   readStoredJson,
@@ -252,5 +253,45 @@ describe("stored values that are valid JSON but the wrong shape", () => {
   it("still returns well-formed values untouched", () => {
     expect(safeJsonParse<string[]>('["a","b"]', [])).toEqual(["a", "b"]);
     expect(safeJsonParse<{ city: string }>('{"city":"Pune"}', { city: "" })).toEqual({ city: "Pune" });
+  });
+});
+
+describe("vehicle drafts", () => {
+  const draft = {
+    brand: "Tata",
+    city: "Pune",
+    fuel: "" as const,
+    model: "Nexon",
+    nickname: "Daily drive",
+    odometerKm: 42000,
+    ownership: "" as const,
+    purchaseMonth: "2021-08",
+    transmission: "" as const,
+    variant: "XZ+",
+  };
+
+  it("round trips fuel, transmission and ownership from the form draft", () => {
+    const vehicle = createVehicle({
+      ...draft,
+      fuel: "Diesel",
+      ownership: "First owner",
+      transmission: "MT",
+    });
+
+    expect(vehicle).toMatchObject({
+      fuel: "Diesel",
+      ownership: "First owner",
+      transmission: "MT",
+      variant: "XZ+",
+    });
+    expect(vehicle.id).toContain("tata-nexon");
+  });
+
+  it("keeps the \"Not set\" default empty instead of assuming petrol", () => {
+    const vehicle = createVehicle(draft);
+
+    expect(vehicle.fuel).toBe("");
+    expect(vehicle.transmission).toBe("");
+    expect(vehicle.ownership).toBe("");
   });
 });

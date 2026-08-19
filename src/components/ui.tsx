@@ -43,7 +43,7 @@ export function EdgeGlow() {
 
 export function Card({ className = "", children, ...rest }: HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cx("relative overflow-hidden bg-surface-container border border-outline-variant rounded-lg p-4", className)} {...rest}>
+    <div className={cx("relative overflow-hidden bg-surface-container border border-outline-variant rounded-lg p-5", className)} {...rest}>
       <EdgeGlow />
       {children}
     </div>
@@ -64,11 +64,11 @@ export function SectionHeader({
   className?: string;
 }) {
   return (
-    <div className={cx("flex flex-wrap items-end justify-between gap-4 mb-4", className)}>
+    <div className={cx("flex flex-wrap items-end justify-between gap-4 mb-5", className)}>
       <div>
         {eyebrow ? <LabelCaps className="text-primary block mb-1">{eyebrow}</LabelCaps> : null}
         <h2 className="font-display text-2xl font-semibold tracking-tight text-on-surface uppercase">{title}</h2>
-        {detail ? <p className="text-sm text-on-surface-variant mt-1">{detail}</p> : null}
+        {detail ? <p className="text-sm text-on-surface-variant mt-1.5">{detail}</p> : null}
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </div>
@@ -153,16 +153,52 @@ export function GhostButton({ className = "", children, ...rest }: ButtonProps) 
   );
 }
 
-export function EmptyState({ className = "", children, ...rest }: HTMLAttributes<HTMLDivElement>) {
+export function EmptyState({
+  title,
+  className = "",
+  children,
+  ...rest
+}: HTMLAttributes<HTMLDivElement> & { title?: ReactNode }) {
   return (
     <div
       className={cx(
-        "flex flex-col items-start gap-3 border border-dashed border-outline-variant rounded-lg p-5 text-outline text-sm",
+        "flex flex-col items-start gap-3 border border-dashed border-outline-variant rounded-lg p-5 text-on-surface-variant text-sm",
         className,
       )}
       {...rest}
     >
+      {title ? (
+        <h3 className="font-display text-base font-semibold uppercase tracking-tight text-on-surface">{title}</h3>
+      ) : null}
       {children}
+    </div>
+  );
+}
+
+/**
+ * One labelled metadata pair (e.g. "Fuel" / "Diesel").
+ *
+ * `muted` renders a value the app does not actually know — the placeholder is
+ * deliberately dimmer than a recorded value so a reader can tell a fact from a
+ * blank at a glance without reading the string.
+ */
+export function FactPair({
+  label,
+  value,
+  muted = false,
+  className = "",
+  title,
+}: {
+  label: string;
+  value: ReactNode;
+  muted?: boolean;
+  className?: string;
+  title?: string;
+}) {
+  return (
+    <div className={cx("flex flex-col gap-1.5 min-w-0", className)} title={title}>
+      <LabelCaps className="text-on-surface-variant">{label}</LabelCaps>
+      <DataText className={cx("truncate", muted ? "text-outline" : "text-on-surface")}>{value}</DataText>
     </div>
   );
 }

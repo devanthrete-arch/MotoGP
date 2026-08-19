@@ -306,11 +306,14 @@ export type Database = {
           city: string
           created_at: string
           deleted_at: string | null
+          fuel: string | null
           id: string
           model: string
           nickname: string
           odometer_km: number
+          ownership: string | null
           purchase_month: string
+          transmission: string | null
           updated_at: string
           user_id: string
           variant: string
@@ -320,11 +323,14 @@ export type Database = {
           city?: string
           created_at?: string
           deleted_at?: string | null
+          fuel?: string | null
           id: string
           model: string
           nickname?: string
           odometer_km?: number
+          ownership?: string | null
           purchase_month?: string
+          transmission?: string | null
           updated_at?: string
           user_id: string
           variant?: string
@@ -334,11 +340,14 @@ export type Database = {
           city?: string
           created_at?: string
           deleted_at?: string | null
+          fuel?: string | null
           id?: string
           model?: string
           nickname?: string
           odometer_km?: number
+          ownership?: string | null
           purchase_month?: string
+          transmission?: string | null
           updated_at?: string
           user_id?: string
           variant?: string
@@ -602,6 +611,7 @@ export type Database = {
           city: string
           created_at: string
           fixes_confirmed: number
+          fuel: string | null
           helpful: number
           id: string
           label: string
@@ -624,6 +634,7 @@ export type Database = {
           city?: string
           created_at?: string
           fixes_confirmed?: number
+          fuel?: string | null
           helpful?: number
           id: string
           label: string
@@ -646,6 +657,7 @@ export type Database = {
           city?: string
           created_at?: string
           fixes_confirmed?: number
+          fuel?: string | null
           helpful?: number
           id?: string
           label?: string

@@ -40,6 +40,7 @@ import {
   buildShortlistDecisionLanes,
   buildStarterRouteProgress,
   buildTesterRunSummary,
+  buildVehicleProfile,
   filterPostsByMode,
   groupByModel,
   modelKeyFor,
@@ -82,7 +83,7 @@ describe("Autoflex insights", () => {
     expect(nudges).toEqual([
       "New fix surfaced for Tata Nexon.",
       "2 saved notes waiting in your garage shelf.",
-      "Daily diesel is close to the next 10k km service checkpoint.",
+      "Daily drive is close to the next 10k km service checkpoint.",
     ]);
   });
 
@@ -361,7 +362,7 @@ describe("Autoflex insights", () => {
     ]);
     expect(reminders[0]).toMatchObject({
       urgency: "Soon",
-      vehicleName: "Daily diesel",
+      vehicleName: "Daily drive",
     });
   });
 
@@ -479,7 +480,12 @@ describe("Autoflex insights", () => {
     const exportText = buildGarageExportMarkdown(seedGarage, seedTimeline);
 
     expect(exportText).toContain("# Autoflex garage export");
-    expect(exportText).toContain("Daily diesel");
+    expect(exportText).toContain("Daily drive");
+    // Metadata exports as labelled lines, never folded into the vehicle line.
+    expect(exportText).toContain("- Variant: XZ+");
+    expect(exportText).toContain("- Fuel: Diesel");
+    expect(exportText).toContain("- Transmission: MT");
+    expect(exportText).toContain("- Ownership: First owner");
     expect(exportText).toContain("₹1,350");
   });
 
@@ -677,5 +683,30 @@ describe("Autoflex insights", () => {
         title: "Start with a baseline inspection checklist",
       },
     ]);
+  });
+});
+
+describe("vehicle profile fuel", () => {
+  const base = {
+    brand: "Tata",
+    city: "Pune",
+    id: "profile-vehicle",
+    model: "Nexon",
+    nickname: "Daily drive",
+    odometerKm: 42000,
+    purchaseMonth: "2021-08",
+    variant: "XZ+",
+  };
+
+  it("uses the fuel the owner recorded", () => {
+    expect(buildVehicleProfile({ ...base, fuel: "Diesel" }, []).fuel).toBe("Diesel");
+  });
+
+  it("returns null instead of inferring fuel from the variant string", () => {
+    expect(buildVehicleProfile({ ...base, variant: "XZ+ Diesel MT" }, []).fuel).toBeNull();
+  });
+
+  it("never falls back to Petrol for a multi-fuel model", () => {
+    expect(buildVehicleProfile(base, []).fuel).not.toBe("Petrol");
   });
 });

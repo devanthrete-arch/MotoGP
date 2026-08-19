@@ -115,7 +115,7 @@ export function Analytics() {
                 {metric.value.toLocaleString("en-IN")}
               </span>
               <Sparkline seed={metric.value + metric.label.length} />
-              <DataText className="text-outline">{metric.hint.toUpperCase()}</DataText>
+              <DataText className="text-on-surface-variant">{metric.hint.toUpperCase()}</DataText>
             </Card>
           );
         })}

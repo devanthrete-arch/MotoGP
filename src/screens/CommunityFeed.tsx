@@ -13,7 +13,7 @@ import {
   Video,
 } from "lucide-react";
 import { useApp, type FeedMode } from "../appState";
-import { knowledgeLabels, type KnowledgeLabel } from "../domain";
+import { knowledgeLabels, vehicleFuels, type DraftPost, type KnowledgeLabel } from "../domain";
 import { vehicleBrands } from "../vehicleCatalog";
 import { Badge, Card, DataText, EdgeGlow, EmptyState, GhostButton, LabelCaps, PrimaryButton } from "../components/ui";
 import { CarDetail } from "./CarDetail";
@@ -143,7 +143,7 @@ export function CommunityFeed() {
         {/* City circles */}
         {cityCircles.length ? (
           <div aria-label="Filter notes by city" className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 lg:mx-0 lg:px-0">
-            <LabelCaps className="text-outline shrink-0">City circles</LabelCaps>
+            <LabelCaps className="text-on-surface-variant shrink-0">City circles</LabelCaps>
             {cityCircles.map((circle) => (
               <button
                 aria-label={`Show notes from ${circle.city}`}
@@ -182,17 +182,23 @@ export function CommunityFeed() {
                     </span>
                     <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
                       <span className="text-sm text-on-surface leading-tight truncate">{post.author}</span>
-                      <DataText className="text-outline uppercase truncate">{post.city || "Community"} · {post.odometerKm.toLocaleString("en-IN")} km</DataText>
+                      <DataText className="text-on-surface-variant uppercase truncate">{post.city || "Community"} · {post.odometerKm.toLocaleString("en-IN")} km</DataText>
                     </div>
                     <Badge className="shrink-0">{post.label}</Badge>
                   </div>
                   {/* Vehicle context */}
                   <div className="inline-flex items-center gap-1.5 bg-surface-container-highest/60 rounded px-2 py-1 self-start edge-highlight max-w-full">
                     <CarFront aria-hidden="true" className="w-3.5 h-3.5 text-outline shrink-0" />
-                    <DataText className="text-outline uppercase truncate">
+                    <DataText className="text-on-surface-variant uppercase truncate">
                       {post.brand} {post.model}
-                      {post.variant ? ` ${post.variant}` : ""}
+                      {post.variant ? ` • ${post.variant}` : ""}
                     </DataText>
+                    {/* Fuel is only shown when the author actually stated it. */}
+                    {post.fuel ? (
+                      <DataText className="text-on-surface-variant uppercase shrink-0 border-l border-outline-variant pl-1.5">
+                        Fuel: {post.fuel}
+                      </DataText>
+                    ) : null}
                   </div>
                   {/* Title + excerpt */}
                   <Link
@@ -256,8 +262,8 @@ export function CommunityFeed() {
                 </article>
               ))
             ) : (
-              <EmptyState>
-                <p>No notes match these filters.</p>
+              <EmptyState title="No notes match these filters">
+                <p>Owners log real fixes, running costs and inspection findings here. Clear the filters to read what has been shared so far.</p>
                 <GhostButton
                   className="min-h-[44px]"
                   onClick={() => {
@@ -372,11 +378,27 @@ export function CommunityFeed() {
             </div>
             <div className="grid sm:grid-cols-2 gap-3">
               <input
+                aria-label="Variant (trim only)"
                 className="w-full min-h-[44px]"
-                placeholder="Variant"
+                placeholder="Variant (trim only), e.g. XZ+"
                 value={draft.variant}
                 onChange={(event) => app.setDraft({ ...draft, variant: event.target.value })}
               />
+              {/* Fuel is captured on its own so the feed never has to guess it
+                  from the variant text. Blank stays blank. */}
+              <select
+                aria-label="Fuel"
+                className="w-full min-h-[44px]"
+                value={draft.fuel ?? ""}
+                onChange={(event) => app.setDraft({ ...draft, fuel: event.target.value as DraftPost["fuel"] })}
+              >
+                <option value="">Fuel — not set</option>
+                {vehicleFuels.map((fuel) => (
+                  <option key={fuel} value={fuel}>
+                    {fuel}
+                  </option>
+                ))}
+              </select>
               <input
                 className="w-full min-h-[44px]"
                 placeholder="City"

@@ -175,11 +175,11 @@ export function CreatorConnect() {
 
             <div className="grid grid-cols-2 gap-2 bg-surface-container-lowest border border-outline-variant/60 rounded-lg p-3">
               <div>
-                <LabelCaps className="text-outline block mb-1">Audience</LabelCaps>
+                <LabelCaps className="text-on-surface-variant block mb-1">Audience</LabelCaps>
                 <DataText size="lg" className="text-on-surface">{creator.audience}</DataText>
               </div>
               <div>
-                <LabelCaps className="text-outline block mb-1">Engagement</LabelCaps>
+                <LabelCaps className="text-on-surface-variant block mb-1">Engagement</LabelCaps>
                 <DataText size="lg" className="text-on-surface">{creator.engagement}</DataText>
               </div>
             </div>
@@ -216,7 +216,7 @@ export function CreatorConnect() {
                 { label: "Budget band", value: "₹40K - ₹1.2L" },
               ].map((item) => (
                 <div className="bg-surface-container-lowest border border-outline-variant/60 rounded p-3" key={item.label}>
-                  <LabelCaps className="text-outline block mb-1">{item.label}</LabelCaps>
+                  <LabelCaps className="text-on-surface-variant block mb-1">{item.label}</LabelCaps>
                   <DataText className="text-on-surface">{item.value}</DataText>
                 </div>
               ))}

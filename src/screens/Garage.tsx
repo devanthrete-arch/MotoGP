@@ -1,6 +1,6 @@
 import { Download, Heart, Plus, Wrench, X } from "lucide-react";
 import { useApp } from "../appState";
-import { findModel, formatINR } from "../carData";
+import { formatINR } from "../carData";
 import {
   Badge,
   Card,
@@ -13,22 +13,25 @@ import {
   SectionHeader,
   StatusChip,
 } from "../components/ui";
-import { timelineKinds, type GarageVehicle, type TimelineEntryKind } from "../domain";
+import { VehicleFactGrid } from "../components/VehicleFactGrid";
+import {
+  timelineKinds,
+  vehicleFuels,
+  vehicleOwnerships,
+  vehicleTransmissions,
+  type GarageVehicle,
+  type TimelineEntryKind,
+  type VehicleFuel,
+  type VehicleOwnership,
+  type VehicleTransmission,
+} from "../domain";
 import { formatMoney } from "../insights";
 import { modelsForBrand, vehicleBrands } from "../vehicleCatalog";
+import { vehicleFactRows, vehicleTitle } from "../vehicleFacts";
 
 /** My-cars screen (template: my_garage_autoflex). */
 
 const yearFor = (vehicle: GarageVehicle): string => (vehicle.purchaseMonth ? vehicle.purchaseMonth.slice(0, 4) : "----");
-
-const fuelFor = (vehicle: GarageVehicle): string => {
-  const haystack = `${vehicle.variant} ${vehicle.model}`.toLowerCase();
-  if (haystack.includes("diesel")) return "Diesel";
-  if (haystack.includes("electric") || /\bev\b/.test(haystack)) return "Electric";
-  if (haystack.includes("cng")) return "CNG";
-  if (haystack.includes("hybrid") || haystack.includes("e:hev")) return "Hybrid";
-  return findModel(vehicle.brand, vehicle.model)?.variants[0]?.fuel ?? "Petrol";
-};
 
 export function Garage() {
   const app = useApp();
@@ -72,24 +75,30 @@ export function Garage() {
         </div>
         {currentVehicle ? (
           <div aria-label="Selected vehicle record" className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
-            <div className="flex flex-col gap-1 p-3 rounded bg-surface-container-lowest/60 border border-outline-variant/40">
+            <div className="flex flex-col gap-1.5 p-3 rounded bg-surface-container-lowest/60 border border-outline-variant/40">
               <LabelCaps className="text-on-surface-variant">Car</LabelCaps>
               <DataText className="text-on-surface truncate">
                 {(currentVehicle.nickname || `${currentVehicle.brand} ${currentVehicle.model}`).toUpperCase()}
               </DataText>
             </div>
-            <div className="flex flex-col gap-1 p-3 rounded bg-surface-container-lowest/60 border border-outline-variant/40">
+            <div className="flex flex-col gap-1.5 p-3 rounded bg-surface-container-lowest/60 border border-outline-variant/40">
               <LabelCaps className="text-on-surface-variant">Odometer</LabelCaps>
               <DataText className="text-on-surface">{currentVehicle.odometerKm.toLocaleString("en-IN")} KM</DataText>
             </div>
-            <div className="flex flex-col gap-1 p-3 rounded bg-surface-container-lowest/60 border border-outline-variant/40">
+            <div className="flex flex-col gap-1.5 p-3 rounded bg-surface-container-lowest/60 border border-outline-variant/40">
               <LabelCaps className="text-on-surface-variant">Total spent</LabelCaps>
               <DataText className="text-on-surface">{currentLedger && currentLedger.totalSpend ? formatMoney(currentLedger.totalSpend) : "—"}</DataText>
             </div>
-            <div className="flex flex-col gap-1 p-3 rounded bg-surface-container-lowest/60 border border-outline-variant/40">
+            <div className="flex flex-col gap-1.5 p-3 rounded bg-surface-container-lowest/60 border border-outline-variant/40">
               <LabelCaps className="text-on-surface-variant">Service due</LabelCaps>
               <DataText className="text-on-surface truncate">{(currentReminder?.title ?? "Nothing due").toUpperCase()}</DataText>
             </div>
+          </div>
+        ) : null}
+        {currentVehicle ? (
+          <div className="mt-5">
+            <LabelCaps className="text-on-surface-variant block mb-2">{vehicleTitle(currentVehicle)}</LabelCaps>
+            <VehicleFactGrid vehicle={currentVehicle} />
           </div>
         ) : null}
         <div className="flex flex-wrap items-center gap-2 mt-4">
@@ -105,8 +114,8 @@ export function Garage() {
       </Card>
 
       {!currentVehicle ? (
-        <EmptyState>
-          <p>Add your car to track service dates, repairs, and total spend.</p>
+        <EmptyState title="Your garage is empty">
+          <p>Track service, costs, and ownership notes for every car you own — in one place, on this device.</p>
           <PrimaryButton className="min-h-[44px]" onClick={app.openVehicleComposer}>
             <Plus aria-hidden="true" className="w-4 h-4" />
             Add my car
@@ -158,15 +167,67 @@ export function Garage() {
                 </div>
                 <div className="grid sm:grid-cols-2 gap-3">
                   <input
+                    aria-label="Variant (trim only)"
                     value={vehicleDraft.variant}
                     onChange={(event) => app.setVehicleDraft({ ...vehicleDraft, variant: event.target.value })}
-                    placeholder="Variant"
+                    placeholder="e.g. XZ+"
                   />
                   <input
+                    aria-label="City"
                     value={vehicleDraft.city}
                     onChange={(event) => app.setVehicleDraft({ ...vehicleDraft, city: event.target.value })}
                     placeholder="City"
                   />
+                </div>
+                {/* Fuel, gearbox and ownership are their own fields so nobody has
+                    to type them into the variant box — and "Not set" stays the
+                    default rather than the app assuming a petrol manual. */}
+                <div className="grid sm:grid-cols-3 gap-3">
+                  <select
+                    aria-label="Fuel"
+                    className="min-h-[44px]"
+                    value={vehicleDraft.fuel ?? ""}
+                    onChange={(event) =>
+                      app.setVehicleDraft({ ...vehicleDraft, fuel: event.target.value as VehicleFuel | "" })
+                    }
+                  >
+                    <option value="">Fuel — not set</option>
+                    {vehicleFuels.map((fuel) => (
+                      <option key={fuel} value={fuel}>
+                        {fuel}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    aria-label="Transmission"
+                    className="min-h-[44px]"
+                    value={vehicleDraft.transmission ?? ""}
+                    onChange={(event) =>
+                      app.setVehicleDraft({ ...vehicleDraft, transmission: event.target.value as VehicleTransmission | "" })
+                    }
+                  >
+                    <option value="">Transmission — not set</option>
+                    {vehicleTransmissions.map((transmission) => (
+                      <option key={transmission} value={transmission}>
+                        {transmission}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    aria-label="Ownership"
+                    className="min-h-[44px]"
+                    value={vehicleDraft.ownership ?? ""}
+                    onChange={(event) =>
+                      app.setVehicleDraft({ ...vehicleDraft, ownership: event.target.value as VehicleOwnership | "" })
+                    }
+                  >
+                    <option value="">Ownership — not set</option>
+                    {vehicleOwnerships.map((ownership) => (
+                      <option key={ownership} value={ownership}>
+                        {ownership}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="grid sm:grid-cols-2 gap-3">
                   <input
@@ -301,7 +362,9 @@ export function Garage() {
                 ))}
               </div>
             ) : (
-              <EmptyState>No upcoming reminders. Add a service or insurance record to keep this current.</EmptyState>
+              <EmptyState title="Nothing due right now">
+                <p>Log a service or insurance renewal and this panel starts tracking what is next, and when.</p>
+              </EmptyState>
             )}
           </div>
 
@@ -310,7 +373,7 @@ export function Garage() {
             <SectionHeader
               eyebrow="My cars"
               title="Active fleet"
-              detail="Name, variant, year, and fuel — with the latest logbook entries."
+              detail="Every car you own, with its recorded details and latest logbook entries."
             />
             <div className="grid gap-4 md:grid-cols-2">
               {garage.map((vehicle) => {
@@ -323,54 +386,69 @@ export function Garage() {
                     key={vehicle.id}
                   >
                     <EdgeGlow />
-                    <div className="p-4">
-                      <div className="flex flex-wrap items-end justify-between gap-2">
+                    <div className="p-5">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
                         <div className="min-w-0">
                           <LabelCaps className="text-primary tracking-widest">{yearFor(vehicle)} · {vehicle.brand}</LabelCaps>
-                          <h3 className="font-display text-xl font-semibold uppercase leading-tight text-on-surface mt-1 truncate">
+                          <h3 className="font-display text-xl font-semibold uppercase leading-tight text-on-surface mt-1.5 truncate">
                             {vehicle.nickname || `${vehicle.brand} ${vehicle.model}`}
                           </h3>
-                          <p className="text-sm text-on-surface-variant truncate">
-                            {vehicle.model}
-                            {vehicle.variant ? ` · ${vehicle.variant}` : ""}
+                          <p className="text-sm text-on-surface-variant truncate mt-1">
+                            {vehicleTitle(vehicle)}
                             {vehicle.city ? ` · ${vehicle.city}` : ""}
                           </p>
                         </div>
-                        <DataText className="shrink-0 text-on-surface-variant bg-surface-container-lowest/60 px-2 py-1 rounded border border-outline-variant/40 uppercase">
-                          {fuelFor(vehicle)}
-                        </DataText>
                       </div>
-                      <div className="grid grid-cols-3 gap-2 mt-4">
-                        <div className="flex flex-col gap-1 p-2 rounded bg-surface-container-lowest/50 border border-outline-variant/30">
-                          <LabelCaps className="text-[8px] text-on-surface-variant">Odometer</LabelCaps>
+                      {/* Variant, fuel, gearbox and ownership as their own fields:
+                          an unrecorded value reads as "Not set", never as a spec. */}
+                      <div aria-label={`${vehicle.nickname || vehicle.model} details`} className="grid grid-cols-2 gap-2 mt-5" role="group">
+                        {vehicleFactRows(vehicle).map((row) => (
+                          <div
+                            className="flex flex-col gap-1.5 p-2 rounded bg-surface-container-lowest/50 border border-outline-variant/30"
+                            key={row.label}
+                          >
+                            <LabelCaps className="text-on-surface-variant">{row.label}</LabelCaps>
+                            <span
+                              className={`font-mono text-[11px] tracking-[0.08em] truncate ${
+                                row.fact.source === "unknown" ? "text-outline" : "text-on-surface"
+                              }`}
+                            >
+                              {row.fact.label}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 mt-5">
+                        <div className="flex flex-col gap-1.5 p-2 rounded bg-surface-container-lowest/50 border border-outline-variant/30">
+                          <LabelCaps className="text-on-surface-variant">Odometer</LabelCaps>
                           <span className="font-mono text-[11px] tracking-[0.08em] text-on-surface">
                             {vehicle.odometerKm.toLocaleString("en-IN")} KM
                           </span>
                         </div>
-                        <div className="flex flex-col gap-1 p-2 rounded bg-surface-container-lowest/50 border border-outline-variant/30">
-                          <LabelCaps className="text-[8px] text-on-surface-variant">Spend</LabelCaps>
+                        <div className="flex flex-col gap-1.5 p-2 rounded bg-surface-container-lowest/50 border border-outline-variant/30">
+                          <LabelCaps className="text-on-surface-variant">Spend</LabelCaps>
                           <span className="font-mono text-[11px] tracking-[0.08em] text-on-surface">
                             {ledger && ledger.totalSpend ? formatMoney(ledger.totalSpend) : "—"}
                           </span>
                         </div>
-                        <div className="flex flex-col gap-1 p-2 rounded bg-surface-container-lowest/50 border border-outline-variant/30">
-                          <LabelCaps className="text-[8px] text-on-surface-variant">Status</LabelCaps>
+                        <div className="flex flex-col gap-1.5 p-2 rounded bg-surface-container-lowest/50 border border-outline-variant/30">
+                          <LabelCaps className="text-on-surface-variant">Status</LabelCaps>
                           <span className={`font-mono text-[11px] tracking-[0.08em] ${reminder?.urgency === "Soon" ? "text-error" : "text-on-surface"}`}>
                             {reminder ? reminder.urgency.toUpperCase() : "PARKED"}
                           </span>
                         </div>
                       </div>
                       {entries.length ? (
-                        <div className="mt-4 border-t border-outline-variant/60 pt-3 flex flex-col gap-3">
+                        <div className="mt-5 border-t border-outline-variant/60 pt-4 flex flex-col gap-4">
                           {entries.map((entry) => (
-                            <div className="flex flex-col gap-0.5" key={entry.id}>
+                            <div className="flex flex-col gap-1" key={entry.id}>
                               <div className="flex items-baseline justify-between gap-2">
                                 <span className="text-sm font-medium text-on-surface truncate">
                                   {entry.kind}: {entry.title}
                                 </span>
                                 <DataText className="shrink-0 text-on-surface-variant">{entry.happenedOn}</DataText>
                               </div>
-                              <DataText className="text-outline">
+                              <DataText className="text-on-surface-variant">
                                 {formatMoney(entry.amount)} · {entry.odometerKm.toLocaleString("en-IN")} KM
                               </DataText>
                               {entry.note ? <p className="text-xs text-on-surface-variant line-clamp-2">{entry.note}</p> : null}
@@ -413,7 +491,7 @@ export function Garage() {
                       <LabelCaps className="text-on-surface-variant">Records</LabelCaps>
                     </div>
                   </div>
-                  <p className="text-xs text-on-surface-variant border-t border-outline-variant/60 pt-2">
+                  <p className="text-xs text-on-surface-variant border-t border-outline-variant/60 pt-3 mt-1">
                     {ledger.latestEntry
                       ? `Latest: ${ledger.latestEntry.kind.toLowerCase()} · ${ledger.latestEntry.title}`
                       : "No costs recorded. Add service, repair, tyre, fuel, or insurance costs."}
@@ -455,8 +533,8 @@ export function Garage() {
             ))}
           </div>
         ) : (
-          <EmptyState>
-            <p>No favorite cars yet. Shortlist a model to keep it on your watchlist.</p>
+          <EmptyState title="No favourite cars yet">
+            <p>Shortlist the models you are considering to compare price, owner reports, and inspection notes side by side.</p>
             <GhostButton className="min-h-[44px]" onClick={app.openShortlistComposer}>
               <Plus aria-hidden="true" className="w-4 h-4" />
               Shortlist a car

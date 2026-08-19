@@ -1,5 +1,5 @@
 import type { GarageVehicle, TimelineEntry, TimelineEntryKind } from "../domain";
-import { timelineKinds } from "../domain";
+import { timelineKinds, vehicleFuels, vehicleOwnerships, vehicleTransmissions } from "../domain";
 import type { GarageReminder } from "../insights";
 import { asAmount, asCount, asDateOnly, asNullableDateOnly, asOneOf, asText } from "./coerce";
 import { type HostedClient, type HostedResult, runHostedForUser, unwrap, unwrapWrite } from "./result";
@@ -52,11 +52,16 @@ export type HostedGarageReminder = GarageReminder & {
 export const vehicleRowToLocal = (row: GarageVehicleRow): GarageVehicle => ({
   brand: asText(row.brand),
   city: asText(row.city),
+  // Null in Postgres and "" locally both mean "not recorded"; normalising here
+  // keeps the two representations from drifting apart.
+  fuel: asOneOf(row.fuel, vehicleFuels, ""),
   id: asText(row.id),
   model: asText(row.model),
   nickname: asText(row.nickname),
   odometerKm: asCount(row.odometer_km),
+  ownership: asOneOf(row.ownership, vehicleOwnerships, ""),
   purchaseMonth: /^\d{4}-\d{2}$/.test(asText(row.purchase_month)) ? asText(row.purchase_month) : "",
+  transmission: asOneOf(row.transmission, vehicleTransmissions, ""),
   variant: asText(row.variant),
 });
 
@@ -64,7 +69,10 @@ export const vehicleToRow = (userId: string, vehicle: GarageVehicle): Insert<"ga
   brand: asText(vehicle.brand, "Unknown"),
   city: asText(vehicle.city),
   deleted_at: null,
+  fuel: vehicle.fuel || null,
   id: asText(vehicle.id),
+  ownership: vehicle.ownership || null,
+  transmission: vehicle.transmission || null,
   model: asText(vehicle.model, "Unknown"),
   nickname: asText(vehicle.nickname),
   odometer_km: asCount(vehicle.odometerKm),

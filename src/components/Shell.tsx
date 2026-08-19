@@ -77,7 +77,7 @@ export function Sidebar() {
       >
         <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
         <span className="flex-1">{item.label}</span>
-        {item.count ? <span className="font-mono text-[10px] text-outline tracking-[0.1em]">{String(item.count).padStart(2, "0")}</span> : null}
+        {item.count ? <span className="font-mono text-[10px] text-on-surface-variant tracking-[0.1em]">{String(item.count).padStart(2, "0")}</span> : null}
       </a>
     );
   };
@@ -126,7 +126,7 @@ export function Sidebar() {
         <span className={cx("status-dot", app.connectionStatus.tone)} aria-hidden="true" />
         <div className="flex flex-col">
           <span className="font-mono text-[10px] font-bold tracking-[0.2em] uppercase text-on-surface">{app.connectionStatus.label}</span>
-          <small className="font-mono text-[10px] text-outline tracking-[0.05em]">Records stay available offline.</small>
+          <small className="font-mono text-[10px] text-on-surface-variant tracking-[0.05em]">Records stay available offline.</small>
         </div>
       </div>
     </aside>
@@ -226,7 +226,7 @@ export function MobileDock() {
               <Icon className="w-5 h-5" aria-hidden="true" />
               <span className="font-mono text-[10px] font-bold tracking-[0.2em] uppercase">{item.label}</span>
               {item.count ? (
-                <span className="absolute top-2 right-1/4 font-mono text-[9px] text-outline">{item.count}</span>
+                <span className="absolute top-2 right-1/4 font-mono text-[9px] text-on-surface-variant">{item.count}</span>
               ) : null}
             </a>
           );

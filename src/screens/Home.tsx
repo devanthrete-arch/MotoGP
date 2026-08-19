@@ -20,6 +20,8 @@ import { useApp } from "../appState";
 import { buildStarterRouteProgress, formatMoney } from "../insights";
 import { starterRoutes } from "../domain";
 import { Badge, DataText, EdgeGlow, GhostButton, LabelCaps, StatusChip } from "../components/ui";
+import { VehicleFactGrid } from "../components/VehicleFactGrid";
+import { vehicleTitle } from "../vehicleFacts";
 
 const Hero3D = lazy(() => import("../components/Hero3D"));
 
@@ -33,7 +35,7 @@ function StatTile({ label, value, unit, sub }: { label: string; value: string; u
         {value}
         {unit ? <span className="font-mono text-xs text-on-surface-variant ml-1.5 tracking-[0.1em]">{unit}</span> : null}
       </DataText>
-      {sub ? <DataText className="text-outline">{sub}</DataText> : null}
+      {sub ? <DataText className="text-on-surface-variant">{sub}</DataText> : null}
       <svg aria-hidden="true" className="absolute bottom-2 right-2 w-12 h-6 text-primary/25" fill="none" viewBox="0 0 48 24">
         <path d="M2 20h8l6-14 8 10 10-12 12 8" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
       </svg>
@@ -120,7 +122,7 @@ export function Home() {
             <h1 className="font-display text-4xl sm:text-5xl font-bold uppercase tracking-tight leading-[1.05] text-on-surface">
               {currentVehicle ? (
                 <>
-                  {currentVehicle.nickname || currentVehicle.model}
+                  Your car
                   <br />
                   <span className="text-primary glow-text">at a glance.</span>
                 </>
@@ -133,14 +135,14 @@ export function Home() {
             </h1>
             <p className="text-on-surface-variant max-w-md">
               {currentVehicle
-                ? "Maintenance, costs, and what owners report — decoded in one place."
+                ? `Maintenance, costs, and what owners report for your ${vehicleTitle(currentVehicle)} — decoded in one place.`
                 : "Start with the car you own or the cars you are considering."}
             </p>
 
 
             {starterPending ? (
               <section aria-label="Finish setting up" className="flex flex-col gap-2">
-                <LabelCaps className="text-outline">Finish setting up</LabelCaps>
+                <LabelCaps className="text-on-surface-variant">Finish setting up</LabelCaps>
               <ol aria-label="First actions" className="flex flex-col gap-2 list-none p-0 m-0">
                 {starterProgress.map((step) => (
                   <li key={step.id}>
@@ -162,7 +164,7 @@ export function Home() {
                           <span className="font-display font-semibold uppercase tracking-tight">{step.title}</span>
                           <Badge>{step.complete ? "Done" : "Pending"}</Badge>
                         </span>
-                        <DataText className="text-outline !normal-case !tracking-normal">{step.detail}</DataText>
+                        <DataText className="text-on-surface-variant !normal-case !tracking-normal">{step.detail}</DataText>
                       </span>
                     </a>
                   </li>
@@ -192,30 +194,27 @@ export function Home() {
                   >
                     <ListChecks aria-hidden="true" className="w-5 h-5 shrink-0" />
                     <span className="flex flex-col gap-0.5">
-                      <LabelCaps className="text-outline">I'm buying a car</LabelCaps>
+                      <LabelCaps className="text-on-surface-variant">I'm buying a car</LabelCaps>
                       <span className="font-display font-semibold uppercase tracking-tight">Start my shortlist</span>
                     </span>
                   </button>
                 </div>
-                <DataText className="text-outline">Choose one path to begin. You can add the other later.</DataText>
+                <DataText className="text-on-surface-variant">Choose one path to begin. You can add the other later.</DataText>
               </>
             ) : (
               <div className="flex flex-wrap items-end gap-3">
                 {garage.length === 1 && currentVehicle ? (
                   <div aria-label="Current vehicle" className="relative overflow-hidden bg-surface-container border border-outline-variant rounded-lg px-4 py-3 flex flex-col gap-0.5">
                     <EdgeGlow />
-                    <LabelCaps className="text-outline">My car</LabelCaps>
+                    <LabelCaps className="text-on-surface-variant">My car</LabelCaps>
                     <strong className="font-display uppercase tracking-tight text-on-surface">
-                      {currentVehicle.nickname || `${currentVehicle.brand} ${currentVehicle.model}`}
+                      {currentVehicle.nickname || vehicleTitle(currentVehicle)}
                     </strong>
-                    <DataText className="text-on-surface-variant">
-                      {currentVehicle.brand} {currentVehicle.model}
-                      {currentVehicle.variant ? ` · ${currentVehicle.variant}` : ""}
-                    </DataText>
+                    <DataText className="text-on-surface-variant">{vehicleTitle(currentVehicle)}</DataText>
                   </div>
                 ) : currentVehicle ? (
                   <div className="relative">
-                    <LabelCaps className="text-outline block mb-1.5">Current vehicle</LabelCaps>
+                    <LabelCaps className="text-on-surface-variant block mb-1.5">Current vehicle</LabelCaps>
                     <button
                       aria-controls="vehicle-menu"
                       aria-expanded={vehicleMenuOpen}
@@ -235,9 +234,7 @@ export function Home() {
                         <strong className="font-display text-sm uppercase tracking-tight text-on-surface truncate">
                           {currentVehicle.nickname || currentVehicle.model}
                         </strong>
-                        <DataText className="text-outline truncate">
-                          {currentVehicle.brand} {currentVehicle.model}
-                        </DataText>
+                        <DataText className="text-on-surface-variant truncate">{vehicleTitle(currentVehicle)}</DataText>
                       </span>
                       <ChevronDown
                         aria-hidden="true"
@@ -268,10 +265,7 @@ export function Home() {
                           </span>
                           <span className="flex flex-col min-w-0">
                             <strong className="text-sm truncate">{vehicle.nickname || vehicle.model}</strong>
-                            <DataText className="text-outline truncate">
-                              {vehicle.brand} {vehicle.model}
-                              {vehicle.variant ? ` · ${vehicle.variant}` : ""}
-                            </DataText>
+                            <DataText className="text-on-surface-variant truncate">{vehicleTitle(vehicle)}</DataText>
                           </span>
                         </button>
                       ))}
@@ -351,6 +345,18 @@ export function Home() {
             </div>
           </section>
 
+          {/* VEHICLE SNAPSHOT — the four recorded details, each labelled */}
+          {currentVehicle ? (
+            <section aria-label="Vehicle snapshot">
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <CarFront aria-hidden="true" className="w-4 h-4 text-primary" />
+                <LabelCaps className="text-on-surface">Vehicle snapshot</LabelCaps>
+                <DataText className="text-on-surface-variant">{vehicleTitle(currentVehicle).toUpperCase()}</DataText>
+              </div>
+              <VehicleFactGrid vehicle={currentVehicle} />
+            </section>
+          ) : null}
+
           {/* LIVE TELEMETRY GRID */}
           <section aria-label="Current car summary">
             <div className="flex items-center gap-2 mb-3">
@@ -390,7 +396,7 @@ export function Home() {
                 <EdgeGlow />
                 <span className="flex items-center justify-between w-full">
                   <Icon aria-hidden="true" className="w-5 h-5 text-primary" />
-                  <DataText className="text-outline">{String(entry.count).padStart(2, "0")}</DataText>
+                  <DataText className="text-on-surface-variant">{String(entry.count).padStart(2, "0")}</DataText>
                 </span>
                 <span className="font-display font-semibold uppercase tracking-tight text-on-surface">{entry.title}</span>
                 <DataText className="text-on-surface-variant">{entry.sub}</DataText>
@@ -422,7 +428,7 @@ export function Home() {
                 <Icon aria-hidden="true" className="w-4 h-4 shrink-0 text-primary" />
                 <span className="flex flex-col min-w-0">
                   <span className="font-mono text-[10px] font-bold tracking-[0.2em] uppercase text-on-surface">{module.label}</span>
-                  <DataText className="text-outline truncate">{module.sub}</DataText>
+                  <DataText className="text-on-surface-variant truncate">{module.sub}</DataText>
                 </span>
               </button>
             );
@@ -457,7 +463,7 @@ export function Home() {
               <Badge className="shrink-0">{post.label}</Badge>
               <span className="flex-1 min-w-0 flex flex-col gap-0.5">
                 <strong className="text-sm text-on-surface truncate">{post.title}</strong>
-                <DataText className="text-outline uppercase truncate">
+                <DataText className="text-on-surface-variant uppercase truncate">
                   {post.brand} {post.model} · {post.city || "Community note"}
                 </DataText>
               </span>

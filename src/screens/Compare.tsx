@@ -199,7 +199,7 @@ function CompareEngine() {
   if (!carCatalog.length) {
     return (
       <Card>
-        <EmptyState className="border-0 p-0">Market catalog is loading. Compare data will appear here.</EmptyState>
+        <EmptyState className="border-0 p-0"><p>Market catalog is loading. Compare data will appear here.</p></EmptyState>
       </Card>
     );
   }
@@ -436,8 +436,8 @@ export function Compare() {
               </Card>
             ))
           ) : (
-            <EmptyState className="sm:col-span-2 lg:col-span-3">
-              <p>Start with a car you are considering. We will show what owners report and what to inspect.</p>
+            <EmptyState className="sm:col-span-2 lg:col-span-3" title="Nothing to compare yet">
+              <p>Add the cars you are considering to line up price, what owners actually report, and what to inspect before you pay.</p>
               <PrimaryButton onClick={app.openShortlistComposer}>
                 <Plus aria-hidden="true" className="w-4 h-4" />
                 Add a car
@@ -541,7 +541,7 @@ export function Compare() {
                       ].map((stat) => (
                         <div className="bg-surface-container-lowest border border-outline-variant/60 rounded p-2 text-center" key={stat.label}>
                           <DataText className="text-on-surface block">{stat.value}</DataText>
-                          <LabelCaps className="text-outline">{stat.label}</LabelCaps>
+                          <LabelCaps className="text-on-surface-variant">{stat.label}</LabelCaps>
                         </div>
                       ))}
                     </div>
@@ -592,8 +592,8 @@ export function Compare() {
                 );
               })
             ) : (
-              <EmptyState className="lg:col-span-2">
-                Add a car to compare price, what owners report, and what to inspect.
+              <EmptyState className="lg:col-span-2" title="No cars on the shortlist">
+                <p>Save a model here to track its price, owner reports, and inspection checklist as you decide.</p>
               </EmptyState>
             )}
           </div>

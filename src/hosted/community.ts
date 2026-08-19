@@ -1,5 +1,5 @@
 import type { KnowledgeLabel, OwnerPost, ReportRecord, ReportStatus } from "../domain";
-import { knowledgeLabels } from "../domain";
+import { knowledgeLabels, vehicleFuels } from "../domain";
 import { asAmount, asCount, asIsoTimestamp, asOneOf, asText, nowIso } from "./coerce";
 import { type HostedClient, type HostedResult, runHosted, runHostedForUser, unwrap, unwrapWrite } from "./result";
 import type { Insert, OwnerPostRow, PostCommentRow, ReportRow } from "./tables";
@@ -50,6 +50,7 @@ export const postRowToLocal = (row: OwnerPostRow, comments: string[] = []): Owne
   odometerKm: asCount(row.odometer_km),
   title: asText(row.title),
   topic: asText(row.topic, "Ownership"),
+  fuel: asOneOf(row.fuel, vehicleFuels, ""),
   variant: asText(row.variant),
 });
 
@@ -68,6 +69,7 @@ export const postToRow = (userId: string, post: OwnerPost): Insert<"owner_posts"
   title: asText(post.title),
   topic: asText(post.topic, "Ownership"),
   user_id: userId,
+  fuel: post.fuel || null,
   variant: asText(post.variant),
 });
 

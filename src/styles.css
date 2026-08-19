@@ -211,6 +211,8 @@ textarea {
   font-family: inherit;
   font-size: 0.9rem;
   width: 100%;
+  /* Touch target floor for every bare form control (mobile-first). */
+  min-height: 44px;
 }
 
 input::placeholder,
@@ -228,6 +230,7 @@ textarea:focus {
 input[type="checkbox"] {
   width: 1rem;
   height: 1rem;
+  min-height: 1rem;
   accent-color: #c7c6cb;
 }
 
