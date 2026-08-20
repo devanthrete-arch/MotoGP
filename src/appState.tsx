@@ -1,5 +1,6 @@
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -885,7 +886,12 @@ export function useAutoflexState() {
     });
   };
 
-  const toggleSaved = (postId: string) => {
+  /**
+   * Wrapped in `useCallback` so memoised list rows can skip re-rendering.
+   * The dependency is the data it actually reads, not the whole render — a
+   * keystroke in the composer no longer changes this function's identity.
+   */
+  const toggleSaved = useCallback((postId: string) => {
     const next = new Set(saved);
     const wasSaved = next.has(postId);
     if (wasSaved) next.delete(postId);
@@ -894,7 +900,8 @@ export function useAutoflexState() {
     saveSaved(next);
     setActionMessage(wasSaved ? "Removed from saved notes." : "Note saved.");
     noteLocalWrite((userId) => void setHostedSavedPost(userId, postId, !wasSaved));
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- persist helpers are recreated each render by design
+  }, [saved]);
 
   const toggleFollowModel = (brand: string, model: string) => {
     const key = modelKeyFor(brand, model);
@@ -909,11 +916,12 @@ export function useAutoflexState() {
     persistFollows({ ...follows, topics: nextTopics });
   };
 
-  const markHelpful = (postId: string) => {
+  const markHelpful = useCallback((postId: string) => {
     const next = posts.map((post) => (post.id === postId ? { ...post, helpful: post.helpful + 1 } : post));
     persistPosts(next);
     setSelectedPost(next.find((post) => post.id === postId) ?? null);
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- persist helpers are recreated each render by design
+  }, [posts]);
 
   const confirmFix = (postId: string) => {
     const next = posts.map((post) =>
@@ -1318,7 +1326,7 @@ export function useAutoflexState() {
     }
   };
 
-  const openPostDetail = (post: OwnerPost) => {
+  const openPostDetail = useCallback((post: OwnerPost) => {
     setSelectedPost(post);
     setPostDetailOpen(true);
     updateRoute(`/community/${encodeURIComponent(post.id)}`);
@@ -1326,7 +1334,8 @@ export function useAutoflexState() {
       document.querySelector(".detail-card")?.scrollIntoView({ block: "start" });
       postDetailHeadingRef.current?.focus({ preventScroll: true });
     });
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- updateRoute is recreated each render by design
+  }, []);
 
   const openPostComposer = () => {
     openWorkspace("community", "community", undefined, "/community/new");
