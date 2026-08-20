@@ -37,9 +37,15 @@ src/
     cloud/cloudSync.ts       account backup/restore + sign-in link
 
   ui/                        design-system primitives, shared across features
-    primitives.tsx           buttons, cards, fields, badges
+    cn.ts                    the class-merge helper + the focus/touch constants
+    primitives.tsx           buttons, cards, fields, badges, EmptyState
+    Skeleton.tsx             loading placeholders that reserve the real box
+    ErrorState.tsx           the quiet hosted-failure notice
+    LiveRegion.tsx           the always-mounted polite announcer
+    AsyncBoundary.tsx        loading / error / empty / content in one place
+    useFocusTrap.ts          Tab containment for overlays
     VehicleFactGrid.tsx      renders core catalog facts
-    ErrorBoundary.tsx        Hero3D.tsx
+    ErrorBoundary.tsx        Hero3D.tsx        index.ts
 
   features/                  one folder per bounded context
     community/  garage/  buying/  content/  account/
@@ -288,9 +294,18 @@ identical, and each has tests asserting its exact current output. Consolidating
 them is a behaviour question, not a structural one, so it was left alone and
 recorded here.
 
-**`ui/` has no barrel.** Screens import `ui/primitives` directly. `ui/` is a
-design-system layer rather than a bounded context, so a curated public API buys
-less there than it does for a feature.
+**`ui/` now has a barrel, but not an access boundary.** `src/ui/index.ts` exists
+so that moving a primitive between files is not a screen-wide edit; importing
+`ui/primitives` directly is still legal and is what the older screens do. `ui/`
+is a design-system layer rather than a bounded context, so the barrel is a
+convenience rather than a curated public API. See `docs/UI_SYSTEM.md`.
+
+**No screen has a hosted-loading signal yet.** `ui/AsyncBoundary` implements the
+loading arm and `ui/Skeleton` reserves the box for it, but `hostedSyncing` lives
+in `appState.tsx` and is not on the `useApp()` surface, so no screen can pass
+`loading` today. Surfacing it is one line in the returned object — it was left
+out on purpose because a visible busy state during background sync is a product
+decision, not a UI-layer one. See `docs/UI_SYSTEM.md`.
 
 **Pre-existing dead locals in `appState.tsx` were left in place.** A dozen
 `useMemo` results (`vehicleProfileById`, `reminderStatusById`,
@@ -306,7 +321,7 @@ Genuinely unused *imports* were removed — that was 31 specifiers, including
 ## 5. Verification
 
 ```bash
-npm run test    # 348 tests across 24 files
+npm run test    # 422 tests across 29 files
 npm run build   # tsc -b + vite build + service-worker manifest
 ```
 

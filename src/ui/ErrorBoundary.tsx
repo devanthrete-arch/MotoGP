@@ -8,6 +8,16 @@ type ErrorBoundaryState = {
   error: Error | null;
 };
 
+/**
+ * Last-resort recovery screen for a render crash anywhere in the app.
+ *
+ * Deliberately imports nothing from the rest of the design system and styles
+ * itself with the global utility classes: this is the component that has to
+ * render when something else in the tree has already failed, so it keeps its
+ * dependency surface as close to zero as a React component can. It wraps the
+ * state provider, not just the frame, so a crash during the initial storage
+ * read lands here rather than on an empty #root.
+ */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   state: ErrorBoundaryState = {
     error: null,

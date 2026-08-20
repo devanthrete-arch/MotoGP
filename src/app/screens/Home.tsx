@@ -21,7 +21,7 @@ import { formatMoney } from "../../core/index";
 import { buildStarterRouteProgress } from "../../features/account/index";
 import { starterRoutes } from "../../core/entities";
 import { Badge, DataText, EdgeGlow, GhostButton, LabelCaps, StatusChip } from "../../ui/primitives";
-import { useFocusTrap } from "../../ui";
+import { Skeleton, useFocusTrap } from "../../ui";
 import { VehicleFactGrid } from "../../ui/VehicleFactGrid";
 import { vehicleTitle } from "../../core/catalog/vehicleFacts";
 
@@ -290,7 +290,9 @@ export function Home() {
 
           {/* Hero visual — 3D module with HUD overlays */}
           <div className="relative min-h-[280px] rounded-lg overflow-hidden border border-outline-variant bg-surface-container-lowest edge-highlight">
-            <Suspense fallback={<div className="h-[420px] bg-surface-container-lowest" />}>
+            {/* The hero is a lazy chunk; on a low-end phone the gap is visible.
+                Same 420px box as the loaded canvas, so nothing shifts. */}
+            <Suspense fallback={<Skeleton className="bg-surface-container-lowest" height="420px" />}>
               <Hero3D />
             </Suspense>
             <div aria-hidden="true" className="absolute top-4 left-4 z-10 flex flex-col items-start gap-1.5 pointer-events-none">
