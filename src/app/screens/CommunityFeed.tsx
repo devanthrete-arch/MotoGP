@@ -11,7 +11,7 @@ import { useApp, type FeedMode } from "../state/appState";
 import { knowledgeLabels, vehicleFuels, type DraftPost, type KnowledgeLabel } from "../../core/entities";
 import { vehicleBrands } from "../../core/catalog/vehicleCatalog";
 import { Card, DataText, EdgeGlow, EmptyState, GhostButton, LabelCaps, PrimaryButton } from "../../ui/primitives";
-import { PostCard } from "../../features/community/ui/PostCard";
+import { PostCard } from "../../features/community";
 import { CarDetail } from "./CarDetail";
 
 function Chip({ active, children, onClick, ariaLabel }: { active: boolean; children: ReactNode; onClick: () => void; ariaLabel?: string }) {
