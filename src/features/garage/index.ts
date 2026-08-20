@@ -16,3 +16,4 @@ export type { GarageInsight } from "./domain/insights";
 export { buildGarageReminders } from "./domain/reminders";
 export { initialTimelineDraft, initialVehicleDraft } from "./domain/drafts";
 export { useGarageDerived } from "./hooks/useGarageDerived";
+export { useGarageActions } from "./hooks/useGarageActions";

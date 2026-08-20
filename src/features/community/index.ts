@@ -16,3 +16,4 @@ export type { SharePayload } from "./domain/sharePayload";
 export { initialPostDraft } from "./domain/drafts";
 export { useCommunityDerived } from "./hooks/useCommunityDerived";
 export type { FeedMode } from "./domain/feed";
+export { useCommunityActions } from "./hooks/useCommunityActions";

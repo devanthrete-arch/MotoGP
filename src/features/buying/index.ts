@@ -11,3 +11,4 @@ export { buildShortlistComparisons, buildShortlistDecisionLanes } from "./domain
 export type { ShortlistComparison, ShortlistDecisionLane } from "./domain/shortlist";
 export { initialShortlistDraft } from "./domain/drafts";
 export { useBuyingDerived } from "./hooks/useBuyingDerived";
+export { useBuyingActions } from "./hooks/useBuyingActions";

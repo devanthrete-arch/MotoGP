@@ -130,11 +130,12 @@ import { readCloudUser, type CloudUser } from "../../infrastructure/supabase/aut
 import { initialPostDraft } from "../../features/community";
 import { initialTimelineDraft, initialVehicleDraft } from "../../features/garage";
 import { initialShortlistDraft } from "../../features/buying";
-import { useConnectionStatus } from "../../features/account";
-import { useCommunityDerived, type FeedMode } from "../../features/community";
-import { useGarageDerived } from "../../features/garage";
+import { useConnectionStatus, useAccountActions } from "../../features/account";
+import { useCommunityDerived, useCommunityActions, type FeedMode } from "../../features/community";
+import { useGarageDerived, useGarageActions } from "../../features/garage";
 import { useContentDerived } from "../../features/content";
-import { useBuyingDerived } from "../../features/buying";
+import { useBuyingDerived, useBuyingActions } from "../../features/buying";
+import { usePersistence } from "./usePersistence";
 
 /** Re-exported from the community feature so screens keep one import site. */
 export type { FeedMode };
@@ -572,161 +573,30 @@ export function useAutoflexState() {
     };
   }, [vehicleMenuOpen]);
 
-  /**
-   * Stamps a local mutation and mirrors it to the hosted tables.
-   *
-   * State and localStorage are written first and unconditionally, so behaviour
-   * is identical with no network, no session, or no Supabase configuration.
-   * The hosted push is fire-and-forget and cannot throw.
-   */
-  const noteLocalWrite = (push?: (userId: string) => void): void => {
-    localUpdatedAtRef.current = markLocalUpdated();
-    const userId = cloudUserRef.current?.id;
-    if (userId && push) push(userId);
-  };
-
-  const persistPosts = (nextPosts: OwnerPost[]) => {
-    setPosts(nextPosts);
-    savePosts(nextPosts);
-    noteLocalWrite((userId) => void upsertHostedPosts(userId, nextPosts));
-  };
-
-  const persistFollows = (nextFollows: FollowState) => {
-    setFollows(nextFollows);
-    saveFollows(nextFollows);
-    noteLocalWrite((userId) => void saveHostedFollows(userId, nextFollows));
-  };
-
-  const persistSubscriptionSettings = (nextSettings: SubscriptionSettings) => {
-    setSubscriptionSettings(nextSettings);
-    saveSubscriptionSettings(nextSettings);
-    noteLocalWrite((userId) => void saveHostedSubscriptionSettings(userId, nextSettings));
-  };
-
-  const persistProfile = (nextProfile: Profile) => {
-    setProfile(nextProfile);
-    saveProfile(nextProfile);
-    noteLocalWrite((userId) => void saveHostedProfile(userId, nextProfile));
-  };
-
-  const persistReports = (nextReports: ReportRecord[]) => {
-    setReports(nextReports);
-    saveReports(nextReports);
-    noteLocalWrite((userId) => void upsertHostedReports(userId, nextReports));
-  };
-
-  const persistShortlist = (nextShortlist: ShortlistItem[]) => {
-    setShortlist(nextShortlist);
-    saveShortlist(nextShortlist);
-    noteLocalWrite((userId) => void upsertHostedShortlistItems(userId, nextShortlist));
-  };
-
-  const persistGarage = (nextGarage: GarageVehicle[]) => {
-    setGarage(nextGarage);
-    saveGarage(nextGarage);
-    noteLocalWrite((userId) => void upsertHostedVehicles(userId, nextGarage));
-    if (!timelineDraft.vehicleId && nextGarage[0]) {
-      setTimelineDraft({ ...timelineDraft, vehicleId: nextGarage[0].id });
-    }
-  };
-
-  const persistTimeline = (nextTimeline: TimelineEntry[]) => {
-    setTimeline(nextTimeline);
-    saveTimeline(nextTimeline);
-    noteLocalWrite((userId) => {
-      void upsertHostedTimelineEntries(userId, nextTimeline);
-      void syncHostedCostsFromTimeline(userId, nextTimeline);
-    });
-  };
-
-  /**
-   * Wrapped in `useCallback` so memoised list rows can skip re-rendering.
-   * The dependency is the data it actually reads, not the whole render — a
-   * keystroke in the composer no longer changes this function's identity.
-   */
-  const toggleSaved = useCallback((postId: string) => {
-    const next = new Set(saved);
-    const wasSaved = next.has(postId);
-    if (wasSaved) next.delete(postId);
-    else next.add(postId);
-    setSaved(next);
-    saveSaved(next);
-    setActionMessage(wasSaved ? "Removed from saved notes." : "Note saved.");
-    noteLocalWrite((userId) => void setHostedSavedPost(userId, postId, !wasSaved));
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- persist helpers are recreated each render by design
-  }, [saved]);
-
-  const toggleFollowModel = (brand: string, model: string) => {
-    const key = modelKeyFor(brand, model);
-    const nextModels = follows.models.includes(key) ? follows.models.filter((item) => item !== key) : [...follows.models, key];
-    persistFollows({ ...follows, models: nextModels });
-  };
-
-  const toggleFollowTopic = (topic: KnowledgeLabel) => {
-    const nextTopics = follows.topics.includes(topic)
-      ? follows.topics.filter((item) => item !== topic)
-      : [...follows.topics, topic];
-    persistFollows({ ...follows, topics: nextTopics });
-  };
-
-  const markHelpful = useCallback((postId: string) => {
-    const next = posts.map((post) => (post.id === postId ? { ...post, helpful: post.helpful + 1 } : post));
-    persistPosts(next);
-    setSelectedPost(next.find((post) => post.id === postId) ?? null);
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- persist helpers are recreated each render by design
-  }, [posts]);
-
-  const confirmFix = (postId: string) => {
-    const next = posts.map((post) =>
-      post.id === postId ? { ...post, fixesConfirmed: post.fixesConfirmed + 1, helpful: post.helpful + 1 } : post,
-    );
-    persistPosts(next);
-    setSelectedPost(next.find((post) => post.id === postId) ?? null);
-  };
-
-  const addComment = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!selectedPost || !commentDraft.trim()) return;
-    const author = profile.displayName.trim() || "Anonymous garage member";
-    const next = posts.map((post) =>
-      post.id === selectedPost.id ? { ...post, comments: [`${author}: ${commentDraft.trim()}`, ...post.comments] } : post,
-    );
-    persistPosts(next);
-    setSelectedPost(next.find((post) => post.id === selectedPost.id) ?? null);
-    setCommentDraft("");
-    const comment = commentDraft.trim();
-    const postId = selectedPost.id;
-    noteLocalWrite((userId) => void addHostedComment(userId, postId, author, comment));
-    setActionMessage(cloudUser ? "Comment posted." : "Comment saved on this device. Sign in to share it with Community.");
-  };
-
-  const reportSelectedPost = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!selectedPost || !reportDraft.trim()) return;
-    const report = createReport({
-      postId: selectedPost.id,
-      postTitle: selectedPost.title,
-      reason: reportDraft.trim(),
-      reporterName: profile.displayName.trim() || "Anonymous reporter",
-    });
-    persistReports([report, ...reports]);
-    setReportDraft("");
-    noteLocalWrite((userId) => void upsertHostedReport(userId, report));
-    setActionMessage(
-      cloudUser ? "Report sent to moderators." : "Report saved on this device. Sign in to send it to moderators.",
-    );
-  };
-
-  const setReportStatus = (reportId: string, status: ReportRecord["status"]) => {
-    persistReports(reports.map((report) => (report.id === reportId ? { ...report, status } : report)));
-  };
-
-  const removeReportedPost = (report: ReportRecord) => {
-    const nextPosts = posts.filter((post) => post.id !== report.postId);
-    persistPosts(nextPosts);
-    persistReports(reports.map((item) => (item.id === report.id ? { ...item, status: "Removed" } : item)));
-    if (selectedPost?.id === report.postId) setSelectedPost(nextPosts[0] ?? null);
-  };
+  const {
+    noteLocalWrite,
+    persistFollows,
+    persistGarage,
+    persistPosts,
+    persistProfile,
+    persistReports,
+    persistShortlist,
+    persistSubscriptionSettings,
+    persistTimeline,
+  } = usePersistence({
+    cloudUserRef,
+    localUpdatedAtRef,
+    setFollows,
+    setGarage,
+    setPosts,
+    setProfile,
+    setReports,
+    setShortlist,
+    setSubscriptionSettings,
+    setTimeline,
+    setTimelineDraft,
+    timelineDraft,
+  });
 
   /** Share via the deep-link aware ladder: Web Share, clipboard, then manual. */
   const share = async (content: ShareContent): Promise<void> => {
@@ -748,250 +618,96 @@ export function useAutoflexState() {
     }
   };
 
-  const shareSelectedPost = () => {
-    if (!selectedPost) return;
-    void share({ kind: "post", post: selectedPost });
-  };
+  const {
+    addComment,
+    confirmFix,
+    markHelpful,
+    publishPost,
+    removeReportedPost,
+    reportSelectedPost,
+    setReportStatus,
+    shareModelNotebook,
+    shareSelectedPost,
+    toggleFollowModel,
+    toggleFollowTopic,
+    toggleSaved,
+  } = useCommunityActions({
+    cloudUser,
+    commentDraft,
+    draft,
+    follows,
+    noteLocalWrite,
+    notebooks,
+    ownershipPlaybooks,
+    persistFollows,
+    persistPosts,
+    persistReports,
+    postDetailHeadingRef,
+    posts,
+    profile,
+    reportDraft,
+    reports,
+    saved,
+    selectedPost,
+    setActionMessage,
+    setCommentDraft,
+    setDraft,
+    setPostComposerOpen,
+    setPostDetailOpen,
+    setReportDraft,
+    setSaved,
+    setSelectedPost,
+    sharePlaybook: (playbook) => void share({ kind: "playbook", playbook }),
+    sharePost: (post) => void share({ kind: "post", post }),
+  });
 
-  const shareModelNotebook = (brand: string, model: string) => {
-    const key = modelKeyFor(brand, model);
-    const notebook = notebooks.find((item) => item.key === key);
-    if (!notebook) return;
-    const playbook = ownershipPlaybooks.find((item) => item.key === key);
-    void share({
-      kind: "playbook",
-      playbook: {
-        brand,
-        model,
-        confidence: playbook?.confidence ?? "Early signal",
-        evidenceCount: playbook?.evidenceCount ?? notebook.posts.length,
-        headline: playbook?.headline ?? `${brand} ${model} owner notes`,
-      },
-    });
-  };
+  const { addTimelineNote, addVehicle, exportGarage, selectVehicle } = useGarageActions({
+    garage,
+    garageHeadingRef,
+    persistGarage,
+    persistTimeline,
+    setActionMessage,
+    setGarageForm,
+    setTimelineDraft,
+    setVehicleDraft,
+    setVehicleMenuOpen,
+    shareText: (payload) => void shareText(payload),
+    timeline,
+    timelineDraft,
+    vehicleDraft,
+    vehicleTriggerRef,
+  });
 
-  const exportGarage = () => {
-    void shareText({
-      title: "Autoflex garage export",
-      text: buildGarageExportMarkdown(garage, timeline),
-    });
-  };
+  const { addSelectedToShortlist, addShortlistItem, removeShortlistItem, updateShortlistItem } = useBuyingActions({
+    persistShortlist,
+    selectedPost,
+    setActionMessage,
+    setShortlistDraft,
+    setShortlistFormOpen,
+    shortlist,
+    shortlistDraft,
+    shortlistHeadingRef,
+  });
 
-  const downloadBackup = () => {
-    try {
-      const payload = JSON.stringify(buildAutoflexBackup(), null, 2);
-      const url = URL.createObjectURL(new Blob([payload], { type: "application/json" }));
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `autoflex-backup-${new Date().toISOString().slice(0, 10)}.json`;
-      document.body.append(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 0);
-      setActionMessage("Your Autoflex data copy was downloaded.");
-    } catch {
-      setActionMessage("Your data copy could not be downloaded in this browser.");
-    }
-  };
-
-  const restoreBackup = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.currentTarget.files?.[0];
-    event.currentTarget.value = "";
-    if (!file) return;
-
-    try {
-      const backup = parseAutoflexBackup(await file.text());
-      if (!backup) {
-        setActionMessage("That file is not a valid Autoflex data copy.");
-        return;
-      }
-
-      restoreAutoflexBackup(backup);
-      setActionMessage("Data imported. Reloading Autoflex.");
-      window.setTimeout(() => window.location.reload(), 500);
-    } catch {
-      setActionMessage("That data copy could not be read.");
-    }
-  };
-
-  const clearAllData = () => {
-    setCloudReadyToSync(false);
-    writeCloudOwner(null);
-    clearAutoflexData();
-    setConfirmClearData(false);
-    window.location.reload();
-  };
-
-  const requestCloudSignIn = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const email = cloudEmail.trim();
-    if (!email) return;
-    setCloudBusy(true);
-    try {
-      await sendCloudSignInLink(email);
-      setActionMessage("Sign-in link sent. Check your email.");
-    } catch {
-      setActionMessage("The sign-in link could not be sent. Try again.");
-    } finally {
-      setCloudBusy(false);
-    }
-  };
-
-  const uploadCloudBackup = async () => {
-    if (!cloudUser) return;
-    setCloudBusy(true);
-    try {
-      const updatedAt = await saveCloudBackup(cloudUser.id, buildAutoflexBackup());
-      writeCloudOwner(cloudUser.id);
-      setCloudReadyToSync(true);
-      setCloudBackupUpdatedAt(updatedAt);
-      setActionMessage("Your Autoflex data is saved to your account.");
-    } catch {
-      setActionMessage("Your data is safe on this device, but we could not update your account.");
-    } finally {
-      setCloudBusy(false);
-    }
-  };
-
-  const restoreCloudData = async () => {
-    if (!cloudUser) return;
-    setCloudBusy(true);
-    try {
-      const cloudBackup = await loadCloudBackup(cloudUser.id);
-      const backup = cloudBackup ? parseAutoflexBackup(JSON.stringify(cloudBackup.payload)) : null;
-      if (!backup) {
-        setActionMessage("No saved account data was found.");
-        return;
-      }
-      restoreAutoflexBackup(backup);
-      writeCloudOwner(cloudUser.id);
-      setCloudReadyToSync(true);
-      setActionMessage("Account data restored. Reloading Autoflex.");
-      window.setTimeout(() => window.location.reload(), 500);
-    } catch {
-      setActionMessage("Account restore failed. This device was not changed.");
-    } finally {
-      setCloudBusy(false);
-    }
-  };
-
-  const disconnectCloud = async () => {
-    setCloudBusy(true);
-    try {
-      await signOutCloud();
-      writeCloudOwner(null);
-      setCloudUser(null);
-      setCloudBackupUpdatedAt(null);
-      setCloudReadyToSync(false);
-      setActionMessage("Signed out. Local Autoflex data remains on this device.");
-    } catch {
-      setActionMessage("Could not sign out. Try again.");
-    } finally {
-      setCloudBusy(false);
-    }
-  };
-
-  const addShortlistItem = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!shortlistDraft.model.trim()) return;
-    const item = createShortlistItem(shortlistDraft);
-    persistShortlist([item, ...shortlist]);
-    setShortlistDraft(initialShortlistDraft);
-    setShortlistFormOpen(false);
-    setActionMessage(`${item.brand} ${item.model} added. Review its inspection checks next.`);
-    window.requestAnimationFrame(() => {
-      document.getElementById("shortlist")?.scrollIntoView({ block: "start" });
-      shortlistHeadingRef.current?.focus({ preventScroll: true });
-    });
-  };
-
-  const addSelectedToShortlist = () => {
-    if (!selectedPost) return;
-    const alreadyShortlisted = shortlist.some(
-      (item) => modelKeyFor(item.brand, item.model) === modelKeyFor(selectedPost.brand, selectedPost.model),
-    );
-    if (alreadyShortlisted) {
-      setActionMessage("That model is already in your shortlist.");
-      return;
-    }
-    persistShortlist([
-      createShortlistItem({
-        brand: selectedPost.brand,
-        budget: 0,
-        model: selectedPost.model,
-        notes: `Added from: ${selectedPost.title}`,
-        status: "Researching",
-      }),
-      ...shortlist,
-    ]);
-    setActionMessage(`${selectedPost.brand} ${selectedPost.model} added to shortlist.`);
-  };
-
-  const updateShortlistItem = (itemId: string, patch: Partial<ShortlistItem>) => {
-    persistShortlist(shortlist.map((item) => (item.id === itemId ? { ...item, ...patch } : item)));
-  };
-
-  const removeShortlistItem = (itemId: string) => {
-    persistShortlist(shortlist.filter((item) => item.id !== itemId));
-  };
-
-  const publishPost = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const post = createPost({
-      ...draft,
-      author: draft.author.trim() || "Anonymous owner",
-      odometerKm: Number.isFinite(draft.odometerKm) ? draft.odometerKm : 0,
-    });
-    const next = [post, ...posts];
-    persistPosts(next);
-    noteLocalWrite((userId) => {
-      void upsertHostedPost(userId, post);
-      void publishHostedPostQuality(userId, [post]);
-    });
-    setSelectedPost(post);
-    setPostDetailOpen(true);
-    setPostComposerOpen(false);
-    setDraft(initialPostDraft);
-    setActionMessage(cloudUser ? "Owner note published." : "Note saved on this device. Sign in to publish it to Community.");
-    window.requestAnimationFrame(() => postDetailHeadingRef.current?.focus());
-  };
-
-  const addVehicle = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const vehicle = createVehicle({
-      ...vehicleDraft,
-      nickname: vehicleDraft.nickname.trim() || `${vehicleDraft.brand} ${vehicleDraft.model}`,
-      variant: vehicleDraft.variant.trim(),
-      odometerKm: Number.isFinite(vehicleDraft.odometerKm) ? vehicleDraft.odometerKm : 0,
-    });
-    persistGarage([vehicle, ...garage]);
-    setTimelineDraft((current) => ({ ...current, vehicleId: vehicle.id }));
-    setVehicleDraft(initialVehicleDraft);
-    setGarageForm(null);
-    setActionMessage(`${vehicle.nickname || `${vehicle.brand} ${vehicle.model}`} added. Add its first service or cost record next.`);
-    window.requestAnimationFrame(() => {
-      document.getElementById("garage")?.scrollIntoView({ block: "start" });
-      garageHeadingRef.current?.focus({ preventScroll: true });
-    });
-  };
-
-  const addTimelineNote = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!timelineDraft.vehicleId) return;
-    const entry = createTimelineEntry({
-      ...timelineDraft,
-      amount: Number.isFinite(timelineDraft.amount) ? timelineDraft.amount : 0,
-      odometerKm: Number.isFinite(timelineDraft.odometerKm) ? timelineDraft.odometerKm : 0,
-    });
-    persistTimeline([entry, ...timeline]);
-    setTimelineDraft({
-      ...initialTimelineDraft,
-      vehicleId: timelineDraft.vehicleId,
-      happenedOn: new Date().toISOString().slice(0, 10),
-    });
-    setGarageForm(null);
-    setActionMessage("Service or cost record saved.");
-  };
+  const {
+    clearAllData,
+    disconnectCloud,
+    downloadBackup,
+    requestCloudSignIn,
+    restoreBackup,
+    restoreCloudData,
+    uploadCloudBackup,
+  } = useAccountActions({
+    cloudEmail,
+    cloudUser,
+    setActionMessage,
+    setCloudBackupUpdatedAt,
+    setCloudBusy,
+    setCloudReadyToSync,
+    setCloudUser,
+    setConfirmClearData,
+    writeCloudOwner,
+  });
 
   const updateRoute = (path: string) => {
     if (`${location.pathname}${location.search}` !== path) navigate(path);
@@ -1039,14 +755,6 @@ export function useAutoflexState() {
     const returnScreen = accountReturnScreenRef.current;
     openWorkspace(returnScreen === "account" ? "home" : returnScreen);
     window.requestAnimationFrame(() => profileTriggerRef.current?.focus());
-  };
-
-  const selectVehicle = (vehicleId: string) => {
-    const vehicle = garage.find((item) => item.id === vehicleId);
-    setTimelineDraft((current) => ({ ...current, vehicleId }));
-    setVehicleMenuOpen(false);
-    if (vehicle) setActionMessage(`${vehicle.nickname || vehicle.model} selected.`);
-    window.requestAnimationFrame(() => vehicleTriggerRef.current?.focus());
   };
 
   const openVehicleMenu = () => {
