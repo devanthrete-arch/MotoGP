@@ -16,3 +16,4 @@ export { buildQaHandoffMarkdown } from "./domain/qaHandoff";
 export type { QaHandoffInput } from "./domain/qaHandoff";
 export { buildHostedApiReadinessSummary, buildLaunchReadinessSummary, buildPrivacyReadinessSummary, buildProductionLaunchSummary, buildProductionOpsSummary, buildQaSessionSummary, buildResponsiveQaSummary, buildTesterRunSummary } from "./domain/readiness";
 export type { HostedApiReadinessSummary, LaunchReadinessSummary, PrivacyReadinessSummary, ProductionLaunchSummary, ProductionOpsSummary, QaSessionSummary, ResponsiveQaSummary, TesterRunSummary } from "./domain/readiness";
+export { useConnectionStatus } from "./hooks/useConnectionStatus";

@@ -126,62 +126,16 @@ import {
   type WorkspaceScreen,
 } from "../routing/routes";
 import { getSupabaseClient, isCloudSyncConfigured } from "../../infrastructure/supabase/client";
+import { readCloudUser, type CloudUser } from "../../infrastructure/supabase/auth";
+import { initialPostDraft } from "../../features/community";
+import { initialTimelineDraft, initialVehicleDraft } from "../../features/garage";
+import { initialShortlistDraft } from "../../features/buying";
+import { useConnectionStatus } from "../../features/account";
 
 export type FeedMode = "latest" | "helpful" | "saved" | "following";
 
-export type CloudUser = { email: string; id: string };
-
-/* -------------------------------------------------------------------------- */
-/* Auth helpers                                                                */
-/*                                                                             */
-/* The hosted data layer in src/hosted/* deliberately owns no auth. These three */
-/* helpers are the only Supabase auth surface the app uses, and each one        */
-/* degrades to a plain result instead of throwing, so a missing client or a     */
-/* dropped connection can never reach a render.                                 */
-/* -------------------------------------------------------------------------- */
-
-type AuthOutcome = { message: string; ok: boolean };
-
-const authOk: AuthOutcome = { message: "", ok: true };
-
-const describeAuthError = (error: unknown): string =>
-  error instanceof Error && error.message ? error.message : "That did not work. Try again.";
-
-const readCloudUser = async (): Promise<CloudUser | null> => {
-  try {
-    const client = getSupabaseClient();
-    if (!client) return null;
-    const { data, error } = await client.auth.getSession();
-    if (error) return null;
-    const user = data.session?.user;
-    return user ? { email: user.email ?? "Signed-in user", id: user.id } : null;
-  } catch {
-    return null;
-  }
-};
-
-const requestSignInLink = async (email: string): Promise<AuthOutcome> => {
-  try {
-    const client = getSupabaseClient();
-    if (!client) return { message: "Account sync is not configured for this build.", ok: false };
-    const redirectTo = `${window.location.origin}${accountPaths.settings}`;
-    const { error } = await client.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo } });
-    return error ? { message: describeAuthError(error), ok: false } : authOk;
-  } catch (error) {
-    return { message: describeAuthError(error), ok: false };
-  }
-};
-
-const signOutOfCloud = async (): Promise<AuthOutcome> => {
-  try {
-    const client = getSupabaseClient();
-    if (!client) return authOk;
-    const { error } = await client.auth.signOut();
-    return error ? { message: describeAuthError(error), ok: false } : authOk;
-  } catch (error) {
-    return { message: describeAuthError(error), ok: false };
-  }
-};
+/** Re-exported so screens keep importing the app-facing name from one place. */
+export type { CloudUser };
 
 /**
  * `unconfigured`, `signed-out` and `offline` are ordinary states, not errors.
@@ -190,63 +144,7 @@ const signOutOfCloud = async (): Promise<AuthOutcome> => {
 const hostedProblemMessage = <Data,>(result: HostedResult<Data>): string =>
   result.ok || (result.reason !== "request-failed" && result.reason !== "unexpected") ? "" : result.message;
 
-const initialDraft: DraftPost = {
-  title: "",
-  author: "",
-  brand: "Tata",
-  model: "",
-  variant: "",
-  fuel: "",
-  city: "",
-  odometerKm: 0,
-  label: "Owner note",
-  topic: "Ownership review",
-  body: "",
-};
-
-const initialVehicleDraft: DraftVehicle = {
-  nickname: "",
-  brand: "Tata",
-  model: "",
-  variant: "",
-  city: "",
-  odometerKm: 0,
-  purchaseMonth: "",
-  // Empty string is the explicit "Not set" option in the form. The app never
-  // pre-selects a fuel, gearbox or ownership on the owner's behalf.
-  fuel: "",
-  transmission: "",
-  ownership: "",
-};
-
-const initialTimelineDraft: DraftTimelineEntry = {
-  vehicleId: "",
-  kind: "Service",
-  title: "",
-  amount: 0,
-  odometerKm: 0,
-  happenedOn: new Date().toISOString().slice(0, 10),
-  note: "",
-};
-
-const initialShortlistDraft: DraftShortlistItem = {
-  brand: "Tata",
-  budget: 1200000,
-  model: "",
-  notes: "",
-  status: "Researching",
-};
-
 export const garageRoles: Profile["garageRole"][] = ["Owner", "Buyer", "Enthusiast", "Mechanic"];
-
-const getInitialOnlineStatus = (): boolean => {
-  try {
-    return typeof navigator === "undefined" ? true : navigator.onLine;
-  } catch {
-    return true;
-  }
-};
-
 export function useAutoflexState() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -265,7 +163,7 @@ export function useAutoflexState() {
   const [selectedLabel, setSelectedLabel] = useState<KnowledgeLabel | "All">("All");
   const [selectedPost, setSelectedPost] = useState<OwnerPost | null>(posts[0] ?? null);
   const [postDetailOpen, setPostDetailOpen] = useState(false);
-  const [draft, setDraft] = useState<DraftPost>(initialDraft);
+  const [draft, setDraft] = useState<DraftPost>(initialPostDraft);
   const [vehicleDraft, setVehicleDraft] = useState<DraftVehicle>(initialVehicleDraft);
   const [timelineDraft, setTimelineDraft] = useState<DraftTimelineEntry>(() => ({
     ...initialTimelineDraft,
@@ -283,7 +181,7 @@ export function useAutoflexState() {
   const [postComposerOpen, setPostComposerOpen] = useState(Boolean(initialRoute.current.openComposer));
   const [activeNav, setActiveNav] = useState(initialRoute.current.nav);
   const [activeScreen, setActiveScreen] = useState<WorkspaceScreen>(initialRoute.current.screen);
-  const [isOnline, setIsOnline] = useState(getInitialOnlineStatus);
+  const { connectionStatus, isOnline } = useConnectionStatus();
   const [cloudEmail, setCloudEmail] = useState("");
   const [cloudUser, setCloudUser] = useState<CloudUser | null>(null);
 
@@ -361,8 +259,6 @@ export function useAutoflexState() {
   );
 
   const feedRankingSource: "hosted" | "local" = hostedRankingScores.size ? "hosted" : "local";
-
-  const connectionStatus = useMemo(() => buildConnectionStatusCopy(isOnline), [isOnline]);
 
   const notificationPreview = useMemo(
     () => buildNotificationPreview({ follows, posts, preference: subscriptionSettings }),
@@ -502,19 +398,6 @@ export function useAutoflexState() {
     }),
     [follows.models.length, follows.topics.length, garage.length, moderationSummary.openReports, notebooks.length, posts, shortlist.length],
   );
-
-  useEffect(() => {
-    const updateOnline = () => setIsOnline(true);
-    const updateOffline = () => setIsOnline(false);
-
-    window.addEventListener("online", updateOnline);
-    window.addEventListener("offline", updateOffline);
-
-    return () => {
-      window.removeEventListener("online", updateOnline);
-      window.removeEventListener("offline", updateOffline);
-    };
-  }, []);
 
   /* ---------------------------------------------------------------------- */
   /* Hosted orchestration                                                     */
@@ -1162,7 +1045,7 @@ export function useAutoflexState() {
     setSelectedPost(post);
     setPostDetailOpen(true);
     setPostComposerOpen(false);
-    setDraft(initialDraft);
+    setDraft(initialPostDraft);
     setActionMessage(cloudUser ? "Owner note published." : "Note saved on this device. Sign in to publish it to Community.");
     window.requestAnimationFrame(() => postDetailHeadingRef.current?.focus());
   };

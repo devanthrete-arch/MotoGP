@@ -14,3 +14,4 @@ export { buildGarageExportMarkdown } from "./domain/exportMarkdown";
 export { buildGarageInsights } from "./domain/insights";
 export type { GarageInsight } from "./domain/insights";
 export { buildGarageReminders } from "./domain/reminders";
+export { initialTimelineDraft, initialVehicleDraft } from "./domain/drafts";

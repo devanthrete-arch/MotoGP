@@ -13,3 +13,4 @@ export { buildNotificationJobDrafts, buildNotificationPreview, defaultSubscripti
 export type { NotificationJobChannel, NotificationJobDraft, NotificationJobInput, NotificationJobKind, SubscriptionPreference } from "./domain/notifications";
 export { buildModelSharePayload, buildPostSharePayload } from "./domain/sharePayload";
 export type { SharePayload } from "./domain/sharePayload";
+export { initialPostDraft } from "./domain/drafts";
