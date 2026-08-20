@@ -1,5 +1,6 @@
 import type { KnowledgeLabel, OwnerPost, ReportRecord, ReportStatus } from "../domain";
 import { knowledgeLabels, vehicleFuels } from "../domain";
+import { CACHE_TTL, invalidateHostedNamespace, publicKey, readThroughCache } from "./cache";
 import { asAmount, asCount, asIsoTimestamp, asOneOf, asText, nowIso } from "./coerce";
 import { type HostedClient, type HostedResult, runHosted, runHostedForUser, unwrap, unwrapWrite } from "./result";
 import type { Insert, OwnerPostRow, PostCommentRow, ReportRow } from "./tables";
@@ -231,35 +232,42 @@ export const listHostedPostsPage = (
   const limit = Math.max(1, Math.min(options.limit ?? FEED_PAGE_SIZE, 100));
   const cursor = options.cursor ?? null;
   const empty: FeedPage = { hasMore: false, nextCursor: null, posts: [] };
+  // Safe to share between visitors: `owner_posts` is anon-readable, the page is
+  // identical for everyone, and the key pins the exact (sort, cursor, size)
+  // triple so page 2 can never be served as page 1.
+  const key = publicKey("feed", sort, limit, encodeFeedCursor(cursor));
 
-  return runHosted<FeedPage>(empty, async (client) => {
-    const column = sortColumn(sort);
-    let query = client
-      .from("owner_posts")
-      .select(FEED_COLUMNS)
-      .order(column, { ascending: false })
-      .order("id", { ascending: false })
-      // One extra row is a cheaper "is there more?" than a COUNT over the table.
-      .limit(limit + 1);
+  const load = () =>
+    runHosted<FeedPage>(empty, async (client) => {
+      const column = sortColumn(sort);
+      let query = client
+        .from("owner_posts")
+        .select(FEED_COLUMNS)
+        .order(column, { ascending: false })
+        .order("id", { ascending: false })
+        // One extra row is a cheaper "is there more?" than a COUNT over the table.
+        .limit(limit + 1);
 
-    if (cursor) {
-      // Strictly after the cursor in (value, id) order.
-      query = query.or(
-        `${column}.lt.${cursor.value},and(${column}.eq.${cursor.value},id.lt.${cursor.id})`,
-      );
-    }
+      if (cursor) {
+        // Strictly after the cursor in (value, id) order.
+        query = query.or(
+          `${column}.lt.${cursor.value},and(${column}.eq.${cursor.value},id.lt.${cursor.id})`,
+        );
+      }
 
-    const rows = unwrap(await query, []) as OwnerPostRow[];
-    const hasMore = rows.length > limit;
-    const pageRows = hasMore ? rows.slice(0, limit) : rows;
-    const last = pageRows[pageRows.length - 1];
+      const rows = unwrap(await query, []) as OwnerPostRow[];
+      const hasMore = rows.length > limit;
+      const pageRows = hasMore ? rows.slice(0, limit) : rows;
+      const last = pageRows[pageRows.length - 1];
 
-    return {
-      hasMore,
-      nextCursor: hasMore && last ? { id: asText(last.id), value: cursorValueFor(last, sort) } : null,
-      posts: pageRows.map((row) => postRowToLocal(row, [])),
-    };
-  });
+      return {
+        hasMore,
+        nextCursor: hasMore && last ? { id: asText(last.id), value: cursorValueFor(last, sort) } : null,
+        posts: pageRows.map((row) => postRowToLocal(row, [])),
+      };
+    });
+
+  return readThroughCache<FeedPage>(key, empty, load, CACHE_TTL.feedPage);
 };
 
 /**
@@ -291,6 +299,7 @@ export const listHostedPostRankings = (fallback: HostedPostRanking[] = []) =>
 export const upsertHostedPost = (userId: string | null | undefined, post: OwnerPost) =>
   runHostedForUser<OwnerPost>(userId, post, async (client, id) => {
     unwrapWrite(await client.from("owner_posts").upsert(postToRow(id, post), { onConflict: "id" }));
+    invalidateHostedNamespace("feed");
     return post;
   });
 
@@ -301,12 +310,14 @@ export const upsertHostedPosts = (userId: string | null | undefined, posts: Owne
     unwrapWrite(
       await client.from("owner_posts").upsert(posts.map((post) => postToRow(id, post)), { onConflict: "id" }),
     );
+    invalidateHostedNamespace("feed");
     return posts;
   });
 
 export const deleteHostedPost = (userId: string | null | undefined, postId: string) =>
   runHostedForUser<string>(userId, postId, async (client, id) => {
     unwrapWrite(await client.from("owner_posts").delete().eq("id", postId).eq("user_id", id));
+    invalidateHostedNamespace("feed");
     return postId;
   });
 

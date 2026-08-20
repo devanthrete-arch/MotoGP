@@ -7,12 +7,35 @@ import type {
   DraftTimelineEntry,
   DraftVehicle,
   FollowState,
+  KnowledgeLabel,
   Profile,
   ReportRecord,
   ShortlistItem,
+  ShortlistStatus,
+  TimelineEntryKind,
+  VehicleFuel,
+  VehicleOwnership,
+  VehicleTransmission,
+} from "../src/domain";
+import {
+  knowledgeLabels,
+  shortlistStatuses,
+  timelineKinds,
+  vehicleFuels,
+  vehicleOwnerships,
+  vehicleTransmissions,
 } from "../src/domain";
 import { createPost, createReport, createShortlistItem, createTimelineEntry, createVehicle } from "../src/storage";
 import { createStoreBundle, makeId, type AutoflexStore, type FeedbackRecord, type InspectionSession, type StorePersistence } from "./store";
+import {
+  createRateLimiter,
+  presentedAdminToken,
+  publicErrorMessage,
+  resolveAdminToken,
+  resolveAllowedOrigins,
+  timingSafeEquals,
+  type RateLimiter,
+} from "./security";
 
 type CreateCommentBody = {
   author?: string;
@@ -33,12 +56,26 @@ type CreateInspectionBody = {
 
 type ApiOptions = {
   adminToken?: string;
+  /** Opt-in escape hatch for local dev only (ALLOW_INSECURE_ADMIN_TOKEN=1). */
+  allowInsecureAdminToken?: boolean;
   allowedOrigins?: string[];
+  /** Max accepted request body in bytes. Default 64 KiB. */
+  bodyLimit?: number;
   dataPath?: string;
+  logger?: boolean;
   persistence?: StorePersistence;
+  /** Per-IP fixed window. `max: 0` disables (tests only). */
+  rateLimit?: { max: number; windowMs: number };
+  /** Stricter per-IP budget for failed admin authentication. */
+  adminAttemptLimit?: { max: number; windowMs: number };
   store?: AutoflexStore;
   version?: string;
 };
+
+/** Body bytes we are willing to parse. Fastify's default is 1 MiB. */
+export const DEFAULT_BODY_LIMIT = 64 * 1024;
+export const DEFAULT_RATE_LIMIT = { max: 120, windowMs: 60_000 };
+export const DEFAULT_ADMIN_ATTEMPT_LIMIT = { max: 10, windowMs: 60_000 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -65,10 +102,99 @@ const optionalStringArray = (value: unknown): string[] =>
 
 const profileRoles: Profile["garageRole"][] = ["Owner", "Buyer", "Enthusiast", "Mechanic"];
 
+/* -------------------------------------------------------------------------- */
+/* Draft construction                                                         */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Every create route used to hand the raw request body to the domain factory
+ * (`createPost(body as DraftPost)`), so any extra key a caller invented was
+ * persisted and served back to every other client. These builders copy only the
+ * fields the domain type declares, bound their length, and clamp enums.
+ */
+const boundedString = (value: unknown, max: number, fallback = ""): string => {
+  const text = typeof value === "string" ? value.trim() : "";
+  return (text || fallback).slice(0, max);
+};
+
+const boundedNumber = (value: unknown, min: number, max: number): number => {
+  const parsed = typeof value === "number" ? value : Number.parseFloat(String(value ?? ""));
+  if (!Number.isFinite(parsed)) return min;
+  return Math.min(max, Math.max(min, parsed));
+};
+
+const oneOf = <T extends string>(value: unknown, allowed: readonly T[], fallback: T): T =>
+  typeof value === "string" && (allowed as readonly string[]).includes(value) ? (value as T) : fallback;
+
+const optionalOneOf = <T extends string>(value: unknown, allowed: readonly T[]): T | "" =>
+  typeof value === "string" && (allowed as readonly string[]).includes(value) ? (value as T) : "";
+
+const MAX_ODOMETER = 5_000_000;
+const MAX_AMOUNT = 100_000_000;
+
+const toPostDraft = (body: Record<string, unknown>): DraftPost => ({
+  author: boundedString(body.author, 120, "Anonymous garage member"),
+  body: boundedString(body.body, 8_000),
+  brand: boundedString(body.brand, 80),
+  city: boundedString(body.city, 80),
+  fuel: optionalOneOf<VehicleFuel>(body.fuel, vehicleFuels),
+  label: oneOf<KnowledgeLabel>(body.label, knowledgeLabels, "Owner note"),
+  model: boundedString(body.model, 80),
+  odometerKm: boundedNumber(body.odometerKm, 0, MAX_ODOMETER),
+  title: boundedString(body.title, 200),
+  topic: boundedString(body.topic, 80, "Ownership"),
+  variant: boundedString(body.variant, 80),
+});
+
+const toVehicleDraft = (body: Record<string, unknown>): DraftVehicle => ({
+  brand: boundedString(body.brand, 80),
+  city: boundedString(body.city, 80),
+  fuel: optionalOneOf<VehicleFuel>(body.fuel, vehicleFuels),
+  model: boundedString(body.model, 80),
+  nickname: boundedString(body.nickname, 80),
+  odometerKm: boundedNumber(body.odometerKm, 0, MAX_ODOMETER),
+  ownership: optionalOneOf<VehicleOwnership>(body.ownership, vehicleOwnerships),
+  purchaseMonth: boundedString(body.purchaseMonth, 16),
+  transmission: optionalOneOf<VehicleTransmission>(body.transmission, vehicleTransmissions),
+  variant: boundedString(body.variant, 80),
+});
+
+const toTimelineDraft = (body: Record<string, unknown>): DraftTimelineEntry => ({
+  amount: boundedNumber(body.amount, 0, MAX_AMOUNT),
+  happenedOn: boundedString(body.happenedOn, 32),
+  kind: oneOf<TimelineEntryKind>(body.kind, timelineKinds, "Note"),
+  note: boundedString(body.note, 2_000),
+  odometerKm: boundedNumber(body.odometerKm, 0, MAX_ODOMETER),
+  title: boundedString(body.title, 200),
+  vehicleId: boundedString(body.vehicleId, 120),
+});
+
+const toShortlistDraft = (body: Record<string, unknown>): DraftShortlistItem => ({
+  brand: boundedString(body.brand, 80),
+  budget: boundedNumber(body.budget, 0, MAX_AMOUNT),
+  model: boundedString(body.model, 80),
+  notes: boundedString(body.notes, 2_000),
+  status: oneOf<ShortlistStatus>(body.status, shortlistStatuses, "Researching"),
+});
+
+const toReportDraft = (body: Record<string, unknown>, postTitle: string): DraftReport => ({
+  postId: boundedString(body.postId, 120),
+  postTitle: boundedString(postTitle, 200, "Untitled note"),
+  reason: boundedString(body.reason, 2_000),
+  reporterName: boundedString(body.reporterName, 120, "Anonymous reporter"),
+});
+
+/**
+ * Constant-time admin check.
+ *
+ * The previous `===` comparison short-circuits on the first differing byte, so
+ * response time leaks a prefix oracle over the token. Both accepted headers now
+ * funnel into a single digest comparison.
+ */
 const isAdminRequest = (headers: FastifyRequest["headers"], adminToken: string): boolean => {
-  const token = headers["x-admin-token"];
-  const authorization = headers.authorization;
-  return token === adminToken || authorization === `Bearer ${adminToken}`;
+  const presented = presentedAdminToken(headers as Record<string, unknown>);
+  if (presented === null) return false;
+  return timingSafeEquals(presented, adminToken);
 };
 
 export async function buildAutoflexApi(options: ApiOptions = {}): Promise<FastifyInstance> {
@@ -82,20 +208,88 @@ export async function buildAutoflexApi(options: ApiOptions = {}): Promise<Fastif
       }
     : await createStoreBundle(options.dataPath ?? process.env.API_DATA_PATH);
   const { persistence, store } = bundle;
-  const adminToken = options.adminToken ?? process.env.ADMIN_TOKEN ?? "dev-admin";
   const version = options.version ?? process.env.APP_VERSION ?? "dev";
-  const app = Fastify({ logger: false });
 
+  /* Admin surface: fail closed -------------------------------------------- */
+  const admin = resolveAdminToken(options.adminToken ?? process.env.ADMIN_TOKEN, {
+    allowInsecure: options.allowInsecureAdminToken ?? process.env.ALLOW_INSECURE_ADMIN_TOKEN === "1",
+  });
+  const adminToken = admin.ok ? admin.token : null;
+
+  const bodyLimit =
+    options.bodyLimit ?? (Number.parseInt(process.env.BODY_LIMIT_BYTES ?? "", 10) || DEFAULT_BODY_LIMIT);
+  const app = Fastify({ bodyLimit, logger: options.logger ?? false });
+
+  const announce = (message: string) => {
+    if (process.env.NODE_ENV === "test") return;
+    console.warn(message);
+  };
+
+  if (!admin.ok) {
+    // Visible even with the logger off: a deployment running without a real
+    // admin token has no moderation queue, and that must not be a surprise.
+    announce(
+      `[autoflex-api] ADMIN_TOKEN is ${admin.reason}. Moderation and feedback-list routes are disabled (503). ` +
+        `Set a random ADMIN_TOKEN of at least 24 characters, or ALLOW_INSECURE_ADMIN_TOKEN=1 for local development only.`,
+    );
+  } else if (admin.insecure) {
+    announce("[autoflex-api] Running with an INSECURE admin token. Never do this outside local development.");
+  }
+
+  /* CORS: explicit allow-list, never origin reflection --------------------- */
+  const allowedOrigins = resolveAllowedOrigins(options.allowedOrigins, process.env.CORS_ORIGINS);
   await app.register(cors, {
-    origin: options.allowedOrigins ?? process.env.CORS_ORIGINS?.split(",").map((origin) => origin.trim()).filter(Boolean) ?? true,
+    credentials: false,
+    maxAge: 600,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    origin: allowedOrigins,
   });
 
-  app.setErrorHandler((error: FastifyError, _request, reply) => {
-    if ("statusCode" in error && typeof error.statusCode === "number" && error.statusCode < 500) {
-      return reply.code(error.statusCode).send(badRequest(error.message));
+  /* Rate limiting ---------------------------------------------------------- */
+  const rateLimitConfig = options.rateLimit ?? {
+    max: Number.parseInt(process.env.RATE_LIMIT_MAX ?? "", 10) || DEFAULT_RATE_LIMIT.max,
+    windowMs: Number.parseInt(process.env.RATE_LIMIT_WINDOW_MS ?? "", 10) || DEFAULT_RATE_LIMIT.windowMs,
+  };
+  const adminAttemptConfig = options.adminAttemptLimit ?? DEFAULT_ADMIN_ATTEMPT_LIMIT;
+  const limiter: RateLimiter | null =
+    rateLimitConfig.max > 0 ? createRateLimiter(rateLimitConfig) : null;
+  const adminLimiter: RateLimiter | null =
+    adminAttemptConfig.max > 0 ? createRateLimiter(adminAttemptConfig) : null;
+
+  const clientKey = (request: FastifyRequest): string => request.ip || "unknown";
+
+  app.addHook("onRequest", async (request, reply) => {
+    // Static, cheap headers on every response including errors. The API can be
+    // deployed on its own host where vercel.json does not apply.
+    reply.header("X-Content-Type-Options", "nosniff");
+    reply.header("Referrer-Policy", "no-referrer");
+    reply.header("X-Frame-Options", "DENY");
+    reply.header("Cross-Origin-Resource-Policy", "same-site");
+    reply.header("Cache-Control", "no-store");
+    reply.header("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; base-uri 'none'");
+
+    if (!limiter) return;
+    const verdict = limiter.hit(clientKey(request));
+    if (verdict.allowed) {
+      reply.header("X-RateLimit-Remaining", String(verdict.remaining));
+      return;
     }
-    app.log.error(error);
-    return reply.code(500).send({ error: "Internal server error", message: "Request failed." });
+    reply.header("Retry-After", String(verdict.retryAfterSeconds));
+    return reply.code(429).send({ error: "Too many requests", message: publicErrorMessage(429) });
+  });
+
+  app.setErrorHandler((error: FastifyError, request, reply) => {
+    const statusCode =
+      "statusCode" in error && typeof error.statusCode === "number" && error.statusCode >= 400
+        ? error.statusCode
+        : 500;
+    // Detail stays server-side: parser offsets and payload sizes are a map of
+    // the API's internals.
+    announce(`[autoflex-api] ${request.method} ${request.url} -> ${statusCode}: ${error.code ?? error.name}`);
+    if (statusCode < 500) {
+      return reply.code(statusCode).send({ error: "Bad request", message: publicErrorMessage(statusCode) });
+    }
+    return reply.code(500).send({ error: "Internal server error", message: publicErrorMessage(500) });
   });
 
   const healthResponse = () => ({
@@ -110,7 +304,24 @@ export async function buildAutoflexApi(options: ApiOptions = {}): Promise<Fastif
   };
 
   const requireAdmin = (request: FastifyRequest, reply: FastifyReply) => {
+    // Fail closed: no usable token means no admin surface at all.
+    if (adminToken === null) {
+      reply.code(503).send({
+        error: "Unavailable",
+        message: "Admin routes are disabled because no ADMIN_TOKEN is configured.",
+      });
+      return false;
+    }
     if (isAdminRequest(request.headers, adminToken)) return true;
+    if (adminLimiter) {
+      // Brute-forcing the token should cost far more than 120 requests/min.
+      const verdict = adminLimiter.hit(`admin:${clientKey(request)}`);
+      if (!verdict.allowed) {
+        reply.header("Retry-After", String(verdict.retryAfterSeconds));
+        reply.code(429).send({ error: "Too many requests", message: publicErrorMessage(429) });
+        return false;
+      }
+    }
     reply.code(401).send({ error: "Unauthorized", message: "Admin token is required." });
     return false;
   };
@@ -161,7 +372,7 @@ export async function buildAutoflexApi(options: ApiOptions = {}): Promise<Fastif
       return reply.code(400).send(badRequest("title, model, and body are required."));
     }
 
-    const post = createPost(body as DraftPost);
+    const post = createPost(toPostDraft(body));
     store.posts.set(post.id, post);
     store.comments.set(post.id, []);
     await persist();
@@ -202,11 +413,7 @@ export async function buildAutoflexApi(options: ApiOptions = {}): Promise<Fastif
     const post = store.posts.get(postId);
     if (!post) return reply.code(404).send({ error: "Post not found" });
 
-    const report = createReport({
-      ...(body as DraftReport),
-      postTitle: post.title,
-      reporterName: requiredString(body, "reporterName") ?? "Anonymous reporter",
-    });
+    const report = createReport(toReportDraft(body, post.title));
     store.reports.set(report.id, report);
     await persist();
     return reply.code(201).send(report);
@@ -278,7 +485,7 @@ export async function buildAutoflexApi(options: ApiOptions = {}): Promise<Fastif
     const model = requiredString(body, "model");
     if (!model) return reply.code(400).send(badRequest("model is required."));
 
-    const vehicle = createVehicle(body as DraftVehicle);
+    const vehicle = createVehicle(toVehicleDraft(body));
     store.garage.set(vehicle.id, vehicle);
     await persist();
     return reply.code(201).send(vehicle);
@@ -294,7 +501,7 @@ export async function buildAutoflexApi(options: ApiOptions = {}): Promise<Fastif
     if (!vehicleId) return reply.code(400).send(badRequest("vehicleId is required."));
     if (!store.garage.has(vehicleId)) return reply.code(404).send({ error: "Vehicle not found" });
 
-    const entry = createTimelineEntry(body as DraftTimelineEntry);
+    const entry = createTimelineEntry(toTimelineDraft(body));
     store.timeline.set(entry.id, entry);
     await persist();
     return reply.code(201).send(entry);
@@ -309,7 +516,7 @@ export async function buildAutoflexApi(options: ApiOptions = {}): Promise<Fastif
     const model = requiredString(body, "model");
     if (!model) return reply.code(400).send(badRequest("model is required."));
 
-    const item: ShortlistItem = createShortlistItem(body as DraftShortlistItem);
+    const item: ShortlistItem = createShortlistItem(toShortlistDraft(body));
     store.shortlist.set(item.id, item);
     await persist();
     return reply.code(201).send(item);

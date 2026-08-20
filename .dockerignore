@@ -1,9 +1,62 @@
-.git
-.gradle
-**/build
+# Build context hygiene: everything here either bloats the context, belongs to
+# another runtime, or must never end up in a layer.
+
+# Never ship secrets or local state.
+.env
+.env.*
+!.env.example
 data
 server-kotlin/data
+*.pem
+*.key
+
+# Reinstalled from the lockfile inside the image; copying the host tree in
+# would also drag in host-specific optional binaries.
+node_modules
+**/node_modules
+
+# Web build output - Vercel builds and serves the web app, not this image.
+dist
+.vercel
+
+# Other runtimes and platforms that this image does not contain.
 android-app
+server-kotlin
+shared
+gradle
+gradlew
+gradlew.bat
+*.gradle.kts
+gradle.properties
+local.properties
+**/build
+.gradle
+
+# Web-only assets and config; the API serves no static files.
+public
+index.html
+vite.config.ts
+tailwind.config.js
+postcss.config.js
+tsconfig.app.json
+api
+
+# Repo metadata, docs and tooling: no effect on the image, big effect on
+# context upload time and on cache invalidation.
+.git
+.github
+.gitignore
+.claude
 .idea
 .DS_Store
+docs
+*.md
+Dockerfile
+.dockerignore
 *.log
+*.tsbuildinfo
+.pnpm-store
+
+# Tests are run in CI, not inside the image build.
+**/*.test.ts
+**/*.test.tsx

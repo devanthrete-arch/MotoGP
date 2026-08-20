@@ -4,6 +4,9 @@ import { mkdtemp } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
+/** A token that passes the fail-closed policy in server-ts/security.ts. */
+const STRONG_ADMIN_TOKEN = "sBq7-Xr2fN9tK4vZ1mPw8LcY";
+
 describe("Autoflex Fastify API foundation", () => {
   it("exposes health without claiming service-center ownership", async () => {
     const app = await buildAutoflexApi();
@@ -81,7 +84,7 @@ describe("Autoflex Fastify API foundation", () => {
   });
 
   it("keeps moderation, follows, saves, garage, shortlist, inspections, and feedback addressable", async () => {
-    const app = await buildAutoflexApi();
+    const app = await buildAutoflexApi({ adminToken: STRONG_ADMIN_TOKEN });
 
     const follows = await app.inject({
       method: "PUT",
@@ -175,7 +178,7 @@ describe("Autoflex Fastify API foundation", () => {
     expect(blockedModerationResponse.statusCode).toBe(401);
 
     const moderationResponse = await app.inject({
-      headers: { "x-admin-token": "dev-admin" },
+      headers: { "x-admin-token": STRONG_ADMIN_TOKEN },
       method: "PATCH",
       payload: { status: "Dismissed" },
       url: `/api/moderation/reports/${report.id}`,
@@ -195,7 +198,7 @@ describe("Autoflex Fastify API foundation", () => {
     expect(feedbackResponse.statusCode).toBe(201);
 
     const feedbackListResponse = await app.inject({
-      headers: { authorization: "Bearer dev-admin" },
+      headers: { authorization: `Bearer ${STRONG_ADMIN_TOKEN}` },
       method: "GET",
       url: "/api/feedback",
     });

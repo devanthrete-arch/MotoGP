@@ -11,6 +11,24 @@
  * unit tested without a live Supabase client.
  */
 
+/* Client cache -------------------------------------------------------------- */
+export {
+  CACHE_TTL,
+  clearHostedCache,
+  createHostedCache,
+  DEFAULT_MAX_ENTRIES,
+  DEFAULT_STALE_MS,
+  DEFAULT_TTL_MS,
+  HostedCache,
+  hostedCache,
+  invalidateHostedNamespace,
+  invalidateHostedUser,
+  ownerKey,
+  publicKey,
+  readThroughCache,
+} from "./cache";
+export type { CacheKey, CachePart, HostedCacheOptions, HostedCacheStats, ReadOptions } from "./cache";
+
 export {
   dataOf,
   describeError,

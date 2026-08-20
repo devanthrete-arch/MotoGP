@@ -100,22 +100,63 @@ const titleCase = (slug) =>
     .map((word) => (word.length <= 2 ? word.toUpperCase() : word[0].toUpperCase() + word.slice(1)))
     .join(" ");
 
-const resolveOrigin = (request) => {
-  const configured = process.env.VITE_PUBLIC_ORIGIN || process.env.PUBLIC_ORIGIN;
+/**
+ * Hosts this function is willing to echo back into canonical/og:url/og:image.
+ *
+ * `Host` and `X-Forwarded-Host` are attacker-controlled: anyone can send
+ * `X-Forwarded-Host: evil.example` and, because crawler responses are cached at
+ * the shared CDN for 300s, poison the preview card every social platform then
+ * renders for a legitimate AutoFlex link. Only the project's own deployment
+ * hostnames (prod alias + `moto-gp-*` branch aliases) and localhost are echoed.
+ */
+const HOST_PATTERN = /^[a-z0-9](?:[a-z0-9.-]{0,251}[a-z0-9])?(?::\d{1,5})?$/;
+const PROJECT_HOST = /^moto-gp[a-z0-9-]*\.vercel\.app$/;
+const LOCAL_HOST = /^(localhost|127\.0\.0\.1|\[::1\])$/;
+
+const extraAllowedHosts = () =>
+  String(process.env.OG_ALLOWED_HOSTS ?? "")
+    .split(",")
+    .map((host) => host.trim().toLowerCase())
+    .filter(Boolean);
+
+export const isAllowedOgHost = (rawHost, configuredHost = "") => {
+  if (typeof rawHost !== "string") return false;
+  const host = rawHost.trim().toLowerCase();
+  if (!host || host.length > 255 || !HOST_PATTERN.test(host)) return false;
+  const bare = host.replace(/:\d{1,5}$/, "");
+  if (configuredHost && bare === configuredHost.toLowerCase()) return true;
+  if (bare === new URL(DEFAULT_ORIGIN).hostname) return true;
+  if (PROJECT_HOST.test(bare)) return true;
+  if (LOCAL_HOST.test(bare)) return true;
+  return extraAllowedHosts().includes(bare);
+};
+
+export const resolveOriginFrom = (headers, env = {}) => {
+  const configured = env.VITE_PUBLIC_ORIGIN || env.PUBLIC_ORIGIN;
+  let configuredHost = "";
   if (configured) {
     try {
-      return new URL(configured).origin;
+      const url = new URL(configured);
+      configuredHost = url.hostname;
+      return url.origin;
     } catch {
       /* fall through to the request host */
     }
   }
-  const forwardedHost = request.headers["x-forwarded-host"] || request.headers.host;
-  if (typeof forwardedHost === "string" && /^[A-Za-z0-9.:-]+$/.test(forwardedHost)) {
-    const protocol = request.headers["x-forwarded-proto"] === "http" ? "http" : "https";
-    return `${protocol}://${forwardedHost}`;
+  const forwardedHost = headers["x-forwarded-host"] || headers.host;
+  if (isAllowedOgHost(forwardedHost, configuredHost)) {
+    const host = String(forwardedHost).trim().toLowerCase();
+    const local = LOCAL_HOST.test(host.replace(/:\d{1,5}$/, ""));
+    const protocol = local && headers["x-forwarded-proto"] !== "https" ? "http" : "https";
+    return `${protocol}://${host}`;
   }
-  return process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : DEFAULT_ORIGIN;
+  // An unrecognised host degrades to the canonical origin rather than echoing
+  // whatever the caller supplied.
+  if (env.VERCEL_URL && isAllowedOgHost(env.VERCEL_URL, configuredHost)) return `https://${env.VERCEL_URL}`;
+  return DEFAULT_ORIGIN;
 };
+
+const resolveOrigin = (request) => resolveOriginFrom(request.headers ?? {}, process.env);
 
 /** Normalise the rewritten path: single leading slash, no traversal, no query. */
 const normalisePath = (raw) => {
@@ -127,6 +168,10 @@ const normalisePath = (raw) => {
   if (path.length > 1 && path.endsWith("/")) path = path.slice(0, -1);
   if (path.includes("..") || path.includes("\\") || path.includes("%")) return "/";
   if (path.length > 200) return "/";
+  // Control characters (including CR/LF and NUL) never appear in a real route
+  // and are exactly what header/markup smuggling attempts are built from.
+  // eslint-disable-next-line no-control-regex
+  if (/[\u0000-\u001f\u007f]/.test(path)) return "/";
   return path || "/";
 };
 
@@ -313,6 +358,14 @@ const renderDocument = ({ canonical, description, imageUrl, path, title, indexab
 };
 
 export default async function handler(request, response) {
+  // This shim only ever renders a document. Anything else is a probe.
+  const method = String(request.method ?? "GET").toUpperCase();
+  if (method !== "GET" && method !== "HEAD") {
+    response.setHeader("Allow", "GET, HEAD");
+    response.status(405).send("");
+    return;
+  }
+
   const origin = resolveOrigin(request);
   const path = normalisePath(request.query?.path ?? request.url);
   const userAgent = String(request.headers["user-agent"] ?? "").toLowerCase();
@@ -341,7 +394,20 @@ export default async function handler(request, response) {
 
   response.setHeader("Content-Type", "text/html; charset=utf-8");
   // The response body depends on the user agent, so shared caches must split on it.
+  // `X-Forwarded-Host` is allow-listed rather than echoed, so it is not a cache key.
   response.setHeader("Vary", "User-Agent");
+  // Defence in depth: this function can be reached directly at /api/og, and it
+  // must stay locked down even if the vercel.json header rules stop matching.
+  // The document has no scripts and no styles; only the favicon is a subresource.
+  response.setHeader(
+    "Content-Security-Policy",
+    "default-src 'none'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; sandbox allow-top-navigation",
+  );
+  response.setHeader("X-Content-Type-Options", "nosniff");
+  response.setHeader("X-Frame-Options", "DENY");
+  response.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+  response.setHeader("Cross-Origin-Resource-Policy", "same-origin");
   if (!isSearchEngine) response.setHeader("X-Robots-Tag", "noindex");
   response.setHeader(
     "Cache-Control",
@@ -353,8 +419,10 @@ export default async function handler(request, response) {
 export const __test__ = {
   describeRoute,
   escapeHtml,
+  isAllowedOgHost,
   normalisePath,
   renderDocument,
+  resolveOriginFrom,
   SEARCH_ENGINE,
   SOCIAL_CRAWLER,
   titleCase,

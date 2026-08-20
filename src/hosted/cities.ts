@@ -1,6 +1,7 @@
 import type { GarageVehicle, KnowledgeLabel, OwnerPost } from "../domain";
 import { knowledgeLabels } from "../domain";
 import type { CityCircle } from "../insights";
+import { CACHE_TTL, invalidateHostedNamespace, publicKey, readThroughCache } from "./cache";
 import { asCount, asStringList, asText, slugify } from "./coerce";
 import { asOneOf } from "./coerce";
 import { type HostedClient, runHosted, runHostedForUser, unwrap, unwrapWrite } from "./result";
@@ -99,24 +100,44 @@ export const hostedCityToLocal = (
 export const selectCityCircleRows = async (client: HostedClient): Promise<CityCircleRow[]> =>
   unwrap(await client.from("city_circles").select("*").order("post_count", { ascending: false }), []);
 
-/** Public read: `city_circles` is anon-readable, so this works signed-out. */
+/**
+ * Public read: `city_circles` is anon-readable, so this works signed-out and is
+ * safe to cache under a shared public key — every visitor sees the same rows.
+ */
 export const listHostedCityCircles = (fallback: HostedCityCircle[] = []) =>
-  runHosted<HostedCityCircle[]>(fallback, async (client) => (await selectCityCircleRows(client)).map(cityRowToHosted));
+  readThroughCache<HostedCityCircle[]>(
+    publicKey("city-circles", "all"),
+    fallback,
+    () =>
+      runHosted<HostedCityCircle[]>(fallback, async (client) =>
+        (await selectCityCircleRows(client)).map(cityRowToHosted),
+      ),
+    CACHE_TTL.cityCircles,
+  );
 
 export const loadHostedCityCircle = (citySlug: string, fallback: HostedCityCircle | null = null) =>
-  runHosted<HostedCityCircle | null>(fallback, async (client) => {
-    const row = unwrap(
-      await client.from("city_circles").select("*").eq("slug", slugify(citySlug)).maybeSingle(),
-      null,
-    );
-    return row ? cityRowToHosted(row) : fallback;
-  });
+  readThroughCache<HostedCityCircle | null>(
+    publicKey("city-circles", slugify(citySlug)),
+    fallback,
+    () =>
+      runHosted<HostedCityCircle | null>(fallback, async (client) => {
+        const row = unwrap(
+          await client.from("city_circles").select("*").eq("slug", slugify(citySlug)).maybeSingle(),
+          null,
+        );
+        return row ? cityRowToHosted(row) : fallback;
+      }),
+    CACHE_TTL.cityCircles,
+  );
 
 export const upsertHostedCityCircles = (userId: string | null | undefined, cities: HostedCityCircle[]) =>
   runHostedForUser<HostedCityCircle[]>(userId, cities, async (client, id) => {
     const rows = cities.map((city) => hostedCityToRow(id, city)).filter((row) => Boolean(row.slug));
     if (!rows.length) return cities;
     unwrapWrite(await client.from("city_circles").upsert(rows, { onConflict: "slug" }));
+    // A curator just changed what everyone reads: drop the shared entries so the
+    // next reader pulls fresh rows rather than waiting out the TTL.
+    invalidateHostedNamespace("city-circles");
     return cities;
   });
 

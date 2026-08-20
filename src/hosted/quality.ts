@@ -1,6 +1,7 @@
 import type { OwnerPost } from "../domain";
 import type { PostQualityReport } from "../insights";
 import { assessPostQuality } from "../insights";
+import { CACHE_TTL, invalidateHostedNamespace, publicKey, readThroughCache } from "./cache";
 import { asAmount, asCount, asIsoTimestamp, asOneOf, asStringList, asText } from "./coerce";
 import { type HostedClient, runHosted, runHostedForUser, unwrap, unwrapWrite } from "./result";
 import type { Insert, PostQualityScoreRow } from "./tables";
@@ -105,7 +106,15 @@ export const selectQualityRows = async (client: HostedClient): Promise<PostQuali
 
 /** Public read: quality scores are anon-readable so the feed can rank signed-out. */
 export const listHostedPostQuality = (fallback: HostedPostQuality[] = []) =>
-  runHosted<HostedPostQuality[]>(fallback, async (client) => (await selectQualityRows(client)).map(qualityRowToLocal));
+  readThroughCache<HostedPostQuality[]>(
+    publicKey("post-quality", "all"),
+    fallback,
+    () =>
+      runHosted<HostedPostQuality[]>(fallback, async (client) =>
+        (await selectQualityRows(client)).map(qualityRowToLocal),
+      ),
+    CACHE_TTL.postQuality,
+  );
 
 export const upsertHostedPostQuality = (userId: string | null | undefined, scores: HostedPostQuality[]) =>
   runHostedForUser<HostedPostQuality[]>(userId, scores, async (client, id) => {
@@ -133,6 +142,9 @@ export const upsertHostedPostQuality = (userId: string | null | undefined, score
         ),
       ),
     );
+    // Ranking moved, so the shared feed and quality entries are now wrong.
+    invalidateHostedNamespace("post-quality");
+    invalidateHostedNamespace("feed");
     return scores;
   });
 

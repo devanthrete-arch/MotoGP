@@ -1,5 +1,6 @@
 import type { OwnershipPlaybook } from "../insights";
 import { modelKeyFor } from "../insights";
+import { CACHE_TTL, invalidateHostedNamespace, publicKey, readThroughCache } from "./cache";
 import { asCount, asOneOf, asStringList, asText } from "./coerce";
 import { type HostedClient, runHosted, runHostedForUser, unwrap, unwrapWrite } from "./result";
 import type { Insert, ModelPlaybookRow, PlaybookEntryRow } from "./tables";
@@ -114,19 +115,39 @@ export const selectPlaybookEntryRows = async (client: HostedClient, playbookId?:
   return unwrap(await (playbookId ? query.eq("playbook_id", playbookId) : query), []);
 };
 
-/** Public read: `model_playbooks` is anon-readable. */
+/** Public read: `model_playbooks` is anon-readable, so the cache key is shared. */
 export const listHostedPlaybooks = (fallback: OwnershipPlaybook[] = []) =>
-  runHosted<OwnershipPlaybook[]>(fallback, async (client) => (await selectPlaybookRows(client)).map(playbookRowToLocal));
+  readThroughCache<OwnershipPlaybook[]>(
+    publicKey("playbooks", "all"),
+    fallback,
+    () =>
+      runHosted<OwnershipPlaybook[]>(fallback, async (client) =>
+        (await selectPlaybookRows(client)).map(playbookRowToLocal),
+      ),
+    CACHE_TTL.playbooks,
+  );
 
 export const loadHostedPlaybook = (playbookId: string, fallback: OwnershipPlaybook | null = null) =>
-  runHosted<OwnershipPlaybook | null>(fallback, async (client) => {
-    const row = unwrap(await client.from("model_playbooks").select("*").eq("id", playbookId).maybeSingle(), null);
-    return row ? playbookRowToLocal(row) : fallback;
-  });
+  readThroughCache<OwnershipPlaybook | null>(
+    publicKey("playbooks", playbookId),
+    fallback,
+    () =>
+      runHosted<OwnershipPlaybook | null>(fallback, async (client) => {
+        const row = unwrap(await client.from("model_playbooks").select("*").eq("id", playbookId).maybeSingle(), null);
+        return row ? playbookRowToLocal(row) : fallback;
+      }),
+    CACHE_TTL.playbooks,
+  );
 
 export const listHostedPlaybookEntries = (playbookId?: string, fallback: HostedPlaybookEntry[] = []) =>
-  runHosted<HostedPlaybookEntry[]>(fallback, async (client) =>
-    (await selectPlaybookEntryRows(client, playbookId)).map(playbookEntryRowToLocal),
+  readThroughCache<HostedPlaybookEntry[]>(
+    publicKey("playbook-entries", playbookId ?? "all"),
+    fallback,
+    () =>
+      runHosted<HostedPlaybookEntry[]>(fallback, async (client) =>
+        (await selectPlaybookEntryRows(client, playbookId)).map(playbookEntryRowToLocal),
+      ),
+    CACHE_TTL.playbooks,
   );
 
 export const upsertHostedPlaybooks = (userId: string | null | undefined, playbooks: OwnershipPlaybook[]) =>
@@ -137,11 +158,13 @@ export const upsertHostedPlaybooks = (userId: string | null | undefined, playboo
         .from("model_playbooks")
         .upsert(playbooks.map((playbook) => playbookToRow(id, playbook)), { onConflict: "id" }),
     );
+    invalidateHostedNamespace("playbooks");
     return playbooks;
   });
 
 export const addHostedPlaybookEntry = (userId: string | null | undefined, entry: Omit<HostedPlaybookEntry, "id">) =>
   runHostedForUser(userId, entry, async (client, id) => {
     unwrapWrite(await client.from("playbook_entries").insert(playbookEntryToRow(id, { ...entry, id: "" })));
+    invalidateHostedNamespace("playbook-entries");
     return entry;
   });
