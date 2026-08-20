@@ -1,5 +1,14 @@
 import { type GarageVehicle, type KnowledgeLabel, type OwnerPost, type ShortlistItem } from "./entities";
 
+/**
+ * Read-model shapes that cross the feature/infrastructure boundary.
+ *
+ * Each of these is *built* by a feature (`content` builds city circles and
+ * playbooks, `garage` builds reminders, `buying` builds inspection checklists)
+ * and *persisted* by `infrastructure/hosted`. Infrastructure may not import a
+ * feature, so the shared shape is defined here and both sides import it. The
+ * builders stay with the feature that owns the rules.
+ */
 export type GarageReminder = {
   id: string;
   vehicleId: string;

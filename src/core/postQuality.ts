@@ -1,5 +1,12 @@
 import { type OwnerPost } from "./entities";
 
+/**
+ * Post-quality scoring: a domain invariant, not a feature preference.
+ *
+ * The community composer shows the score live, and `infrastructure/hosted`
+ * persists the same report to `post_quality` so the feed can rank on it. Both
+ * sides have to agree on the rule, so the rule is core.
+ */
 export type PostQualityInput = Pick<OwnerPost, "body" | "city" | "label" | "odometerKm" | "variant">;
 
 export type PostQualityReport = {

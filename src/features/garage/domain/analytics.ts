@@ -144,7 +144,3 @@ export function buildTimelineAnalytics(
     })
     .sort((first, second) => second.totalSpend - first.totalSpend || first.vehicle.id.localeCompare(second.vehicle.id));
 }
-
-/* -------------------------------------------------------------------------- */
-/* Evidence scoring for city and playbook pages                                */
-/* -------------------------------------------------------------------------- */

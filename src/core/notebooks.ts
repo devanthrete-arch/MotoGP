@@ -1,6 +1,11 @@
 import { type ModelNotebook, type OwnerPost } from "./entities";
 import { modelKeyFor } from "./identity";
 
+/**
+ * Groups owner posts into the `ModelNotebook` entity. Both the community feed
+ * and the ownership playbooks read notebooks, which is why the constructor sits
+ * in `core` rather than in either feature.
+ */
 export function groupByModel(posts: OwnerPost[]): ModelNotebook[] {
   const notebooks = posts.reduce<Map<string, ModelNotebook>>((accumulator, post) => {
     const key = modelKeyFor(post.brand, post.model);
