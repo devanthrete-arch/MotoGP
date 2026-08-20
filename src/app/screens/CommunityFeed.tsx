@@ -1,13 +1,8 @@
 import type { ReactNode } from "react";
-import { Link } from "react-router-dom";
+
 import {
-  Bookmark,
   Camera,
-  CarFront,
-  ChevronsUp,
   CircleUserRound,
-  Flag,
-  MessageSquare,
   PencilLine,
   Search,
   Video,
@@ -15,7 +10,7 @@ import {
 import { useApp, type FeedMode } from "../state/appState";
 import { knowledgeLabels, vehicleFuels, type DraftPost, type KnowledgeLabel } from "../../core/entities";
 import { vehicleBrands } from "../../core/catalog/vehicleCatalog";
-import { Badge, Card, DataText, EdgeGlow, EmptyState, GhostButton, LabelCaps, PrimaryButton } from "../../ui/primitives";
+import { Card, DataText, EdgeGlow, EmptyState, GhostButton, LabelCaps, PrimaryButton } from "../../ui/primitives";
 import { PostCard } from "../../features/community/ui/PostCard";
 import { CarDetail } from "./CarDetail";
 

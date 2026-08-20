@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { FeedbackNote, GarageVehicle, OwnerPost, Profile, ReportRecord, ShortlistItem, TimelineEntry } from "../../core/entities";
-import type { CityCircle, GarageReminder, InspectionChecklist, OwnershipPlaybook } from "../../insights";
-import { assessPostQuality, buildCityCircles, modelKeyFor } from "../../insights";
+import { type CityCircle, type GarageReminder, type InspectionChecklist, type OwnershipPlaybook } from "../../core/projections";
+import { modelKeyFor } from "../../core/identity";
+import { assessPostQuality } from "../../core/postQuality";
+import { buildCityCircles } from "../../features/content/index";
 import {
   asAmount,
   asCount,

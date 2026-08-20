@@ -8,7 +8,7 @@ vi.mock("../supabase/client", () => ({
 }));
 
 import type { FeedbackNote, GarageVehicle, OwnerPost, Profile, ReportRecord, ShortlistItem, TimelineEntry } from "../../core/entities";
-import type { GarageReminder, OwnershipPlaybook } from "../../insights";
+import { type GarageReminder, type OwnershipPlaybook } from "../../core/projections";
 import {
   addHostedComment,
   addHostedPlaybookEntry,
@@ -72,7 +72,6 @@ import {
   upsertHostedCosts,
   upsertHostedFeedback,
   upsertHostedFeedbackNote,
-  upsertHostedInspection,
   upsertHostedInspections,
   upsertHostedPlaybooks,
   upsertHostedPost,

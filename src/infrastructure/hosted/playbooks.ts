@@ -1,6 +1,6 @@
-import type { OwnershipPlaybook } from "../../insights";
+import { type OwnershipPlaybook } from "../../core/projections";
 import { CHILD_LIST_LIMIT, PUBLIC_LIST_LIMIT } from "./kernel/limits";
-import { modelKeyFor } from "../../insights";
+import { modelKeyFor } from "../../core/identity";
 import { CACHE_TTL, invalidateHostedNamespace, publicKey, readThroughCache } from "./kernel/cache";
 import { asCount, asOneOf, asStringList, asText } from "./kernel/coerce";
 import { type HostedClient, runHosted, runHostedForUser, unwrap, unwrapWrite } from "./kernel/result";

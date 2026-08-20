@@ -1,5 +1,5 @@
 import type { ShortlistItem, ShortlistStatus } from "../../core/entities";
-import type { InspectionChecklist, InspectionChecklistItem } from "../../insights";
+import { type InspectionChecklist, type InspectionChecklistItem } from "../../core/projections";
 import { asCount, asNullableIsoTimestamp, asOneOf, asText } from "./kernel/coerce";
 import { type HostedClient, runHostedForUser, unwrap, unwrapWrite } from "./kernel/result";
 import type { Insert, InspectionItemRow, InspectionSessionRow } from "../supabase/tables";

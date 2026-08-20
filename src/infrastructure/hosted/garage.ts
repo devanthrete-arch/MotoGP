@@ -1,6 +1,6 @@
 import type { GarageVehicle, TimelineEntry, TimelineEntryKind } from "../../core/entities";
 import { timelineKinds, vehicleFuels, vehicleOwnerships, vehicleTransmissions } from "../../core/entities";
-import type { GarageReminder } from "../../insights";
+import { type GarageReminder } from "../../core/projections";
 import { asAmount, asCount, asDateOnly, asNullableDateOnly, asOneOf, asText } from "./kernel/coerce";
 import { type HostedClient, type HostedResult, runHostedForUser, unwrap, unwrapWrite } from "./kernel/result";
 import type { GarageCostRow, GarageReminderRow, GarageVehicleRow, Insert, TimelineEntryRow } from "../supabase/tables";

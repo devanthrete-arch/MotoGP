@@ -1,7 +1,7 @@
 import type { OwnerPost } from "../../core/entities";
 import { PUBLIC_LIST_LIMIT } from "./kernel/limits";
-import type { PostQualityReport } from "../../insights";
-import { assessPostQuality } from "../../insights";
+import { type PostQualityReport } from "../../core/postQuality";
+import { assessPostQuality } from "../../core/postQuality";
 import { CACHE_TTL, invalidateHostedNamespace, publicKey, readThroughCache } from "./kernel/cache";
 import { asAmount, asCount, asIsoTimestamp, asOneOf, asStringList, asText } from "./kernel/coerce";
 import { type HostedClient, runHosted, runHostedForUser, unwrap, unwrapWrite } from "./kernel/result";

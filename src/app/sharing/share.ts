@@ -1,5 +1,5 @@
 import type { GarageVehicle, OwnerPost, ShortlistItem } from "../../core/entities";
-import { modelKeyFor, type CityCircle, type OwnershipPlaybook } from "../../insights";
+import { modelKeyFor, type CityCircle, type OwnershipPlaybook } from "../../core/index";
 import { accountPaths, titleForPath, workspacePaths } from "../routing/routes";
 
 /**

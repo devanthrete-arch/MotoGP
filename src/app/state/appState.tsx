@@ -14,11 +14,7 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   addHostedComment,
-  channelForSettings,
   checklistToSession,
-  costsFromTimeline,
-  deleteHostedPost,
-  deleteHostedShortlistItem,
   inspectionSessionIdFor,
   listHostedCityCircles,
   listHostedCityFollows,
@@ -34,44 +30,32 @@ import {
   publishHostedChecklists,
   publishHostedCityCircles,
   publishHostedPostQuality,
-  queueHostedNotifications,
   saveHostedFollows,
   saveHostedProfile,
   saveHostedSubscriptionSettings,
-  setHostedCityFollow,
-  setHostedInspectionItemState,
-  setHostedReminderStatus,
-  setHostedReportStatus,
   setHostedSavedPost,
   syncAllHosted,
   syncHostedCostsFromTimeline,
-  upsertHostedCosts,
-  upsertHostedInspection,
   upsertHostedPlaybooks,
   upsertHostedPost,
   upsertHostedPosts,
   upsertHostedReminders,
   upsertHostedReport,
   upsertHostedReports,
-  upsertHostedShortlistItem,
   upsertHostedShortlistItems,
   upsertHostedTimelineEntries,
-  upsertHostedTimelineEntry,
-  upsertHostedVehicle,
   upsertHostedVehicles,
   type HostedCityCircle,
   type HostedGarageCost,
   type HostedGarageReminder,
-  type HostedInspectionItemState,
   type HostedInspectionSession,
-  type HostedInspectionVerdict,
   type HostedNotificationJob,
   type HostedPlaybookEntry,
   type HostedPostQuality,
   type HostedResult,
   type HostedSyncOutcome,
 } from "../../infrastructure/hosted";
-import { shareContent, shareResultMessage, citySlugFor, modelSlugFor, type ShareContent } from "../sharing/share";
+import { shareContent, shareResultMessage, citySlugFor, type ShareContent } from "../sharing/share";
 import { loadCloudBackup, saveCloudBackup, sendCloudSignInLink, signOutCloud } from "../../infrastructure/cloud/cloudSync";
 import {
   type DraftPost,
@@ -88,30 +72,12 @@ import {
   type SubscriptionSettings,
   type TimelineEntry,
 } from "../../core/entities";
-import {
-  assessPostQuality,
-  buildCityCircles,
-  buildConnectionStatusCopy,
-  buildGarageCostLedger,
-  buildGarageExportMarkdown,
-  buildGarageReminders,
-  buildInspectionChecklists,
-  buildModerationSummary,
-  buildNotificationJobDrafts,
-  buildNotificationPreview,
-  buildOwnershipPlaybooks,
-  buildShortlistComparisons,
-  buildShortlistDecisionLanes,
-  buildTimelineAnalytics,
-  filterPostsByMode,
-  groupByModel,
-  modelKeyFor,
-  slugifyCity,
-  scoreCityEvidence,
-  scorePlaybookEvidence,
-  type CityCircle,
-  type OwnershipPlaybook,
-} from "../../insights";
+import { assessPostQuality, groupByModel, modelKeyFor, slugifyCity, type CityCircle, type OwnershipPlaybook } from "../../core/index";
+import { buildConnectionStatusCopy } from "../../features/account/index";
+import { buildInspectionChecklists, buildShortlistComparisons, buildShortlistDecisionLanes } from "../../features/buying/index";
+import { buildModerationSummary, buildNotificationPreview, filterPostsByMode } from "../../features/community/index";
+import { buildCityCircles, buildOwnershipPlaybooks } from "../../features/content/index";
+import { buildGarageCostLedger, buildGarageExportMarkdown, buildGarageReminders, buildTimelineAnalytics } from "../../features/garage/index";
 import {
   buildAutoflexBackup,
   clearAutoflexData,
@@ -150,7 +116,6 @@ import {
 } from "../../infrastructure/storage/localStore";
 import {
   accountPaths,
-  detailPathFor,
   getInitialRoute,
   routeFromPath,
   routeFromHash,
@@ -158,7 +123,6 @@ import {
   workspacePaths,
   type AccountView,
   type AppRoute,
-  type DetailType,
   type WorkspaceScreen,
 } from "../routing/routes";
 import { getSupabaseClient, isCloudSyncConfigured } from "../../infrastructure/supabase/client";

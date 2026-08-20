@@ -17,7 +17,8 @@ import {
   Wrench,
 } from "lucide-react";
 import { useApp } from "../state/appState";
-import { buildStarterRouteProgress, formatMoney } from "../../insights";
+import { formatMoney } from "../../core/index";
+import { buildStarterRouteProgress } from "../../features/account/index";
 import { starterRoutes } from "../../core/entities";
 import { Badge, DataText, EdgeGlow, GhostButton, LabelCaps, StatusChip } from "../../ui/primitives";
 import { VehicleFactGrid } from "../../ui/VehicleFactGrid";

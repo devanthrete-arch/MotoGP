@@ -25,7 +25,7 @@ import {
   type VehicleOwnership,
   type VehicleTransmission,
 } from "../../core/entities";
-import { formatMoney } from "../../insights";
+import { formatMoney } from "../../core/index";
 import { modelsForBrand, vehicleBrands } from "../../core/catalog/vehicleCatalog";
 import { vehicleFactRows, vehicleTitle } from "../../core/catalog/vehicleFacts";
 

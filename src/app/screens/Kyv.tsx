@@ -3,7 +3,7 @@ import { useApp } from "../state/appState";
 import { findModel } from "../../core/catalog/carData";
 import { Card, DataText, EmptyState, LabelCaps, PrimaryButton, StatusChip } from "../../ui/primitives";
 import { VehicleFactGrid } from "../../ui/VehicleFactGrid";
-import { PLACEHOLDER, vehicleTitle } from "../../core/catalog/vehicleFacts";
+import { PLACEHOLDER } from "../../core/catalog/vehicleFacts";
 import type { GarageVehicle, TimelineEntry } from "../../core/entities";
 
 /**

@@ -1,7 +1,7 @@
 import type { GarageVehicle, KnowledgeLabel, OwnerPost } from "../../core/entities";
 import { PUBLIC_LIST_LIMIT } from "./kernel/limits";
 import { knowledgeLabels } from "../../core/entities";
-import type { CityCircle } from "../../insights";
+import { type CityCircle } from "../../core/projections";
 import { CACHE_TTL, invalidateHostedNamespace, publicKey, readThroughCache } from "./kernel/cache";
 import { asCount, asStringList, asText, slugify } from "./kernel/coerce";
 import { asOneOf } from "./kernel/coerce";

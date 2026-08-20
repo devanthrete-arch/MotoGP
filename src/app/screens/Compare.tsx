@@ -12,7 +12,7 @@ import {
 } from "../../core/catalog/carData";
 import { Badge, Card, DataText, EmptyState, GhostButton, LabelCaps, PrimaryButton } from "../../ui/primitives";
 import { knowledgeLabels, shortlistStatuses, type ShortlistItem } from "../../core/entities";
-import { formatMoney } from "../../insights";
+import { formatMoney } from "../../core/index";
 import { modelsForBrand, vehicleBrands } from "../../core/catalog/vehicleCatalog";
 
 const inputCls =

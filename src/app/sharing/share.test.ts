@@ -2,7 +2,8 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import vercelConfig from "../../../vercel.json";
 import type { OwnerPost } from "../../core/entities";
-import { buildPostSharePayload, modelKeyFor } from "../../insights";
+import { modelKeyFor } from "../../core/index";
+import { buildPostSharePayload } from "../../features/community/index";
 import { accountPaths, detailPathFor, workspacePaths } from "../routing/routes";
 import {
   buildDeepLink,

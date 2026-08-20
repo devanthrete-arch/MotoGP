@@ -11,7 +11,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { useApp } from "../state/appState";
-import { modelKeyFor } from "../../insights";
+import { modelKeyFor } from "../../core/index";
 import { findModel, formatINR, indianStates, onRoadPriceINR } from "../../core/catalog/carData";
 import { Badge, DataText, EdgeGlow, GhostButton, LabelCaps, PrimaryButton } from "../../ui/primitives";
 
