@@ -1,6 +1,12 @@
 import type { GarageVehicle, OwnerPost, ShortlistItem } from "../../core/entities";
 import { modelKeyFor, type CityCircle, type OwnershipPlaybook } from "../../core/index";
+import { citySlugFor, modelSlugFor, safeSlug } from "../../core/slug";
 import { accountPaths, titleForPath, workspacePaths } from "../routing/routes";
+
+/* The slug value objects moved to `core/slug` so the content feature can key
+   local city circles by the same rule without importing the app layer. They
+   stay exported here: share is still the one import site for link shapes. */
+export { citySlugFor, modelSlugFor, slugify } from "../../core/slug";
 
 /**
  * Deep links + sharing for Autoflex.
@@ -67,7 +73,6 @@ export type DeepLinkOptions = {
  * Lowercase alphanumerics and single dashes only: no `.`, `/`, `\`, `%` or
  * whitespace, so `..%2f` style traversal can never reach the path.
  */
-const slugPattern = /^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/;
 
 /** Post ids are opaque (`note-12`, ULIDs, UUIDs) but still tightly bounded. */
 const idPattern = /^[A-Za-z0-9](?:[A-Za-z0-9_-]{0,63})?$/;
@@ -109,32 +114,14 @@ export const resolveShareOrigin = (origin?: string): string => {
   );
 };
 
-/** Same normalisation as `modelKeyFor`, with dash trimming, for free-text values. */
-export const slugify = (value: string): string =>
-  value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
 export const isShareScreen = (value: string): value is ShareScreen =>
   Object.prototype.hasOwnProperty.call(sharePaths, value);
-
-const safeSlug = (candidate: string | undefined): string | null => {
-  const value = (candidate ?? "").trim();
-  return slugPattern.test(value) ? value : null;
-};
 
 const safeId = (candidate: string | undefined): string | null => {
   const value = (candidate ?? "").trim();
   if (!idPattern.test(value)) return null;
   return reservedPostIds.has(value.toLowerCase()) ? null : value;
 };
-
-/** Model slug for `/cars/:slug` and `/playbooks/:slug`. Identical to `modelKeyFor`. */
-export const modelSlugFor = (brand: string | undefined, model: string | undefined): string | null =>
-  safeSlug(modelKeyFor((brand ?? "").trim(), (model ?? "").trim()));
-
-export const citySlugFor = (city: string | undefined): string | null => safeSlug(slugify((city ?? "").trim()));
 
 const detailSlugFor = (kind: ShareDetailKind, params: DeepLinkParams): string | null => {
   if (kind === "post") return safeId(params.postId ?? params.slug);

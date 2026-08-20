@@ -131,8 +131,13 @@ import { initialPostDraft } from "../../features/community";
 import { initialTimelineDraft, initialVehicleDraft } from "../../features/garage";
 import { initialShortlistDraft } from "../../features/buying";
 import { useConnectionStatus } from "../../features/account";
+import { useCommunityDerived, type FeedMode } from "../../features/community";
+import { useGarageDerived } from "../../features/garage";
+import { useContentDerived } from "../../features/content";
+import { useBuyingDerived } from "../../features/buying";
 
-export type FeedMode = "latest" | "helpful" | "saved" | "following";
+/** Re-exported from the community feature so screens keep one import site. */
+export type { FeedMode };
 
 /** Re-exported so screens keep importing the app-facing name from one place. */
 export type { CloudUser };
@@ -229,161 +234,62 @@ export function useAutoflexState() {
   const vehicleTriggerRef = useRef<HTMLButtonElement>(null);
   const accountReturnScreenRef = useRef<WorkspaceScreen>("home");
 
-  const notebooks = useMemo(() => groupByModel(posts), [posts]);
-  const followedModelSet = useMemo(() => new Set(follows.models), [follows.models]);
-  const followedTopicSet = useMemo(() => new Set(follows.topics), [follows.topics]);
+  /* ------------------------------------------------------------------ */
+  /* Derived state, owned by the feature that owns the concept.          */
+  /*                                                                     */
+  /* Each hook takes the state it reads as an explicit argument, so the  */
+  /* composition root stays the only owner of `useState` and a feature   */
+  /* can be exercised without mounting the provider.                     */
+  /* ------------------------------------------------------------------ */
+  const {
+    draftQuality,
+    feedRankingSource,
+    filteredPosts,
+    followedModelSet,
+    followedTopicSet,
+    hostedQualityByPostId,
+    moderationSummary,
+    notebooks,
+    notificationPreview,
+    selectedPostQuality,
+  } = useCommunityDerived({
+    draft,
+    follows,
+    hostedQuality,
+    mode,
+    posts,
+    query,
+    reports,
+    saved,
+    selectedLabel,
+    selectedPost,
+    subscriptionSettings,
+  });
 
-  /** postId -> hosted `ranking_score`. Empty offline, which keeps the local sort. */
-  const hostedRankingScores = useMemo(
-    () => new Map(hostedQuality.map((quality) => [quality.postId, quality.rankingScore])),
-    [hostedQuality],
-  );
+  const {
+    garageCostLedger,
+    garageReminders,
+    hostedCostByVehicleId,
+    localReminders,
+    reminderStatusById,
+    timelineAnalytics,
+    vehicleProfileById,
+  } = useGarageDerived({ garage, hostedCosts, hostedReminders, timeline });
 
-  const hostedQualityByPostId = useMemo(
-    () => new Map(hostedQuality.map((quality) => [quality.postId, quality])),
-    [hostedQuality],
-  );
+  const { cityCircles, hostedCityBySlug, ownershipPlaybooks } = useContentDerived({
+    garage,
+    hostedCities,
+    hostedPlaybooks,
+    posts,
+  });
 
-  const filteredPosts = useMemo(
-    () =>
-      filterPostsByMode(posts, {
-        followedModelSet,
-        followedTopicSet,
-        mode,
-        query,
-        rankingScores: hostedRankingScores,
-        saved,
-        selectedLabel,
-      }),
-    [followedModelSet, followedTopicSet, hostedRankingScores, mode, posts, query, saved, selectedLabel],
-  );
-
-  const feedRankingSource: "hosted" | "local" = hostedRankingScores.size ? "hosted" : "local";
-
-  const notificationPreview = useMemo(
-    () => buildNotificationPreview({ follows, posts, preference: subscriptionSettings }),
-    [follows, posts, subscriptionSettings],
-  );
-
-  const garageCostLedger = useMemo(() => buildGarageCostLedger(garage, timeline), [garage, timeline]);
-  const localReminders = useMemo(() => buildGarageReminders(garage, timeline), [garage, timeline]);
-  const timelineAnalytics = useMemo(() => buildTimelineAnalytics(garage, timeline), [garage, timeline]);
-  const vehicleProfileById = useMemo(
-    () => new Map(timelineAnalytics.map((analytics) => [analytics.vehicle.id, analytics.profile])),
-    [timelineAnalytics],
-  );
-
-  /**
-   * Derived reminders stay the source of truth for *what* is due; the hosted row
-   * only contributes scheduling state (Open / Snoozed / Done / Dismissed).
-   * Reminders the user closed hosted disappear; hosted-only reminders are added.
-   */
-  const garageReminders = useMemo(() => {
-    if (!hostedReminders.length) return localReminders;
-    const hostedById = new Map(hostedReminders.map((reminder) => [reminder.id, reminder]));
-    const localIds = new Set(localReminders.map((reminder) => reminder.id));
-    const merged = localReminders
-      .map((reminder) => {
-        const hosted = hostedById.get(reminder.id);
-        if (!hosted) return reminder;
-        return hosted.status === "Done" || hosted.status === "Dismissed" ? null : { ...reminder, ...hosted, vehicleName: reminder.vehicleName };
-      })
-      .filter((reminder): reminder is NonNullable<typeof reminder> => Boolean(reminder));
-    const hostedOnly = hostedReminders.filter(
-      (reminder) => !localIds.has(reminder.id) && reminder.status !== "Done" && reminder.status !== "Dismissed",
-    );
-    return [...merged, ...hostedOnly];
-  }, [hostedReminders, localReminders]);
-
-  const reminderStatusById = useMemo(
-    () => new Map(hostedReminders.map((reminder) => [reminder.id, reminder.status])),
-    [hostedReminders],
-  );
-
-  /** Local city circles, enriched with the hosted page copy when it exists. */
-  const cityCircles = useMemo(() => {
-    const local = buildCityCircles(posts, garage);
-    if (!hostedCities.length) return local;
-    const localBySlug = new Map(local.map((circle) => [citySlugFor(circle.city) ?? "", circle]));
-    const extras = hostedCities
-      .filter((city) => city.slug && !localBySlug.has(city.slug))
-      .map<CityCircle>((city) => ({
-        city: city.city,
-        garageVehicles: [],
-        hotTopics: city.hotTopics,
-        localSignal: city.localSignal,
-        posts: [],
-        topBrands: city.topBrands,
-      }));
-    return [...local, ...extras];
-  }, [garage, hostedCities, posts]);
-
-  const hostedCityBySlug = useMemo(() => new Map(hostedCities.map((city) => [city.slug, city])), [hostedCities]);
-
-  /** Local playbooks win on shape; hosted rows add models this device has never seen. */
-  const ownershipPlaybooks = useMemo(() => {
-    const local = buildOwnershipPlaybooks(posts);
-    if (!hostedPlaybooks.length) return local;
-    const localKeys = new Set(local.map((playbook) => playbook.key));
-    return [...local, ...hostedPlaybooks.filter((playbook) => !localKeys.has(playbook.key))];
-  }, [hostedPlaybooks, posts]);
-
-  const moderationSummary = useMemo(() => buildModerationSummary(reports), [reports]);
-  const shortlistComparisons = useMemo(() => buildShortlistComparisons(shortlist, posts), [posts, shortlist]);
-  const shortlistDecisionLanes = useMemo(() => buildShortlistDecisionLanes(shortlist, posts), [posts, shortlist]);
-  const inspectionChecklists = useMemo(() => buildInspectionChecklists(shortlist, posts), [posts, shortlist]);
-  const inspectionChecklistByItemId = useMemo(
-    () => new Map(inspectionChecklists.map((checklist) => [checklist.item.id, checklist])),
-    [inspectionChecklists],
-  );
-
-  /**
-   * Hosted inspection run per shortlist item.
-   *
-   * The checklist itself is still derived locally, so it renders identically
-   * offline; the hosted session only carries the outcome fields the local
-   * checklist has no room for (per-item state, per-item note, verdict, notes,
-   * completed_at). Signed-out this is the local checklist with everything
-   * Pending, which is exactly what shipped before.
-   */
-  const inspectionSessionByItemId = useMemo(() => {
-    const hostedById = new Map(hostedInspections.map((session) => [session.id, session]));
-    return new Map(
-      inspectionChecklists.map((checklist) => {
-        const shell = checklistToSession(checklist);
-        const hosted = hostedById.get(inspectionSessionIdFor(checklist.item.id));
-        if (!hosted) return [checklist.item.id, shell] as const;
-        const hostedItemById = new Map(hosted.checklist.map((item) => [item.checklistItemId, item]));
-        return [
-          checklist.item.id,
-          {
-            ...shell,
-            checklist: shell.checklist.map((item) => {
-              const hostedItem = hostedItemById.get(item.checklistItemId);
-              return hostedItem
-                ? { ...item, checkedAt: hostedItem.checkedAt, note: hostedItem.note, state: hostedItem.state }
-                : item;
-            }),
-            completedAt: hosted.completedAt,
-            notes: hosted.notes || shell.notes,
-            status: hosted.status,
-            verdict: hosted.verdict,
-          },
-        ] as const;
-      }),
-    );
-  }, [hostedInspections, inspectionChecklists]);
-
-  const hostedCostByVehicleId = useMemo(() => {
-    const totals = new Map<string, { entryCount: number; totalSpend: number }>();
-    hostedCosts.forEach((cost) => {
-      const current = totals.get(cost.vehicleId) ?? { entryCount: 0, totalSpend: 0 };
-      totals.set(cost.vehicleId, { entryCount: current.entryCount + 1, totalSpend: current.totalSpend + cost.amount });
-    });
-    return totals;
-  }, [hostedCosts]);
-  const draftQuality = useMemo(() => assessPostQuality(draft), [draft]);
-  const selectedPostQuality = useMemo(() => (selectedPost ? assessPostQuality(selectedPost) : null), [selectedPost]);
+  const {
+    inspectionChecklistByItemId,
+    inspectionChecklists,
+    inspectionSessionByItemId,
+    shortlistComparisons,
+    shortlistDecisionLanes,
+  } = useBuyingDerived({ hostedInspections, posts, shortlist });
 
   const stats = useMemo(
     () => ({

@@ -1,12 +1,15 @@
 import { type KnowledgeLabel, type OwnerPost } from "../../../core/entities";
 import { modelKeyFor } from "../../../core/identity";
 
+/** The four ways the community feed can be ordered/filtered. */
+export type FeedMode = "latest" | "helpful" | "saved" | "following";
+
 export function filterPostsByMode(
   posts: OwnerPost[],
   options: {
     followedModelSet: Set<string>;
     followedTopicSet: Set<string>;
-    mode: "latest" | "helpful" | "saved" | "following";
+    mode: FeedMode;
     query: string;
     /**
      * Hosted `ranking_score` per post id. When supplied and non-empty the
