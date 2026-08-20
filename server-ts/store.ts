@@ -6,8 +6,8 @@ import type {
   ReportRecord,
   ShortlistItem,
   TimelineEntry,
-} from "../src/domain";
-import { seedGarage, seedPosts, seedTimeline } from "../src/domain";
+} from "../src/core/entities";
+import { seedGarage, seedPosts, seedTimeline } from "../src/core/entities";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 

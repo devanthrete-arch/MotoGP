@@ -16,7 +16,7 @@ import type {
   VehicleFuel,
   VehicleOwnership,
   VehicleTransmission,
-} from "../src/domain";
+} from "../src/core/entities";
 import {
   knowledgeLabels,
   shortlistStatuses,
@@ -24,8 +24,8 @@ import {
   vehicleFuels,
   vehicleOwnerships,
   vehicleTransmissions,
-} from "../src/domain";
-import { createPost, createReport, createShortlistItem, createTimelineEntry, createVehicle } from "../src/storage";
+} from "../src/core/entities";
+import { createPost, createReport, createShortlistItem, createTimelineEntry, createVehicle } from "../src/infrastructure/storage/localStore";
 import { createStoreBundle, makeId, type AutoflexStore, type FeedbackRecord, type InspectionSession, type StorePersistence } from "./store";
 import {
   createRateLimiter,

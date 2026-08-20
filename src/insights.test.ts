@@ -10,7 +10,7 @@ import {
   seedPosts,
   seedTimeline,
   starterRoutes,
-} from "./domain";
+} from "./core/entities";
 import {
   assessPostQuality,
   buildFeedbackTriageSummary,

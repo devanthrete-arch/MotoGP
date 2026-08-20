@@ -20,8 +20,8 @@ import type {
   StarterRoute,
   TesterRun,
   TimelineEntry,
-} from "./domain";
-import { vehicleFactRows, vehicleFuel } from "./vehicleFacts";
+} from "./core/entities";
+import { vehicleFactRows, vehicleFuel } from "./core/catalog/vehicleFacts";
 
 export type SubscriptionPreference = {
   emailDigest: boolean;

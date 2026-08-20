@@ -17,7 +17,7 @@
  * `listHostedPostsPage` through it to show the injection is neutralised.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { FeedCursor } from "../../src/hosted/community";
+import type { FeedCursor } from "../../src/infrastructure/hosted/community";
 
 /* -------------------------------------------------------------------------- */
 /* Reference fix — drop straight into src/hosted/community.ts                 */
@@ -116,7 +116,7 @@ const makeQuery = () => {
   return query;
 };
 
-vi.mock("../../src/supabase", () => ({
+vi.mock("../../src/infrastructure/supabase/client", () => ({
   getSupabaseClient: () => ({ from: () => makeQuery() }),
   isCloudSyncConfigured: true,
 }));
@@ -146,7 +146,7 @@ describe("AF-02 the sanitised cursor produces a two-branch keyset filter", () =>
   });
 
   it("emits exactly the intended keyset predicate for a legitimate cursor", async () => {
-    const { listHostedPostsPage } = await import("../../src/hosted/community");
+    const { listHostedPostsPage } = await import("../../src/infrastructure/hosted/community");
     const cursor = sanitiseFeedCursor({ id: "nexon-diesel-clutch", value: "2026-08-19T10:11:12.345Z" });
 
     await listHostedPostsPage({ cursor });
@@ -158,7 +158,7 @@ describe("AF-02 the sanitised cursor produces a two-branch keyset filter", () =>
   });
 
   it("adds no filter at all once a hostile cursor is sanitised away", async () => {
-    const { listHostedPostsPage } = await import("../../src/hosted/community");
+    const { listHostedPostsPage } = await import("../../src/infrastructure/hosted/community");
 
     for (const { cursor } of HOSTILE_CURSORS) {
       capturedOr = undefined;

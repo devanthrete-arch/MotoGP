@@ -14,5 +14,5 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["server-ts", "src/domain.ts", "src/storage.ts"]
+  "include": ["server-ts", "src/core/entities.ts", "src/infrastructure/storage/localStore.ts"]
 }
