@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { garageRoles, useApp } from "../state/appState";
 import { Badge, Card, DataText, EmptyState, GhostButton, LabelCaps, PrimaryButton } from "../../ui/primitives";
+import { AsyncBoundary } from "../../ui";
 import type { Profile } from "../../core/entities";
 import { isCloudSyncConfigured } from "../../infrastructure/supabase/client";
 
@@ -172,9 +173,10 @@ export function Account() {
               </button>
             ))}
           {!saved.size ? (
-            <EmptyState title="No saved notes yet">
-              <p>Save any owner note from Community and it stays here for later — on this device, offline included.</p>
-            </EmptyState>
+            <EmptyState
+              body="Save any owner note from Community and it stays here for later — on this device, offline included."
+              title="No saved notes yet"
+            />
           ) : null}
         </section>
       ) : null}
@@ -210,9 +212,10 @@ export function Account() {
             </div>
           ))}
           {!follows.models.length && !follows.topics.length ? (
-            <EmptyState title="You are not following anything yet">
-              <p>Follow a car or a topic and its model notebook collects every new owner note in one thread.</p>
-            </EmptyState>
+            <EmptyState
+              body="Follow a car or a topic and its model notebook collects every new owner note in one thread."
+              title="You are not following anything yet"
+            />
           ) : null}
         </section>
       ) : null}
@@ -358,25 +361,19 @@ export function Account() {
               <div className="bg-error-container/30 border border-error/40 rounded-lg p-4 flex flex-col gap-3" role="alert">
                 <strong className="text-sm text-error">This cannot be undone unless you downloaded a backup.</strong>
                 <div className="flex flex-wrap gap-2">
-                  <button
-                    className="inline-flex items-center justify-center gap-2 min-h-[44px] bg-transparent text-on-surface border border-outline-variant hover:border-outline font-mono text-[10px] font-bold tracking-[0.2em] uppercase px-4 py-2.5 rounded transition-colors"
+                  <GhostButton
                     ref={app.clearDataCancelRef}
-                    type="button"
                     onClick={() => {
                       app.setConfirmClearData(false);
                       window.requestAnimationFrame(() => app.clearDataTriggerRef.current?.focus());
                     }}
                   >
                     Cancel
-                  </button>
-                  <button
-                    className="inline-flex items-center justify-center gap-2 min-h-[44px] bg-error-container text-on-error-container font-mono text-[10px] font-bold tracking-[0.2em] uppercase px-5 py-3 rounded transition-transform active:scale-95"
-                    type="button"
-                    onClick={app.clearAllData}
-                  >
+                  </GhostButton>
+                  <PrimaryButton onClick={app.clearAllData} tone="danger">
                     <Trash2 aria-hidden="true" className="w-4 h-4" />
                     Clear all data
-                  </button>
+                  </PrimaryButton>
                 </div>
               </div>
             ) : (
@@ -479,9 +476,19 @@ export function Account() {
             <Badge>{moderationSummary.removedReports} removed</Badge>
           </div>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {reports.length ? (
-            reports.map((report) => (
+        <AsyncBoundary
+          empty={
+            <EmptyState
+              body="Reported notes land here with their reason and status, so nothing waits on someone remembering it."
+              title="No reports yet"
+              titleAs="h4"
+            />
+          }
+          isEmpty={!reports.length}
+          label="moderation reports"
+        >
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {reports.map((report) => (
               <Card className="flex flex-col gap-2" key={report.id}>
                 <Badge className="self-start" tone={report.status === "Open" ? "error" : "default"}>
                   {report.status}
@@ -492,21 +499,17 @@ export function Account() {
                   {report.reporterName.toUpperCase()} · {new Date(report.createdAt).toLocaleDateString("en-IN")}
                 </DataText>
                 <div className="flex flex-wrap gap-2 mt-1">
-                  <GhostButton className="min-h-[44px]" onClick={() => app.setReportStatus(report.id, "Dismissed")}>
+                  <GhostButton onClick={() => app.setReportStatus(report.id, "Dismissed")}>
                     Dismiss
                   </GhostButton>
-                  <GhostButton className="min-h-[44px] border-error/40 text-error hover:border-error" onClick={() => app.removeReportedPost(report)}>
+                  <GhostButton className="border-error/40 text-error hover:border-error" onClick={() => app.removeReportedPost(report)}>
                     Remove post
                   </GhostButton>
                 </div>
-              </Card>
-            ))
-          ) : (
-            <EmptyState className="sm:col-span-2 lg:col-span-3" title="No reports yet">
-              <p>Reported notes land here with their reason and status, so nothing waits on someone remembering it.</p>
-            </EmptyState>
-          )}
-        </div>
+            </Card>
+            ))}
+          </div>
+        </AsyncBoundary>
       </section>
     </div>
   );

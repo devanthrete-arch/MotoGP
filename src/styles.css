@@ -220,11 +220,30 @@ textarea::placeholder {
   color: #919095;
 }
 
+/*
+ * Focus: the border tint is a mouse affordance, but colour alone is not a
+ * focus indicator. `outline: none` is therefore scoped to :not(:focus-visible)
+ * so the 2px base outline above still lands on every keyboard route into a
+ * field. Previously this rule sat outside @layer base and won the cascade
+ * against :focus-visible, which left bare inputs with no visible focus ring.
+ */
 input:focus,
 select:focus,
 textarea:focus {
   border-color: #c7c6cb;
+}
+
+input:focus:not(:focus-visible),
+select:focus:not(:focus-visible),
+textarea:focus:not(:focus-visible) {
   outline: none;
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #c7c6cb;
+  outline-offset: 2px;
 }
 
 input[type="checkbox"] {

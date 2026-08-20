@@ -63,14 +63,22 @@ export function AsyncBoundary({
   const busy = loading && !isEmpty;
 
   return (
-    <div aria-busy={loading || undefined} className={cn(className)}>
+    // One wrapper, and `children` render as a direct child of it: an extra
+    // element around the content would break a grid or flex parent, and
+    // mounting/unmounting a wrapper as `busy` flips would remount the subtree
+    // and drop focus. Place the boundary *around* a list container, never
+    // inside one as a sibling of the items.
+    <div
+      aria-busy={loading || undefined}
+      className={cn(busy && "motion-safe:opacity-70 transition-opacity", className)}
+    >
       <p className="sr-only" role="status">
         {loading ? `Loading ${label ?? "content"}…` : ""}
       </p>
       {error && !showSkeleton ? (
         <ErrorState className="mb-4" message={error.message} onRetry={error.onRetry} title={error.title} />
       ) : null}
-      {showSkeleton ? (skeleton ?? <SkeletonList />) : showEmpty ? empty : <div className={cn(busy && "motion-safe:opacity-70 transition-opacity")}>{children}</div>}
+      {showSkeleton ? (skeleton ?? <SkeletonList />) : showEmpty ? empty : children}
     </div>
   );
 }

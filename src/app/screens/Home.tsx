@@ -21,6 +21,7 @@ import { formatMoney } from "../../core/index";
 import { buildStarterRouteProgress } from "../../features/account/index";
 import { starterRoutes } from "../../core/entities";
 import { Badge, DataText, EdgeGlow, GhostButton, LabelCaps, StatusChip } from "../../ui/primitives";
+import { useFocusTrap } from "../../ui";
 import { VehicleFactGrid } from "../../ui/VehicleFactGrid";
 import { vehicleTitle } from "../../core/catalog/vehicleFacts";
 
@@ -59,6 +60,12 @@ export function Home() {
     saved,
     shortlist,
   } = app;
+
+  // #vehicle-menu already closed on Escape and restored focus to its trigger,
+  // but Tab walked straight out of the open menu and stranded a keyboard user
+  // behind an overlay they could not see. The trap closes that hole; Escape and
+  // focus restoration stay where they were, in appState.
+  useFocusTrap(app.vehicleMenuRef, vehicleMenuOpen);
 
   // Release checklist item 18: the fresh-profile starter route. The progress
   // builder and its copy already existed in insights/domain but nothing rendered

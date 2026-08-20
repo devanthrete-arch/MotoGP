@@ -14,6 +14,7 @@ import {
   StatusChip,
 } from "../../ui/primitives";
 import { VehicleFactGrid } from "../../ui/VehicleFactGrid";
+import { AsyncBoundary, cn } from "../../ui";
 import {
   timelineKinds,
   vehicleFuels,
@@ -114,13 +115,16 @@ export function Garage() {
       </Card>
 
       {!currentVehicle ? (
-        <EmptyState title="Your garage is empty">
-          <p>Track service, costs, and ownership notes for every car you own — in one place, on this device.</p>
-          <PrimaryButton className="min-h-[44px]" onClick={app.openVehicleComposer}>
-            <Plus aria-hidden="true" className="w-4 h-4" />
-            Add my car
-          </PrimaryButton>
-        </EmptyState>
+        <EmptyState
+          action={
+            <PrimaryButton onClick={app.openVehicleComposer}>
+              <Plus aria-hidden="true" className="w-4 h-4" />
+              Add my car
+            </PrimaryButton>
+          }
+          body="Track service, costs, and ownership notes for every car you own — in one place, on this device."
+          title="Your garage is empty"
+        />
       ) : null}
 
       {/* ---- Composers ---- */}
@@ -341,13 +345,19 @@ export function Garage() {
           {/* ---- Service due ---- */}
           <div aria-label="Service due">
             <SectionHeader eyebrow="Reminders" title="Service due" />
-            {garageReminders.length ? (
+            <AsyncBoundary
+              empty={
+                <EmptyState
+                  body="Log a service or insurance renewal and this panel starts tracking what is next, and when."
+                  title="Nothing due right now"
+                />
+              }
+              isEmpty={!garageReminders.length}
+              label="service reminders"
+            >
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {garageReminders.map((reminder) => (
-                  <Card
-                    className={`flex flex-col gap-2 ${reminder.urgency === "Soon" ? "border-error/40" : ""}`}
-                    key={reminder.id}
-                  >
+                  <Card className={cn("flex flex-col gap-2", reminder.urgency === "Soon" && "border-error/40")} key={reminder.id}>
                     <div className="flex items-center justify-between gap-2">
                       <Badge tone={reminder.urgency === "Soon" ? "error" : reminder.urgency === "Plan" ? "tertiary" : "default"}>
                         {reminder.urgency}
@@ -361,11 +371,7 @@ export function Garage() {
                   </Card>
                 ))}
               </div>
-            ) : (
-              <EmptyState title="Nothing due right now">
-                <p>Log a service or insurance renewal and this panel starts tracking what is next, and when.</p>
-              </EmptyState>
-            )}
+            </AsyncBoundary>
           </div>
 
           {/* ---- Active fleet ---- */}
@@ -516,7 +522,22 @@ export function Garage() {
             </GhostButton>
           }
         />
-        {shortlist.length ? (
+        <AsyncBoundary
+          empty={
+            <EmptyState
+              action={
+                <GhostButton onClick={app.openShortlistComposer}>
+                  <Plus aria-hidden="true" className="w-4 h-4" />
+                  Shortlist a car
+                </GhostButton>
+              }
+              body="Shortlist the models you are considering to compare price, owner reports, and inspection notes side by side."
+              title="No favourite cars yet"
+            />
+          }
+          isEmpty={!shortlist.length}
+          label="your watchlist"
+        >
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
             {shortlist.map((item) => (
               <Card className="flex flex-col gap-2" key={item.id}>
@@ -532,15 +553,7 @@ export function Garage() {
               </Card>
             ))}
           </div>
-        ) : (
-          <EmptyState title="No favourite cars yet">
-            <p>Shortlist the models you are considering to compare price, owner reports, and inspection notes side by side.</p>
-            <GhostButton className="min-h-[44px]" onClick={app.openShortlistComposer}>
-              <Plus aria-hidden="true" className="w-4 h-4" />
-              Shortlist a car
-            </GhostButton>
-          </EmptyState>
-        )}
+        </AsyncBoundary>
       </div>
     </section>
   );

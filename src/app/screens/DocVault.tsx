@@ -160,13 +160,16 @@ export function DocVault() {
       </Card>
 
       {!vehicle ? (
-        <EmptyState title="No car paired yet">
-          <p>Add a car and the vault keeps its registration, insurance, PUC and licence records together — with expiry dates you can actually see coming.</p>
-          <PrimaryButton className="min-h-[44px]" onClick={app.openVehicleComposer}>
-            <Plus aria-hidden="true" className="w-4 h-4" />
-            Add my car
-          </PrimaryButton>
-        </EmptyState>
+        <EmptyState
+          action={
+            <PrimaryButton onClick={app.openVehicleComposer}>
+              <Plus aria-hidden="true" className="w-4 h-4" />
+              Add my car
+            </PrimaryButton>
+          }
+          body="Add a car and the vault keeps its registration, insurance, PUC and licence records together — with expiry dates you can actually see coming."
+          title="No car paired yet"
+        />
       ) : null}
 
       {/* ---- Document cards ---- */}

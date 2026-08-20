@@ -11,6 +11,7 @@ import {
   type CarVariant,
 } from "../../core/catalog/carData";
 import { Badge, Card, DataText, EmptyState, GhostButton, LabelCaps, PrimaryButton } from "../../ui/primitives";
+import { AsyncBoundary, cn } from "../../ui";
 import { knowledgeLabels, shortlistStatuses, type ShortlistItem } from "../../core/entities";
 import { formatMoney } from "../../core/index";
 import { modelsForBrand, vehicleBrands } from "../../core/catalog/vehicleCatalog";
@@ -197,10 +198,22 @@ function CompareEngine() {
   };
 
   if (!carCatalog.length) {
+    // The catalog is a frozen module, so this arm is a guard rather than a real
+    // wait. It goes through AsyncBoundary anyway so the announcement and the
+    // aria-busy contract are identical to every other deferred read.
     return (
-      <Card>
-        <EmptyState className="border-0 p-0"><p>Market catalog is loading. Compare data will appear here.</p></EmptyState>
-      </Card>
+      <AsyncBoundary
+        isEmpty
+        label="the market catalogue"
+        loading
+        skeleton={
+          <Card>
+            <EmptyState body="Market catalog is loading. Compare data will appear here." className="border-0 p-0" />
+          </Card>
+        }
+      >
+        {null}
+      </AsyncBoundary>
     );
   }
 
@@ -296,6 +309,7 @@ function CompareEngine() {
         })}
         {slots.length < 3 ? (
           <button
+            aria-label="Add unit to the comparison"
             className="min-h-[120px] border border-dashed border-outline-variant rounded-lg flex flex-col items-center justify-center gap-2 text-outline hover:text-on-surface hover:border-outline transition-colors"
             type="button"
             onClick={addSlot}
@@ -418,9 +432,25 @@ export function Compare() {
           </div>
         </div>
 
-        <div aria-label="What to check next" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mb-6">
-          {shortlistDecisionLanes.length ? (
-            shortlistDecisionLanes.map((lane) => (
+        <AsyncBoundary
+          className="mb-6"
+          empty={
+            <EmptyState
+              action={
+                <PrimaryButton onClick={app.openShortlistComposer}>
+                  <Plus aria-hidden="true" className="w-4 h-4" />
+                  Add a car
+                </PrimaryButton>
+              }
+              body="Add the cars you are considering to line up price, what owners actually report, and what to inspect before you pay."
+              title="Nothing to compare yet"
+            />
+          }
+          isEmpty={!shortlistDecisionLanes.length}
+          label="your shortlist"
+        >
+          <div aria-label="What to check next" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {shortlistDecisionLanes.map((lane) => (
               <Card className="flex flex-col gap-2" key={lane.item.id}>
                 <div className="flex items-center justify-between gap-2">
                   <LabelCaps className="text-on-surface-variant">Next check</LabelCaps>
@@ -434,17 +464,9 @@ export function Compare() {
                 <p className="text-sm text-on-surface-variant">{lane.signal}</p>
                 <p className="text-sm font-semibold text-on-surface">{lane.nextAction}</p>
               </Card>
-            ))
-          ) : (
-            <EmptyState className="sm:col-span-2 lg:col-span-3" title="Nothing to compare yet">
-              <p>Add the cars you are considering to line up price, what owners actually report, and what to inspect before you pay.</p>
-              <PrimaryButton onClick={app.openShortlistComposer}>
-                <Plus aria-hidden="true" className="w-4 h-4" />
-                Add a car
-              </PrimaryButton>
-            </EmptyState>
-          )}
-        </div>
+            ))}
+          </div>
+        </AsyncBoundary>
 
         {shortlistFormOpen ? (
           <Card className="mb-6" id="shortlist-form">
@@ -514,9 +536,18 @@ export function Compare() {
         ) : null}
 
         {shortlist.length ? (
-          <div className="grid gap-4 lg:grid-cols-2">
-            {shortlistComparisons.length ? (
-              shortlistComparisons.map((comparison) => {
+          <AsyncBoundary
+            empty={
+              <EmptyState
+                body="Save a model here to track its price, owner reports, and inspection checklist as you decide."
+                title="No cars on the shortlist"
+              />
+            }
+            isEmpty={!shortlistComparisons.length}
+            label="your comparisons"
+          >
+            <div className="grid gap-4 lg:grid-cols-2">
+              {shortlistComparisons.map((comparison) => {
                 const inspection = inspectionChecklistByItemId.get(comparison.item.id);
                 return (
                   <Card className="flex flex-col gap-3" key={comparison.item.id}>
@@ -590,13 +621,9 @@ export function Compare() {
                     />
                   </Card>
                 );
-              })
-            ) : (
-              <EmptyState className="lg:col-span-2" title="No cars on the shortlist">
-                <p>Save a model here to track its price, owner reports, and inspection checklist as you decide.</p>
-              </EmptyState>
-            )}
-          </div>
+              })}
+            </div>
+          </AsyncBoundary>
         ) : null}
       </section>
 
@@ -618,7 +645,8 @@ export function Compare() {
                   <DataText className="text-on-surface-variant">{notebook.posts.length} owner notes</DataText>
                   <div className="flex flex-wrap gap-2 mt-1">
                     <GhostButton
-                      className={"min-h-[44px] " + (isFollowing ? "border-primary text-primary" : "")}
+                      aria-pressed={isFollowing}
+                      className={cn(isFollowing && "border-primary text-primary")}
                       onClick={() => app.toggleFollowModel(notebook.brand, notebook.model)}
                     >
                       {isFollowing ? "Following" : "Follow model"}
@@ -632,12 +660,13 @@ export function Compare() {
                       .filter((label) => notebook.posts.some((post) => post.label === label))
                       .map((label) => (
                         <button
-                          className={
-                            "font-mono text-[10px] font-bold tracking-[0.15em] uppercase px-2.5 py-2 rounded border transition-colors " +
-                            (followedTopicSet.has(label)
+                          aria-pressed={followedTopicSet.has(label)}
+                          className={cn(
+                            "inline-flex items-center min-h-[44px] font-mono text-[10px] font-bold tracking-[0.15em] uppercase px-2.5 py-2 rounded border transition-colors",
+                            followedTopicSet.has(label)
                               ? "border-primary text-primary bg-primary/10"
-                              : "border-outline-variant text-on-surface-variant hover:text-on-surface")
-                          }
+                              : "border-outline-variant text-on-surface-variant hover:text-on-surface",
+                          )}
                           key={label}
                           type="button"
                           onClick={() => app.toggleFollowTopic(label)}

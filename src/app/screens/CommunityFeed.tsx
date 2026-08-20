@@ -11,24 +11,16 @@ import { useApp, type FeedMode } from "../state/appState";
 import { knowledgeLabels, vehicleFuels, type DraftPost, type KnowledgeLabel } from "../../core/entities";
 import { vehicleBrands } from "../../core/catalog/vehicleCatalog";
 import { Card, DataText, EdgeGlow, EmptyState, GhostButton, LabelCaps, PrimaryButton } from "../../ui/primitives";
+import { AsyncBoundary, IconButton, ToggleChip, cn } from "../../ui";
 import { PostCard } from "../../features/community";
 import { CarDetail } from "./CarDetail";
 
+/** Thin wrapper so the feed keeps its own call signature over the primitive. */
 function Chip({ active, children, onClick, ariaLabel }: { active: boolean; children: ReactNode; onClick: () => void; ariaLabel?: string }) {
   return (
-    <button
-      aria-label={ariaLabel}
-      aria-pressed={active}
-      className={`whitespace-nowrap px-4 py-3 min-h-[44px] rounded-full font-mono text-[10px] font-bold tracking-[0.2em] uppercase transition-colors ${
-        active
-          ? "bg-primary text-on-primary shadow-[0_0_12px_rgba(199,198,203,0.4)]"
-          : "bg-surface-container text-on-surface-variant border border-outline-variant hover:text-on-surface"
-      }`}
-      type="button"
-      onClick={onClick}
-    >
+    <ToggleChip aria-label={ariaLabel} onClick={onClick} pressed={active}>
       {children}
-    </button>
+    </ToggleChip>
   );
 }
 
@@ -77,15 +69,9 @@ export function CommunityFeed() {
             </div>
             <div className="flex items-center justify-between gap-3 sm:pl-[52px]">
               <div className="flex gap-1">
-                <button aria-label="Write a review" className="w-11 h-11 flex items-center justify-center rounded text-on-surface-variant hover:text-primary transition-colors" type="button" onClick={app.openPostComposer}>
-                  <PencilLine aria-hidden="true" className="w-5 h-5" />
-                </button>
-                <button aria-label="Share a photo note" className="w-11 h-11 flex items-center justify-center rounded text-on-surface-variant hover:text-primary transition-colors" type="button" onClick={app.openPostComposer}>
-                  <Camera aria-hidden="true" className="w-5 h-5" />
-                </button>
-                <button aria-label="Share a video note" className="w-11 h-11 flex items-center justify-center rounded text-on-surface-variant hover:text-primary transition-colors" type="button" onClick={app.openPostComposer}>
-                  <Video aria-hidden="true" className="w-5 h-5" />
-                </button>
+                <IconButton icon={PencilLine} iconClassName="w-5 h-5" label="Write a review" onClick={app.openPostComposer} />
+                <IconButton icon={Camera} iconClassName="w-5 h-5" label="Share a photo note" onClick={app.openPostComposer} />
+                <IconButton icon={Video} iconClassName="w-5 h-5" label="Share a video note" onClick={app.openPostComposer} />
               </div>
               <PrimaryButton className="min-h-[44px]" onClick={app.openPostComposer}>
                 Transmit
@@ -144,11 +130,12 @@ export function CommunityFeed() {
               <button
                 aria-label={`Show notes from ${circle.city}`}
                 aria-pressed={query === circle.city}
-                className={`whitespace-nowrap min-h-[44px] px-3 py-2 rounded border font-mono text-xs tracking-[0.1em] transition-colors ${
+                className={cn(
+                  "whitespace-nowrap min-h-[44px] px-3 py-2 rounded border font-mono text-xs tracking-[0.1em] transition-colors",
                   query === circle.city
                     ? "border-primary text-primary bg-primary-container"
-                    : "border-outline-variant text-on-surface-variant hover:text-on-surface bg-surface-container-lowest"
-                }`}
+                    : "border-outline-variant text-on-surface-variant hover:text-on-surface bg-surface-container-lowest",
+                )}
                 key={circle.city}
                 type="button"
                 onClick={() => app.setQuery(query === circle.city ? "" : circle.city)}
@@ -161,9 +148,30 @@ export function CommunityFeed() {
 
         {/* Feed + detail */}
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,420px)] items-start">
-          <div className={`${postDetailOpen ? "hidden lg:flex" : "flex"} flex-col gap-4 min-w-0`}>
-            {filteredPosts.length ? (
-              filteredPosts.map((post) => (
+          <AsyncBoundary
+            className={cn(postDetailOpen ? "hidden lg:block" : "block", "min-w-0")}
+            empty={
+              <EmptyState
+                action={
+                  <GhostButton
+                    onClick={() => {
+                      app.setQuery("");
+                      app.setSelectedLabel("All");
+                      app.setMode("latest");
+                    }}
+                  >
+                    Show all notes
+                  </GhostButton>
+                }
+                body="Owners log real fixes, running costs and inspection findings here. Clear the filters to read what has been shared so far."
+                title="No notes match these filters"
+              />
+            }
+            isEmpty={!filteredPosts.length}
+            label="owner notes"
+          >
+            <div className="flex flex-col gap-4 min-w-0">
+              {filteredPosts.map((post) => (
                 <PostCard
                   isSaved={saved.has(post.id)}
                   isSelected={selectedPost?.id === post.id}
@@ -174,23 +182,9 @@ export function CommunityFeed() {
                   onToggleSave={app.toggleSaved}
                   post={post}
                 />
-              ))
-            ) : (
-              <EmptyState title="No notes match these filters">
-                <p>Owners log real fixes, running costs and inspection findings here. Clear the filters to read what has been shared so far.</p>
-                <GhostButton
-                  className="min-h-[44px]"
-                  onClick={() => {
-                    app.setQuery("");
-                    app.setSelectedLabel("All");
-                    app.setMode("latest");
-                  }}
-                >
-                  Show all notes
-                </GhostButton>
-              </EmptyState>
-            )}
-          </div>
+              ))}
+            </div>
+          </AsyncBoundary>
 
           <CarDetail />
         </div>

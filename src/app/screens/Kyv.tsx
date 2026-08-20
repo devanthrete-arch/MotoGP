@@ -2,6 +2,7 @@ import { AlertTriangle, BadgeCheck, Cpu, FileUp, IdCard, Nfc, Plus, Share2, Shie
 import { useApp } from "../state/appState";
 import { findModel } from "../../core/catalog/carData";
 import { Card, DataText, EmptyState, LabelCaps, PrimaryButton, StatusChip } from "../../ui/primitives";
+import { cn } from "../../ui";
 import { VehicleFactGrid } from "../../ui/VehicleFactGrid";
 import { PLACEHOLDER } from "../../core/catalog/vehicleFacts";
 import type { GarageVehicle, TimelineEntry } from "../../core/entities";
@@ -237,11 +238,12 @@ export function Kyv() {
           {app.garage.map((item) => (
             <button
               aria-pressed={item.id === vehicle?.id}
-              className={`min-h-[44px] px-4 rounded border font-mono text-[10px] font-bold tracking-[0.2em] uppercase transition-colors ${
+              className={cn(
+                "min-h-[44px] px-4 rounded border font-mono text-[10px] font-bold tracking-[0.2em] uppercase transition-colors",
                 item.id === vehicle?.id
                   ? "bg-primary text-on-primary border-primary glow-ring"
-                  : "bg-surface-container text-on-surface-variant border-outline-variant hover:border-outline"
-              }`}
+                  : "bg-surface-container text-on-surface-variant border-outline-variant hover:border-outline",
+              )}
               key={item.id}
               onClick={() => app.selectVehicle(item.id)}
               type="button"
@@ -287,13 +289,17 @@ export function Kyv() {
               <DataText size="lg" className="text-on-surface uppercase tracking-widest">{record.regNumber}</DataText>
             </div>
           ) : (
-            <EmptyState className="mt-2 max-w-md" title="No car paired yet">
-              <p>Add a car and KYV keeps its registration, insurance, PUC and FASTag status in one readable place.</p>
-              <PrimaryButton className="min-h-[44px]" onClick={app.openVehicleComposer}>
-                <Plus aria-hidden="true" className="w-4 h-4" />
-                Add my car
-              </PrimaryButton>
-            </EmptyState>
+            <EmptyState
+              action={
+                <PrimaryButton onClick={app.openVehicleComposer}>
+                  <Plus aria-hidden="true" className="w-4 h-4" />
+                  Add my car
+                </PrimaryButton>
+              }
+              body="Add a car and KYV keeps its registration, insurance, PUC and FASTag status in one readable place."
+              className="mt-2 max-w-md"
+              title="No car paired yet"
+            />
           )}
         </div>
       </div>

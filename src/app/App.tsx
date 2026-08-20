@@ -1,5 +1,6 @@
 import { AppStateProvider, useApp } from "./state/appState";
 import { ErrorBoundary } from "../ui/ErrorBoundary";
+import { ErrorState, LiveRegion } from "../ui";
 import { MobileDock, Sidebar, Topbar, WorkspaceHeader } from "./shell/Shell";
 import { Account } from "./screens/Account";
 import { Analytics } from "./screens/Analytics";
@@ -28,7 +29,7 @@ function AppFrame() {
         <div className="lg:pl-60 flex flex-col min-h-screen">
           <Topbar />
           {!isOnline ? (
-            <div className="offline-banner" role="status">You are offline. Saved records remain available on this device.</div>
+            <ErrorState message="You are offline. Saved records remain available on this device." variant="banner" />
           ) : null}
           <main className="flex-1 w-full max-w-[1440px] mx-auto px-4 lg:px-10 pb-28 lg:pb-12" id="main-content">
             <WorkspaceHeader />
@@ -44,11 +45,10 @@ function AppFrame() {
           </main>
         </div>
         <MobileDock />
-        {actionMessage ? (
-          <div aria-atomic="true" className="action-message" role="status">
-            {actionMessage}
-          </div>
-        ) : null}
+        {/* Always mounted: a live region inserted at the same moment as its
+            text is frequently never announced, so the node stays and only the
+            message changes. */}
+        <LiveRegion className="action-message" message={actionMessage} />
       </div>
     </>
   );

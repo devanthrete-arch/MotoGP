@@ -233,8 +233,9 @@ export function IconButton({
   icon: Icon,
   label,
   className,
+  iconClassName = "w-4 h-4",
   ...rest
-}: Omit<ButtonProps, "children" | "aria-label"> & { icon: IconComponent; label: string }) {
+}: Omit<ButtonProps, "children" | "aria-label"> & { icon: IconComponent; label: string; iconClassName?: string }) {
   return (
     <button
       aria-label={label}
@@ -246,7 +247,7 @@ export function IconButton({
       type="button"
       {...rest}
     >
-      <Icon aria-hidden="true" className="w-4 h-4" />
+      <Icon aria-hidden="true" className={iconClassName} />
     </button>
   );
 }
