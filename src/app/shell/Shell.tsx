@@ -16,6 +16,7 @@ import {
 import { workspacePaths, type WorkspaceScreen } from "../routing/routes";
 import { useApp } from "../state/appState";
 import { LabelCaps } from "../../ui/primitives";
+import { cn } from "../../ui";
 
 type NavScreen = Exclude<WorkspaceScreen, "account">;
 
@@ -25,8 +26,6 @@ type NavItem = {
   icon: ComponentType<{ className?: string; "aria-hidden"?: boolean | "true" | "false" }>;
   count?: number;
 };
-
-const cx = (...parts: Array<string | false | null | undefined>) => parts.filter(Boolean).join(" ");
 
 function useNavItems(): { primary: NavItem[]; modules: NavItem[] } {
   const app = useApp();
@@ -67,8 +66,10 @@ export function Sidebar() {
           event.preventDefault();
           navigateTo(app, item);
         }}
-        className={cx(
-          "flex items-center gap-3 px-3 py-2.5 rounded border-l-2 transition-colors",
+        className={cn(
+          // min-h-[44px]: the rail is desktop-only, but a 1280px touch tablet
+          // still hits it with a finger, and 10px label text left the row ~30px.
+          "flex items-center gap-3 min-h-[44px] px-3 py-2.5 rounded border-l-2 transition-colors",
           "font-mono text-[10px] font-bold tracking-[0.2em] uppercase",
           isActive
             ? "bg-primary-container text-primary border-primary"
@@ -123,7 +124,7 @@ export function Sidebar() {
       </div>
 
       <div className="px-4 py-4 border-t border-outline-variant flex items-center gap-3">
-        <span className={cx("status-dot", app.connectionStatus.tone)} aria-hidden="true" />
+        <span className={cn("status-dot", app.connectionStatus.tone)} aria-hidden="true" />
         <div className="flex flex-col">
           <span className="font-mono text-[10px] font-bold tracking-[0.2em] uppercase text-on-surface">{app.connectionStatus.label}</span>
           <small className="font-mono text-[10px] text-on-surface-variant tracking-[0.05em]">Records stay available offline.</small>
@@ -218,7 +219,7 @@ export function MobileDock() {
                 event.preventDefault();
                 navigateTo(app, item);
               }}
-              className={cx(
+              className={cn(
                 "relative flex flex-col items-center justify-center w-1/4 gap-1 no-underline transition-colors border-t-2",
                 isActive ? "text-primary border-primary" : "text-on-surface-variant border-transparent hover:text-on-surface",
               )}
