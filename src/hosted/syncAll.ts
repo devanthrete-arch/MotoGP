@@ -11,13 +11,11 @@ import type {
 } from "../domain";
 import { nowIso, timestampOf } from "./coerce";
 import {
-  groupCommentLines,
   mergePostCollections,
   postRowToLocal,
   postToRow,
   reportRowToLocal,
   reportToRow,
-  selectCommentRows,
   selectOwnerPostRows,
   selectReportRows,
   selectSavedPostIds,
@@ -259,9 +257,11 @@ export const syncAllHosted = async (
     });
 
     await runDomain("posts", async () => {
-      const [postRows, commentRows] = await Promise.all([selectOwnerPostRows(client), selectCommentRows(client)]);
-      const commentsByPost = groupCommentLines(commentRows);
-      const hostedPosts = postRows.map((row) => postRowToLocal(row, commentsByPost.get(row.id) ?? []));
+      // Comment bodies are intentionally NOT pulled here: syncing the feed once
+      // used to scan the entire post_comments table. Bodies load per post when
+      // a detail pane opens; the card only needs `comment_count`.
+      const postRows = await selectOwnerPostRows(client);
+      const hostedPosts = postRows.map((row) => postRowToLocal(row, []));
       const hostedIds = new Set(hostedPosts.map((post) => post.id));
       workspace.posts = mergePostCollections(snapshot.posts ?? [], hostedPosts);
       // Only push posts that do not exist hosted yet: updating another author's

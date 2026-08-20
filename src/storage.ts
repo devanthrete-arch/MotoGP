@@ -123,7 +123,14 @@ const getBrowserStorage = (): StorageLike | null => {
   }
 };
 
+/** Reads see buffered writes, so a read-after-write is never stale. */
+const peekPending = <T,>(key: string): { hit: boolean; value?: T } =>
+  pendingWrites.has(key) ? { hit: true, value: pendingWrites.get(key) as T } : { hit: false };
+
 export const readStoredJson = <T,>(key: string, fallback: T, storage: StorageLike | null = getBrowserStorage()): T => {
+  // A value written this frame is still in the buffer, not yet in storage.
+  const buffered = peekPending<T>(key);
+  if (buffered.hit) return buffered.value as T;
   if (!storage) return fallback;
 
   try {
@@ -133,14 +140,81 @@ export const readStoredJson = <T,>(key: string, fallback: T, storage: StorageLik
   }
 };
 
-export const writeStoredJson = <T,>(key: string, value: T, storage: StorageLike | null = getBrowserStorage()): void => {
-  if (!storage) return;
+/**
+ * Coalesced writes.
+ *
+ * Every mutation used to `JSON.stringify` a whole collection synchronously, so
+ * a burst of edits (typing, dragging a slider, bulk-importing) re-serialised
+ * the same array N times on the main thread. Writes are now buffered per key
+ * and flushed once per frame, keeping only the last value — the same bytes
+ * land in storage, just once instead of N times.
+ *
+ * Durability is unchanged from the user's point of view: reads go through the
+ * buffer, and the buffer is flushed synchronously on `pagehide` and on tab
+ * hide, which are the last reliable moments before a browser discards a page.
+ */
+type SchedulerHost = {
+  addEventListener?: (type: string, listener: () => void) => void;
+  cancelAnimationFrame?: (handle: number) => void;
+  clearTimeout?: (handle: number) => void;
+  document?: { visibilityState?: string };
+  requestAnimationFrame?: (callback: () => void) => number;
+  setTimeout?: (callback: () => void, delay: number) => unknown;
+};
 
+/** Host timers/events, read off globalThis so this file compiles without DOM lib. */
+const scheduler = globalThis as unknown as SchedulerHost;
+
+const pendingWrites = new Map<string, unknown>();
+let flushHandle: number | null = null;
+
+const writeThrough = <T,>(key: string, value: T, storage: StorageLike | null): void => {
+  if (!storage) return;
   try {
     storage.setItem(key, JSON.stringify(value));
   } catch {
     // Storage can be blocked, full, or unavailable in private browsing. Keep the in-memory UI alive.
   }
+};
+
+/** Writes every buffered value immediately. Safe to call at any time. */
+export const flushStoredJson = (storage: StorageLike | null = getBrowserStorage()): void => {
+  if (flushHandle !== null) {
+    const cancel = scheduler.cancelAnimationFrame ?? scheduler.clearTimeout;
+    cancel?.call(scheduler, flushHandle);
+    flushHandle = null;
+  }
+  if (!pendingWrites.size) return;
+  const entries = [...pendingWrites.entries()];
+  pendingWrites.clear();
+  for (const [key, value] of entries) writeThrough(key, value, storage);
+};
+
+const scheduleFlush = (storage: StorageLike | null): void => {
+  if (flushHandle !== null) return;
+  const run = () => {
+    flushHandle = null;
+    flushStoredJson(storage);
+  };
+  flushHandle = scheduler.requestAnimationFrame
+    ? scheduler.requestAnimationFrame(run)
+    : (scheduler.setTimeout?.(run, 16) as unknown as number);
+};
+
+// pagehide covers reload, navigation and bfcache; visibilitychange covers the
+// mobile case where a tab is backgrounded and may never fire pagehide.
+// Accessed through globalThis so this module also compiles for non-DOM targets.
+if (scheduler.addEventListener) {
+  scheduler.addEventListener("pagehide", () => flushStoredJson());
+  scheduler.addEventListener("visibilitychange", () => {
+    if (scheduler.document?.visibilityState === "hidden") flushStoredJson();
+  });
+}
+
+export const writeStoredJson = <T,>(key: string, value: T, storage: StorageLike | null = getBrowserStorage()): void => {
+  if (!storage) return;
+  pendingWrites.set(key, value);
+  scheduleFlush(storage);
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>

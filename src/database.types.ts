@@ -609,6 +609,7 @@ export type Database = {
           body: string
           brand: string
           city: string
+          comment_count: number
           created_at: string
           fixes_confirmed: number
           fuel: string | null
@@ -632,6 +633,7 @@ export type Database = {
           body: string
           brand: string
           city?: string
+          comment_count?: number
           created_at?: string
           fixes_confirmed?: number
           fuel?: string | null
@@ -655,6 +657,7 @@ export type Database = {
           body?: string
           brand?: string
           city?: string
+          comment_count?: number
           created_at?: string
           fixes_confirmed?: number
           fuel?: string | null

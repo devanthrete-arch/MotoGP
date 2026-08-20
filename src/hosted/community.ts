@@ -129,11 +129,82 @@ export const mergePostCollections = (local: OwnerPost[], hosted: OwnerPost[]): O
 /* IO                                                                          */
 /* -------------------------------------------------------------------------- */
 
-export const selectOwnerPostRows = async (client: HostedClient): Promise<OwnerPostRow[]> =>
-  unwrap(await client.from("owner_posts").select("*").order("created_at", { ascending: false }), []);
+/**
+ * Columns the feed actually renders.
+ *
+ * `select("*")` shipped every column of every row; naming them keeps the wire
+ * payload proportional to what is drawn, and lets Postgres serve the page from
+ * an index-only scan.
+ */
+const FEED_COLUMNS =
+  "id,title,author,brand,model,variant,fuel,city,odometer_km,label,topic,body,created_at,helpful,fixes_confirmed,comment_count,quality_score,quality_grade,ranking_score";
 
-export const selectCommentRows = async (client: HostedClient): Promise<PostCommentRow[]> =>
-  unwrap(await client.from("post_comments").select("*").order("created_at", { ascending: true }), []);
+/** Rows per feed page. Keyset paging means cost is O(page), not O(table). */
+export const FEED_PAGE_SIZE = 30;
+
+/**
+ * Upper bound for the compatibility helpers that still return "all" posts.
+ * Without it a single call could stream an unbounded table into the browser.
+ */
+export const FEED_MAX_ROWS = 300;
+
+export type FeedSort = "recent" | "ranked";
+
+/**
+ * Keyset cursor: the ordering value plus the primary key as a tiebreaker.
+ *
+ * OFFSET was deliberately avoided — its cost grows linearly with the number of
+ * rows skipped, so deep pages get slower as the table grows. A keyset cursor
+ * stays constant-time at any depth.
+ */
+export type FeedCursor = { id: string; value: string };
+
+export type FeedPage = { hasMore: boolean; nextCursor: FeedCursor | null; posts: OwnerPost[] };
+
+export const encodeFeedCursor = (cursor: FeedCursor | null): string =>
+  cursor ? `${cursor.value}|${cursor.id}` : "";
+
+export const decodeFeedCursor = (raw: string | null | undefined): FeedCursor | null => {
+  if (typeof raw !== "string") return null;
+  const separator = raw.lastIndexOf("|");
+  if (separator <= 0 || separator === raw.length - 1) return null;
+  return { id: raw.slice(separator + 1), value: raw.slice(0, separator) };
+};
+
+const sortColumn = (sort: FeedSort): "created_at" | "ranking_score" =>
+  sort === "ranked" ? "ranking_score" : "created_at";
+
+const cursorValueFor = (row: OwnerPostRow, sort: FeedSort): string =>
+  sort === "ranked" ? String(row.ranking_score ?? 0) : asText(row.created_at);
+
+export const selectOwnerPostRows = async (
+  client: HostedClient,
+  limit: number = FEED_MAX_ROWS,
+): Promise<OwnerPostRow[]> =>
+  unwrap(
+    await client
+      .from("owner_posts")
+      .select(FEED_COLUMNS)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .limit(limit),
+    [],
+  ) as OwnerPostRow[];
+
+/** Comment bodies for ONE post. The feed uses `comment_count` instead. */
+export const selectCommentRowsForPost = async (
+  client: HostedClient,
+  postId: string,
+): Promise<PostCommentRow[]> =>
+  unwrap(
+    await client
+      .from("post_comments")
+      .select("id,post_id,author,message,created_at")
+      .eq("post_id", postId)
+      .order("created_at", { ascending: true })
+      .limit(500),
+    [],
+  ) as PostCommentRow[];
 
 export const selectReportRows = async (client: HostedClient, userId: string): Promise<ReportRow[]> =>
   unwrap(
@@ -146,12 +217,70 @@ export const selectSavedPostIds = async (client: HostedClient, userId: string): 
   return rows.map((row) => asText(row.post_id)).filter(Boolean);
 };
 
-/** Public feed read: works signed-out because `owner_posts` is anon-readable. */
+/**
+ * One page of the public feed. Works signed-out (`owner_posts` is anon-readable).
+ *
+ * Comment bodies are NOT fetched here — the card only needs `comment_count`,
+ * and the bodies load when a post is opened. Ranking data rides along on the
+ * same rows, so the separate rankings scan is gone.
+ */
+export const listHostedPostsPage = (
+  options: { cursor?: FeedCursor | null; limit?: number; sort?: FeedSort } = {},
+): Promise<HostedResult<FeedPage>> => {
+  const sort = options.sort ?? "recent";
+  const limit = Math.max(1, Math.min(options.limit ?? FEED_PAGE_SIZE, 100));
+  const cursor = options.cursor ?? null;
+  const empty: FeedPage = { hasMore: false, nextCursor: null, posts: [] };
+
+  return runHosted<FeedPage>(empty, async (client) => {
+    const column = sortColumn(sort);
+    let query = client
+      .from("owner_posts")
+      .select(FEED_COLUMNS)
+      .order(column, { ascending: false })
+      .order("id", { ascending: false })
+      // One extra row is a cheaper "is there more?" than a COUNT over the table.
+      .limit(limit + 1);
+
+    if (cursor) {
+      // Strictly after the cursor in (value, id) order.
+      query = query.or(
+        `${column}.lt.${cursor.value},and(${column}.eq.${cursor.value},id.lt.${cursor.id})`,
+      );
+    }
+
+    const rows = unwrap(await query, []) as OwnerPostRow[];
+    const hasMore = rows.length > limit;
+    const pageRows = hasMore ? rows.slice(0, limit) : rows;
+    const last = pageRows[pageRows.length - 1];
+
+    return {
+      hasMore,
+      nextCursor: hasMore && last ? { id: asText(last.id), value: cursorValueFor(last, sort) } : null,
+      posts: pageRows.map((row) => postRowToLocal(row, [])),
+    };
+  });
+};
+
+/**
+ * Compatibility wrapper for callers that still want a single list.
+ *
+ * Capped at `FEED_MAX_ROWS`; prefer `listHostedPostsPage` in new code.
+ */
 export const listHostedPosts = (fallback: OwnerPost[] = []): Promise<HostedResult<OwnerPost[]>> =>
-  runHosted<OwnerPost[]>(fallback, async (client) => {
-    const [postRows, commentRows] = await Promise.all([selectOwnerPostRows(client), selectCommentRows(client)]);
-    const commentsByPost = groupCommentLines(commentRows);
-    return sortPostsByRecency(postRows.map((row) => postRowToLocal(row, commentsByPost.get(asText(row.id)) ?? [])));
+  runHosted<OwnerPost[]>(fallback, async (client) =>
+    sortPostsByRecency((await selectOwnerPostRows(client)).map((row) => postRowToLocal(row, []))),
+  );
+
+/** Comment bodies for one post, loaded when the detail pane opens. */
+export const listHostedCommentsForPost = (
+  postId: string,
+  fallback: string[] = [],
+): Promise<HostedResult<string[]>> =>
+  runHosted<string[]>(fallback, async (client) => {
+    if (!postId) return fallback;
+    const rows = await selectCommentRowsForPost(client, postId);
+    return rows.map(commentRowToLine);
   });
 
 export const listHostedPostRankings = (fallback: HostedPostRanking[] = []) =>
