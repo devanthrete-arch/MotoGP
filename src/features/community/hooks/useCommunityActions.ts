@@ -17,7 +17,7 @@ import {
   setHostedSavedPost,
   upsertHostedPost,
   upsertHostedReport,
-} from "../../../infrastructure/hosted";
+} from "../data/communityRepository";
 import { type CloudUser } from "../../../infrastructure/supabase/auth";
 import { initialPostDraft } from "../domain/drafts";
 

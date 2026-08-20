@@ -4,7 +4,7 @@ import {
   checklistToSession,
   inspectionSessionIdFor,
   type HostedInspectionSession,
-} from "../../../infrastructure/hosted";
+} from "../data/buyingRepository";
 import { buildInspectionChecklists } from "../domain/inspection";
 import { buildShortlistComparisons, buildShortlistDecisionLanes } from "../domain/shortlist";
 

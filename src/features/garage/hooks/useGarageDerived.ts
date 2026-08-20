@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { type GarageVehicle, type TimelineEntry } from "../../../core";
-import { type HostedGarageCost, type HostedGarageReminder } from "../../../infrastructure/hosted";
+import { type HostedGarageCost, type HostedGarageReminder } from "../data/garageRepository";
 import { buildGarageCostLedger } from "../domain/costs";
 import { buildGarageReminders } from "../domain/reminders";
 import { buildTimelineAnalytics } from "../domain/analytics";

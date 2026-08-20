@@ -9,7 +9,7 @@ import {
   type ReportRecord,
   type SubscriptionSettings,
 } from "../../../core";
-import { type HostedPostQuality } from "../../../infrastructure/hosted";
+import { type HostedPostQuality } from "../data/communityRepository";
 import { filterPostsByMode, type FeedMode } from "../domain/feed";
 import { buildModerationSummary } from "../domain/moderation";
 import { buildNotificationPreview } from "../domain/notifications";

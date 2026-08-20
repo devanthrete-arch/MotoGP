@@ -12,3 +12,4 @@ export type { EvidenceScore } from "./domain/evidence";
 export { buildOwnershipPlaybooks } from "./domain/playbooks";
 export { topValues } from "./domain/topValues";
 export { useContentDerived } from "./hooks/useContentDerived";
+export * from "./data/contentRepository";

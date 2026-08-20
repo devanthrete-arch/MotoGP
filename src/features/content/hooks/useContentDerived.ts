@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { type CityCircle, type GarageVehicle, type OwnerPost, type OwnershipPlaybook } from "../../../core";
-import { type HostedCityCircle } from "../../../infrastructure/hosted";
+import { type HostedCityCircle } from "../data/contentRepository";
 import { citySlugFor } from "../../../core/slug";
 import { buildCityCircles } from "../domain/cityCircles";
 import { buildOwnershipPlaybooks } from "../domain/playbooks";
