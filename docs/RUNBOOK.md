@@ -75,7 +75,7 @@ outage.
 
 **Symptom.** The app loads and looks healthy but nothing syncs: the feed shows
 only seeded/local content, new posts and garage entries do not appear on another
-device, and there is no error banner - `src/hosted/result.ts` degrades every
+device, and there is no error banner - `src/infrastructure/hosted/kernel/result.ts` degrades every
 hosted call to local data on purpose. Sev 1 if writes are being lost.
 
 **First check.**
@@ -319,7 +319,7 @@ Every user-scoped table must have `relrowsecurity = true` and policies keyed on
    readable.
 3. Do **not** put user data or identifiers into the incident notes; reference
    row counts and table names only.
-4. Reminder: vault documents never leave the device (`src/screens/DocVault.tsx`
+4. Reminder: vault documents never leave the device (`src/app/screens/DocVault.tsx`
    keeps them in `localStorage`), so they cannot be exposed by an RLS bug. Say
    so explicitly when assessing scope.
 

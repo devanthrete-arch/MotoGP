@@ -40,8 +40,8 @@ template and was kept as a single class.
 
 **D4 — `App.tsx` split from 2,323 lines into per-screen modules.**
 The monolith made parallel agent work impossible — every agent would have
-collided in one file. Splitting into `src/screens/*` with all logic hoisted
-into `src/appState.tsx` created clean ownership boundaries.
+collided in one file. Splitting into `src/app/screens/*` with all logic hoisted
+into `src/app/state/appState.tsx` created clean ownership boundaries.
 *Consequence:* `appState.tsx` is now the single large file (~1,200 lines). That
 is deliberate: one hub with clear seams beats state scattered across ten
 screens.
@@ -53,7 +53,7 @@ point was a prerequisite for everything else; the prototype was later deleted.
 
 ### 1.2 Data
 
-**D6 — A frozen contract file (`src/carData.ts`) written before the data existed.**
+**D6 — A frozen contract file (`src/core/catalog/carData.ts`) written before the data existed.**
 The catalog was needed by three screen agents and one data agent working
 simultaneously. Publishing the types and function signatures first, with a seed
 row, let all four start immediately without waiting or colliding.
@@ -99,7 +99,7 @@ type HostedResult<D> =
 Callers write `setPosts(result.data)` with no branching. `ok` is consulted only
 to decide whether to show status copy.
 
-**D11 — Nothing in `src/hosted/` throws.** Two guards (`runHosted`,
+**D11 — Nothing in `src/infrastructure/hosted/` throws.** Two guards (`runHosted`,
 `runHostedForUser`) convert a null client, a signed-out user, an offline
 browser and any thrown PostgREST error into the failure arm. A rejected promise
 inside a render path is how local-first apps become blank screens; making it
@@ -148,7 +148,7 @@ snapshot are Supabase *auth* concerns, not data-access concerns. Only
 ### 1.4 Sharing and previews
 
 **D21 — Deep links derived from the route table, never string-concatenated.**
-`src/share.ts` spreads `workspacePaths`/`accountPaths` from `routing.ts`, so a
+`src/app/sharing/share.ts` spreads `workspacePaths`/`accountPaths` from `routing.ts`, so a
 route rename cannot leave shared links pointing at dead paths.
 
 **D22 — Share degrades down a ladder and distinguishes cancel from failure.**
@@ -301,7 +301,7 @@ ownership; anything touching `appState.tsx` ran alone.
 | Agent | Owned | Delivered |
 | --- | --- | --- |
 | Schema agent | Supabase DDL, migrations, `database.types.ts` | 12 new tables with RLS, indexes, triggers and comments; zero security-advisor lints. |
-| Hosted API agent | `src/hosted/**` | 16 modules, the `HostedResult` convention, pure mappers, `syncAllHosted`. Rebuilt from scratch after the sandbox loss, reconstructing migrations from the live catalog. |
+| Hosted API agent | `src/infrastructure/hosted/**` | 16 modules, the `HostedResult` convention, pure mappers, `syncAllHosted`. Rebuilt from scratch after the sandbox loss, reconstructing migrations from the live catalog. |
 | Deep links / OG agent | `share.ts`, `api/og.js`, `vercel.json`, `index.html`, docs | Canonical deep links, crawler-gated OG shim, generated OG card, launch panel and tester kit. |
 | Wiring agent | `appState.tsx`, `screens/*`, `routing.ts` | Wired the app to the hosted layer. Hit a session limit mid-migration; the remaining call sites were finished by hand. |
 
@@ -337,7 +337,7 @@ index.html
                      <App />
 ```
 
-`src/App.tsx` composes the tree deliberately:
+`src/app/App.tsx` composes the tree deliberately:
 
 ```
 <ErrorBoundary>          // outermost: storage reads and route parsing can crash
@@ -352,7 +352,7 @@ of their own beyond local UI concerns; they call `useApp()`.
 ### 4.2 First paint is always local
 
 `AppStateProvider` initialises every slice synchronously from `localStorage`
-via `src/storage.ts` (seeded defaults on first run). **The first render never
+via `src/infrastructure/storage/localStore.ts` (seeded defaults on first run). **The first render never
 waits on the network.** Hosted data merges in later, if and when it arrives.
 
 ### 4.3 A read

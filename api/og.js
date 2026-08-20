@@ -23,7 +23,7 @@ const DEFAULT_TITLE = "AutoFlex — owner notes that survive the showroom pitch"
 const DEFAULT_DESCRIPTION =
   "Owner notes, running costs, service history and document vault for Indian drivers. Local-first, your data stays yours.";
 
-// Same shapes as src/share.ts. Anything else degrades to the parent screen.
+// Same shapes as src/app/sharing/share.ts. Anything else degrades to the parent screen.
 const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,78}[a-z0-9])?$/;
 const ID_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9_-]{0,63})?$/;
 

@@ -27,7 +27,7 @@ Last reviewed: 2026-08-15.
 | Serverless functions | `api/og.js` only (social-crawler Open Graph shim) |
 
 The origin is **configurable, never hardcoded in app logic**. Resolution order
-in `src/share.ts`:
+in `src/app/sharing/share.ts`:
 
 1. an explicit `{ origin }` passed to the call,
 2. `VITE_PUBLIC_ORIGIN` (build-time env),
@@ -39,7 +39,7 @@ in `src/share.ts`:
 then `x-forwarded-host`, then `VERCEL_URL`, then the same fallback. When a
 custom domain lands, set `VITE_PUBLIC_ORIGIN` in the Vercel project and update
 `defaultShareOrigin` plus the canonical/`og:` URLs in `index.html`.
-`src/share.test.ts` fails if `index.html` and `defaultShareOrigin` disagree.
+`src/app/sharing/share.test.ts` fails if `index.html` and `defaultShareOrigin` disagree.
 
 ### Security headers (must not weaken)
 
@@ -57,9 +57,9 @@ custom domain lands, set `VITE_PUBLIC_ORIGIN` in the Vercel project and update
 No `'unsafe-inline'` and no `'unsafe-eval'` anywhere. Consequences that everyone
 touching markup must respect: **no inline `<script>` and no inline `style="…"`
 attributes** in `index.html` or in anything `api/og.js` prints. The legacy copy
-fallback in `src/share.ts` positions its scratch textarea through CSSOM
+fallback in `src/app/sharing/share.ts` positions its scratch textarea through CSSOM
 (`element.style.position = …`), which CSP allows, rather than a style attribute,
-which it blocks. `src/share.test.ts` asserts the CSP still contains
+which it blocks. `src/app/sharing/share.test.ts` asserts the CSP still contains
 `script-src 'self'` and `frame-ancestors 'none'` and still contains no
 `unsafe-inline`.
 
@@ -125,7 +125,7 @@ Key handling:
 
 - The **publishable (anon) key is safe to ship** in the client bundle and in
   `api/og.js`. It is a public identifier; RLS is what protects the data. It is
-  already committed as a fallback in `src/supabase.ts`.
+  already committed as a fallback in `src/infrastructure/supabase/client.ts`.
 - The **service role key must never** appear in this repo, in a Vercel build
   env exposed to the client, in a chat message, in an issue, or in a log line.
   Any server work needing it belongs in a separate backend with its own secret
@@ -160,8 +160,8 @@ Key handling:
 
 ### Deep-link scheme
 
-All paths come from the router tables in `src/routing.ts`
-(`workspacePaths`, `accountPaths`), spread into `sharePaths` in `src/share.ts`
+All paths come from the router tables in `src/app/routing/routes.ts`
+(`workspacePaths`, `accountPaths`), spread into `sharePaths` in `src/app/sharing/share.ts`
 so a route rename cannot leave shared links behind.
 
 | Target | Path |
@@ -255,8 +255,8 @@ the brand line changes.
 
 | Change | File |
 | --- | --- |
-| A route path | `src/routing.ts` (deep links follow automatically) |
-| Deep-link or share behaviour | `src/share.ts` + `src/share.test.ts` |
+| A route path | `src/app/routing/routes.ts` (deep links follow automatically) |
+| Deep-link or share behaviour | `src/app/sharing/share.ts` + `src/app/sharing/share.test.ts` |
 | Crawler allow-list, rewrites, headers | `vercel.json` |
 | Per-route preview copy or enrichment | `api/og.js` |
 | Default social card art | `scripts/generate-og-image.mjs` → `public/og-cover.png` |

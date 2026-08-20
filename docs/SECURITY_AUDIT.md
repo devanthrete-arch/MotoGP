@@ -43,7 +43,7 @@ inflates `model_playbooks`; every visitor then downloads the entire table on
 page load. Cheap to trigger, degrades every client, and costs egress on the
 defender's account — a practical asymmetric denial-of-service.
 
-*Fix:* `src/hosted/limits.ts` defines `PUBLIC_LIST_LIMIT` (200),
+*Fix:* `src/infrastructure/hosted/kernel/limits.ts` defines `PUBLIC_LIST_LIMIT` (200),
 `OWNER_LIST_LIMIT` (1000) and `CHILD_LIST_LIMIT` (500); the four reads now
 apply them. Caps are a safety net, not paging: surfaces that must walk a large
 table should use a cursor, as the feed does.

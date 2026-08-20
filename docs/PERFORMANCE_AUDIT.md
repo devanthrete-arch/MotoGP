@@ -13,7 +13,7 @@ main.tsx ──▶ ErrorBoundary ──▶ AppStateProvider ──▶ AppFrame �
                                      │
                                      ├── 45 useState, 27 useMemo, 0 useCallback
                                      ├── localStorage (synchronous, per mutation)
-                                     └── src/hosted/** ──▶ Supabase Postgres (RLS)
+                                     └── src/infrastructure/hosted/** ──▶ Supabase Postgres (RLS)
 ```
 
 **The good parts, which the refactor preserved:**
@@ -22,7 +22,7 @@ main.tsx ──▶ ErrorBoundary ──▶ AppStateProvider ──▶ AppFrame �
   synchronously; the network is a background reconciliation. Most reads never
   touch the database at all.
 - **`HostedResult` carries usable `data` on both the success and failure arms**
-  and nothing in `src/hosted/` throws, so offline, signed-out and unconfigured
+  and nothing in `src/infrastructure/hosted/` throws, so offline, signed-out and unconfigured
   are ordinary states rather than error paths.
 - **RLS uses `(select auth.uid()) = user_id`**, the form Postgres evaluates once
   per query instead of once per row.
@@ -35,7 +35,7 @@ main.tsx ──▶ ErrorBoundary ──▶ AppStateProvider ──▶ AppFrame �
 
 ### P0 — the feed read the entire database on every page load
 
-`src/hosted/community.ts` had **no `.limit()` or `.range()` anywhere**:
+`src/infrastructure/hosted/community.ts` had **no `.limit()` or `.range()` anywhere**:
 
 ```ts
 client.from("owner_posts").select("*").order("created_at", …)      // every post

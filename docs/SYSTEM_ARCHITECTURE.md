@@ -21,7 +21,7 @@ Two consequences run through every decision in this document:
 1. **The database is not on the critical path for a read.** So the interesting
    scaling question is not "how fast is the query" but "how few queries can we
    get away with, and how cheap is each one when it does run".
-2. **Failure is an ordinary state.** `src/hosted/**` returns a
+2. **Failure is an ordinary state.** `src/infrastructure/hosted/**` returns a
    `HostedResult<T>` that carries usable `data` on *both* arms. Offline,
    signed-out and unconfigured are not error paths. Nothing in that directory
    throws into a render. Any new layer — including the cache added in this
@@ -39,9 +39,9 @@ flowchart TB
     subgraph device["User device"]
         LS[("localStorage<br/>authoritative for first paint")]
         SW["Service worker<br/>Cache Storage<br/>same-origin assets only"]
-        MEM["In-memory cache<br/>src/hosted/cache.ts<br/>TTL + SWR + dedup + LRU"]
+        MEM["In-memory cache<br/>src/infrastructure/hosted/kernel/cache.ts<br/>TTL + SWR + dedup + LRU"]
         APP["React 19 SPA<br/>appState.tsx state hub"]
-        HOSTED["src/hosted/**<br/>HostedResult, never throws"]
+        HOSTED["src/infrastructure/hosted/**<br/>HostedResult, never throws"]
     end
 
     subgraph edge["Vercel edge / CDN"]
@@ -82,7 +82,7 @@ flowchart TB
 | --- | --- | --- |
 | First paint | `localStorage` + React | Any network hop here costs a second on a 3G Indian connection |
 | Authorisation | Postgres RLS | One enforcement point. A second one in an API layer would drift |
-| Request collapsing, TTL, SWR | `src/hosted/cache.ts` | Per-tab; the only layer that knows a user just navigated back |
+| Request collapsing, TTL, SWR | `src/infrastructure/hosted/kernel/cache.ts` | Per-tab; the only layer that knows a user just navigated back |
 | Asset delivery | Vercel CDN, content-hashed | Immutable filenames make a 1-year TTL trivially correct |
 | Offline shell | Service worker | Only layer that can answer a navigation with no network |
 | Expensive aggregates | Postgres materialised view | Aggregates over *all* users cannot be computed from one client's local data |
@@ -264,7 +264,7 @@ the client switches on — HTTP status alone is too coarse.
 
 `4xx` means "your request was wrong", `5xx` means "we were wrong". The hosted
 layer maps every non-2xx onto the existing `HostedFailureReason` union, so
-introducing the API changes nothing above `src/hosted/**`.
+introducing the API changes nothing above `src/infrastructure/hosted/**`.
 
 **Rate limits.** Token bucket keyed on user id, falling back to IP for anon.
 `RateLimit-Limit` / `RateLimit-Remaining` / `RateLimit-Reset` on every response,
@@ -462,7 +462,7 @@ requests. Now:
 
 ### The cache API
 
-`src/hosted/cache.ts`, no dependencies, ~330 lines.
+`src/infrastructure/hosted/kernel/cache.ts`, no dependencies, ~330 lines.
 
 ```ts
 publicKey("city-circles", "all")            // CacheKey  — anon-readable data only
@@ -593,7 +593,7 @@ decision criterion 2 for the API layer, and it should arrive with that layer.
 | --- | --- |
 | `autoflex_user_backups` rewrites the whole workspace as `jsonb` on every change — write amplification, TOAST churn, table bloat | Retire the table. Normalised tables are already authoritative, as its own comment says. Snapshot to object storage on a schedule if DR needs it |
 | One bad actor can post unboundedly; there is no rate limit anywhere | Postgres-side write budget trigger on `owner_posts` and `post_comments` — the only enforcement point a browser cannot bypass |
-| Every remount re-issues the same public reads | **Done in this change:** TTL + dedup in `src/hosted/cache.ts` |
+| Every remount re-issues the same public reads | **Done in this change:** TTL + dedup in `src/infrastructure/hosted/kernel/cache.ts` |
 | Anyone signed in can rewrite any `city_circles` or `model_playbooks` row | Add a curator-role check to those `update` policies |
 
 ### 100,000 users — the unbounded public reads become the P0
