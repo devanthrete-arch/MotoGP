@@ -1,4 +1,5 @@
 import type { GarageVehicle, KnowledgeLabel, OwnerPost } from "../domain";
+import { PUBLIC_LIST_LIMIT } from "./limits";
 import { knowledgeLabels } from "../domain";
 import type { CityCircle } from "../insights";
 import { CACHE_TTL, invalidateHostedNamespace, publicKey, readThroughCache } from "./cache";
@@ -98,7 +99,14 @@ export const hostedCityToLocal = (
 /* -------------------------------------------------------------------------- */
 
 export const selectCityCircleRows = async (client: HostedClient): Promise<CityCircleRow[]> =>
-  unwrap(await client.from("city_circles").select("*").order("post_count", { ascending: false }), []);
+  unwrap(
+    await client
+      .from("city_circles")
+      .select("*")
+      .order("post_count", { ascending: false })
+      .limit(PUBLIC_LIST_LIMIT),
+    [],
+  );
 
 /**
  * Public read: `city_circles` is anon-readable, so this works signed-out and is

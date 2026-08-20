@@ -1,4 +1,5 @@
 import type { OwnershipPlaybook } from "../insights";
+import { CHILD_LIST_LIMIT, PUBLIC_LIST_LIMIT } from "./limits";
 import { modelKeyFor } from "../insights";
 import { CACHE_TTL, invalidateHostedNamespace, publicKey, readThroughCache } from "./cache";
 import { asCount, asOneOf, asStringList, asText } from "./coerce";
@@ -108,10 +109,17 @@ export const playbookToEntries = (playbook: OwnershipPlaybook): Omit<HostedPlayb
 /* -------------------------------------------------------------------------- */
 
 export const selectPlaybookRows = async (client: HostedClient): Promise<ModelPlaybookRow[]> =>
-  unwrap(await client.from("model_playbooks").select("*").order("evidence_count", { ascending: false }), []);
+  unwrap(
+    await client
+      .from("model_playbooks")
+      .select("*")
+      .order("evidence_count", { ascending: false })
+      .limit(PUBLIC_LIST_LIMIT),
+    [],
+  );
 
 export const selectPlaybookEntryRows = async (client: HostedClient, playbookId?: string): Promise<PlaybookEntryRow[]> => {
-  const query = client.from("playbook_entries").select("*");
+  const query = client.from("playbook_entries").select("*").limit(playbookId ? CHILD_LIST_LIMIT : PUBLIC_LIST_LIMIT);
   return unwrap(await (playbookId ? query.eq("playbook_id", playbookId) : query), []);
 };
 

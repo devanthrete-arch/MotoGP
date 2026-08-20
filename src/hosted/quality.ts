@@ -1,4 +1,5 @@
 import type { OwnerPost } from "../domain";
+import { PUBLIC_LIST_LIMIT } from "./limits";
 import type { PostQualityReport } from "../insights";
 import { assessPostQuality } from "../insights";
 import { CACHE_TTL, invalidateHostedNamespace, publicKey, readThroughCache } from "./cache";
@@ -102,7 +103,14 @@ export const rankPosts = (posts: OwnerPost[], scores: Map<string, HostedPostQual
 /* -------------------------------------------------------------------------- */
 
 export const selectQualityRows = async (client: HostedClient): Promise<PostQualityScoreRow[]> =>
-  unwrap(await client.from("post_quality_scores").select("*").order("ranking_score", { ascending: false }), []);
+  unwrap(
+    await client
+      .from("post_quality_scores")
+      .select("*")
+      .order("ranking_score", { ascending: false })
+      .limit(PUBLIC_LIST_LIMIT),
+    [],
+  );
 
 /** Public read: quality scores are anon-readable so the feed can rank signed-out. */
 export const listHostedPostQuality = (fallback: HostedPostQuality[] = []) =>
