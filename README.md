@@ -133,7 +133,16 @@ Service-center integration is intentionally kept separate under
 
 ## Project layout
 
-- `src` — active TypeScript webapp MVP
+- `src` — active TypeScript webapp MVP, layered `core` / `infrastructure` / `ui` /
+  `features` / `app` with dependencies pointing inward only
+  - `src/core` — pure domain: entities, identity and slug rules, projections, vehicle catalog
+  - `src/infrastructure` — Supabase client, the non-throwing hosted data layer, local storage, cloud backup
+  - `src/ui` — design-system primitives shared across features
+  - `src/features` — one folder per bounded context (community, garage, buying, content, account),
+    each with its own `domain`, `data`, `hooks`, `ui` and a public `index.ts`
+  - `src/app` — composition root: provider, routing, sharing, shell, screens
+- `docs/ARCHITECTURE.md` — the layer rules, what moved where, and the seams left uncut
+- `tests/architecture/layers.test.ts` — fails the build if a layer rule is violated
 - `server-ts` — first TypeScript/Fastify hosted API foundation for the web MVP
 - `scripts/build-service-worker.mjs` — generates the versioned production offline shell
 - `index.html`, `vite.config.ts`, `package.json` — Vercel-ready web build
