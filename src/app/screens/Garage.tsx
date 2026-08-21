@@ -1,6 +1,6 @@
 import { Download, Heart, Plus, Wrench, X } from "lucide-react";
 import { useApp } from "../state/appState";
-import { formatINR } from "../../core/catalog/carData";
+import { carCatalog, formatINR } from "../../core/catalog/carData";
 import {
   Badge,
   Card,
@@ -33,6 +33,10 @@ import { vehicleFactRows, vehicleTitle } from "../../core/catalog/vehicleFacts";
 /** My-cars screen (template: my_garage_autoflex). */
 
 const yearFor = (vehicle: GarageVehicle): string => (vehicle.purchaseMonth ? vehicle.purchaseMonth.slice(0, 4) : "----");
+
+/** Static catalog size, quoted in the first-run copy so the offer is concrete. */
+const catalogModelCount = carCatalog.length;
+const catalogBrandCount = new Set(carCatalog.map((model) => model.brand)).size;
 
 export function Garage() {
   const app = useApp();
@@ -122,8 +126,8 @@ export function Garage() {
               Add my car
             </PrimaryButton>
           }
-          body="Track service, costs, and ownership notes for every car you own — in one place, on this device."
-          title="Your garage is empty"
+          body={`Add any car you own — pick from ${catalogModelCount} models across ${catalogBrandCount} Indian brands, or type your own. AutoFlex then tracks its service history, running costs, documents and renewal dates, all on this device.`}
+          title="Add your first car"
         />
       ) : null}
 

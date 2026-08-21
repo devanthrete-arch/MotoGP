@@ -208,6 +208,8 @@ export function useAutoflexState() {
   const [hostedSyncing, setHostedSyncing] = useState(false);
   const localUpdatedAtRef = useRef<string>(loadLocalUpdatedAt());
   const cloudUserRef = useRef<CloudUser | null>(null);
+  /** Cleared once the backend refuses a curated write (non-admin account). */
+  const curatedWritesAllowedRef = useRef(true);
   const cloudOwnerRef = useRef<string | null>(readCloudOwner());
 
   /** Records which account this device's data belongs to. */
@@ -475,8 +477,17 @@ export function useAutoflexState() {
     const userId = cloudUser?.id;
     if (!userId) return;
     const timeout = window.setTimeout(() => {
-      void publishHostedCityCircles(userId, cityCircles);
-      void upsertHostedPlaybooks(userId, ownershipPlaybooks);
+      // City circles and model playbooks are curated content: RLS allows writes
+      // only from admin accounts. For everyone else the write is denied, which
+      // is harmless (the result is discarded and the local view is unaffected),
+      // but there is no point retrying it on every debounce — so the first
+      // denial disables curated publishing for the rest of the session.
+      if (curatedWritesAllowedRef.current) {
+        void publishHostedCityCircles(userId, cityCircles).then((result) => {
+          if (!result.ok && result.reason === "request-failed") curatedWritesAllowedRef.current = false;
+        });
+        void upsertHostedPlaybooks(userId, ownershipPlaybooks);
+      }
       void publishHostedChecklists(userId, inspectionChecklists);
       void upsertHostedReminders(userId, localReminders);
       void syncHostedCostsFromTimeline(userId, timeline);

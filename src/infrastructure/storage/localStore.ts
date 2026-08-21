@@ -18,7 +18,7 @@ import type {
   TesterRun,
   TimelineEntry,
 } from "../../core/entities";
-import { seedGarage, seedPosts, seedTimeline } from "../../core/entities";
+import { seedPosts } from "../../core/entities";
 
 const postsKey = "autoflex.web.posts.v1";
 const savedKey = "autoflex.web.saved.v1";
@@ -439,7 +439,16 @@ export const saveFollows = (follows: FollowState): void => {
   writeStoredJson(followKey, follows);
 };
 
-export const loadGarage = (): GarageVehicle[] => readStoredJson<GarageVehicle[]>(garageKey, seedGarage);
+/**
+ * A new visitor starts with an empty garage.
+ *
+ * The seed vehicle used to be the default, so every first-time user opened
+ * AutoFlex already "owning" a Tata Nexon they had never entered — and the app
+ * could not distinguish a genuine first run from a returning one, because
+ * `garage.length === 0` was never true. `seedGarage` is kept for tests and
+ * demos; it is no longer what a real person sees.
+ */
+export const loadGarage = (): GarageVehicle[] => readStoredJson<GarageVehicle[]>(garageKey, []);
 
 export const saveGarage = (garage: GarageVehicle[]): void => {
   writeStoredJson(garageKey, garage);
@@ -451,7 +460,9 @@ export const createVehicle = (draft: DraftVehicle): GarageVehicle => ({
 });
 
 export const loadTimeline = (): TimelineEntry[] =>
-  readStoredJson<TimelineEntry[]>(timelineKey, seedTimeline).sort(
+  // Empty too: the seeded timeline belonged to the seeded vehicle, so keeping
+  // it would leave service records pointing at a car that no longer exists.
+  readStoredJson<TimelineEntry[]>(timelineKey, []).sort(
     (first, second) => Date.parse(second.happenedOn) - Date.parse(first.happenedOn),
   );
 
