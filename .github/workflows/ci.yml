@@ -1,0 +1,200 @@
+# Autoflex CI
+#
+# Runs on every pull request into master, and is reused (workflow_call) by
+# deploy.yml so the master pipeline verifies exactly the same things a PR does.
+#
+# Design notes:
+# - Jobs are independent and run in parallel. Each restores the shared ~/.npm
+#   cache via setup-node, so re-running `npm ci` per job costs seconds, not a
+#   full download. That is cheaper and far less fragile than passing a
+#   node_modules artifact between jobs.
+# - `ci-gate` is the single job name to require in branch protection. Adding a
+#   new job below never requires touching the GitHub branch protection rule.
+# - Actions are pinned to commit SHAs (immutable) with the tag in a comment.
+name: CI
+
+on:
+  pull_request:
+    branches: [master]
+  workflow_call: {}
+  workflow_dispatch: {}
+
+# Least privilege: nothing here writes to the repo, publishes packages, or
+# needs an OIDC token.
+permissions:
+  contents: read
+
+concurrency:
+  # Supersede stale PR runs; never cancel a run that master/deploy depends on.
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  # Match the Vercel project runtime. Bump both together.
+  NODE_VERSION: "22"
+
+jobs:
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Install
+        run: npm ci --no-audit --no-fund
+      - name: tsc project references (app + server)
+        # `npm run build` also typechecks, but a dedicated job fails in ~40s
+        # instead of waiting for Vite, and points at the offending project.
+        run: npx tsc -b --pretty false
+
+  test:
+    name: Unit tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Install
+        run: npm ci --no-audit --no-fund
+      - name: Run vitest
+        run: npm run test
+
+  build:
+    name: Production build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Install
+        run: npm ci --no-audit --no-fund
+      - name: Build
+        # Same command Vercel runs (tsc -b && vite build && service worker).
+        run: npm run build
+      - name: Verify build output
+        # The service worker is generated after vite build; if that step is
+        # skipped the PWA silently stops updating in production.
+        run: |
+          set -euo pipefail
+          test -f dist/index.html
+          test -f dist/sw.js
+          test -d dist/assets
+          grep -q "CACHE_NAME" dist/sw.js
+          echo "dist size: $(du -sh dist | cut -f1)"
+      - name: Upload dist for inspection
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: dist-${{ github.sha }}
+          path: dist
+          retention-days: 7
+          if-no-files-found: error
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Install
+        run: npm ci --no-audit --no-fund
+      - name: Block on critical vulnerabilities in shipped dependencies
+        # Blocking threshold is `critical` on the production tree only.
+        # Rationale: the tree currently carries one *high* transitive advisory
+        # (fast-uri, via fastify -> fast-json-stringify) that only affects the
+        # server-ts container, not the Vercel frontend. Blocking at `high`
+        # today would wedge every PR on a dependency this pipeline cannot fix.
+        # Tighten to `high` once that advisory is resolved - see docs/DEPLOYMENT.md.
+        run: npm audit --omit=dev --audit-level=critical
+      - name: Report high/moderate findings (non-blocking)
+        if: always()
+        run: |
+          set -uo pipefail
+          npm audit --json > audit.json || true
+          node -e '
+            const fs = require("node:fs");
+            let report = {};
+            try { report = JSON.parse(fs.readFileSync("audit.json", "utf8")); } catch { }
+            const counts = report?.metadata?.vulnerabilities ?? {};
+            const lines = ["| severity | count |", "| --- | --- |"];
+            for (const [name, value] of Object.entries(counts)) lines.push(`| ${name} | ${value} |`);
+            const advisories = Object.values(report?.vulnerabilities ?? {})
+              .filter((entry) => ["high", "critical"].includes(entry.severity))
+              .map((entry) => `- **${entry.name}** (${entry.severity}) - fix available: ${Boolean(entry.fixAvailable)}`);
+            const body = ["### npm audit", ...lines, "", ...(advisories.length ? advisories : ["No high or critical advisories."])].join("\n");
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${body}\n`);
+            console.log(body);
+          '
+
+  migrations:
+    name: Migration lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          # Full history so the script can diff against the merge base and see
+          # whether an already-applied migration file was edited in place.
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Lint supabase/migrations
+        env:
+          MIGRATION_BASE_REF: ${{ github.event.pull_request.base.sha || '' }}
+        run: node scripts/check-migrations.mjs
+
+  ci-gate:
+    name: CI gate
+    # The one required status check. Runs even when a dependency fails so the
+    # check always reports a conclusion instead of hanging as "expected".
+    if: always()
+    needs: [typecheck, test, build, audit, migrations]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Aggregate job results
+        env:
+          RESULTS: ${{ join(needs.*.result, ',') }}
+        run: |
+          set -euo pipefail
+          echo "job results: ${RESULTS}"
+          case "${RESULTS}" in
+            *failure*|*cancelled*)
+              echo "::error::One or more required CI jobs did not succeed."
+              exit 1
+              ;;
+          esac
+          echo "All required CI jobs succeeded."

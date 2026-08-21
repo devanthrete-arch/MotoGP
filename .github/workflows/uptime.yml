@@ -1,0 +1,86 @@
+# Scheduled uptime check against real user journeys.
+#
+# This is the only continuous monitoring the project has today. It runs the same
+# script the post-deploy smoke test runs, so a routing regression, an expired
+# deployment, a stale service worker or an unreachable Supabase shows up within
+# the check interval instead of when a user complains.
+#
+# Cost note: on a private repo each run consumes ~1 GitHub Actions minute. Every
+# 30 minutes is ~1,450 minutes/month against the 2,000-minute free tier. See
+# docs/DEPLOYMENT.md section 8.5 - an external uptime service is the better
+# long-term answer and this workflow should be reduced to daily once one exists.
+#
+# GitHub disables scheduled workflows on repositories with no activity for 60
+# days, and schedule triggers are best-effort, not exact.
+name: Uptime
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  # Needed only to raise/close the incident issue below. Nothing else here
+  # writes to the repository.
+  issues: write
+
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    name: Probe production
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+
+      - name: Run journey checks
+        env:
+          PRODUCTION_URL: https://moto-gp-chi.vercel.app
+          # Optional: the publishable (public) Supabase key. When set, the probe
+          # also measures real feed-query latency instead of only reachability.
+          SMOKE_SUPABASE_KEY: ${{ secrets.SMOKE_SUPABASE_KEY }}
+        run: node scripts/smoke-production.mjs
+
+      - name: Raise or update the incident issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh label create uptime --color B60205 --description "Automated production probe" 2>/dev/null || true
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          body="Production smoke test failed at $(date -u +%Y-%m-%dT%H:%M:%SZ).
+
+          Run: ${run_url}
+
+          Start at docs/RUNBOOK.md - the failing check name maps to a section there."
+          existing="$(gh issue list --label uptime --state open --limit 1 --json number --jq '.[0].number // empty')"
+          if [ -n "${existing}" ]; then
+            gh issue comment "${existing}" --body "${body}"
+          else
+            gh issue create --title "Production probe failing" --label uptime --body "${body}"
+          fi
+
+      - name: Close the incident issue on recovery
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          existing="$(gh issue list --label uptime --state open --limit 1 --json number --jq '.[0].number // empty')"
+          if [ -n "${existing}" ]; then
+            run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            gh issue close "${existing}" --comment "Production probe recovered: ${run_url}"
+          fi

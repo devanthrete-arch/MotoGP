@@ -1,0 +1,117 @@
+# Autoflex database migrations (Supabase Postgres)
+#
+# Manual only, and deliberately so: the app (Vercel) and the schema (Supabase)
+# deploy on separate timelines, so a migration must be safe against BOTH the
+# currently-running frontend and the next one. That is the expand/contract
+# discipline enforced by scripts/check-migrations.mjs and documented in
+# docs/DEPLOYMENT.md.
+#
+# Ordering for a normal change:
+#   1. expand   - run this workflow (additive migration), app unchanged
+#   2. backfill - run this workflow (idempotent, batched backfill migration)
+#   3. deploy   - merge the app change that writes/reads the new shape
+#   4. contract - run this workflow again, days later, to drop the old shape
+name: Database migrations
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "dry-run prints the plan; apply runs it inside a transaction per file"
+        type: choice
+        options: [dry-run, apply]
+        default: dry-run
+        required: true
+      confirm:
+        description: "Type the project ref (uxzdmlqyxausmmdpmkrr) to apply. Ignored for dry-run."
+        type: string
+        default: ""
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  # Two concurrent migration runs against one database is the fastest way to
+  # produce the half-applied state in docs/RUNBOOK.md.
+  group: supabase-migrate-production
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Apply migrations (${{ inputs.mode }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    # Configure required reviewers on this GitHub Environment to get a human
+    # approval gate before the secret is even exposed to the job.
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+
+      - name: Lint migrations before touching the database
+        run: node scripts/check-migrations.mjs
+
+      - name: Confirm target for apply
+        if: inputs.mode == 'apply'
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          set -euo pipefail
+          if [ "${CONFIRM}" != "uxzdmlqyxausmmdpmkrr" ]; then
+            echo "::error::Type the production project ref in the confirm input to apply migrations."
+            exit 1
+          fi
+
+      - name: Ensure psql is available
+        run: |
+          set -euo pipefail
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends postgresql-client
+          fi
+          psql --version
+
+      - name: Schema snapshot (best effort, for rollback reference)
+        if: inputs.mode == 'apply'
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          # Best effort: pg_dump refuses to run against a newer server major.
+          # A failure here is not a reason to block the migration, but the
+          # absence of a snapshot must be visible in the run log.
+          if pg_dump --schema-only --no-owner --no-privileges "${SUPABASE_DB_URL}" > schema-before.sql 2>pg_dump.err; then
+            echo "Captured $(wc -l < schema-before.sql) lines of schema." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::pg_dump snapshot unavailable ($(tail -n1 pg_dump.err)). Relying on Supabase PITR instead."
+            rm -f schema-before.sql
+          fi
+
+      - name: Upload schema snapshot
+        if: inputs.mode == 'apply' && hashFiles('schema-before.sql') != ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: schema-before-${{ github.run_id }}
+          path: schema-before.sql
+          retention-days: 30
+
+      - name: Run migrations
+        env:
+          # Session-mode pooler or direct connection string. Never printed:
+          # apply-migrations.sh passes it to psql via the environment only.
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          if [ "${{ inputs.mode }}" = "apply" ]; then
+            ./scripts/apply-migrations.sh --apply
+          else
+            ./scripts/apply-migrations.sh --dry-run
+          fi

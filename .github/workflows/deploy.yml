@@ -1,0 +1,74 @@
+# Autoflex production pipeline (master)
+#
+# IMPORTANT - read docs/DEPLOYMENT.md "What actually gates production".
+# Vercel's git integration builds and promotes every push to master by itself.
+# This workflow runs *alongside* that deploy, not in front of it. It gives you:
+#   1. the same verification a PR gets, on the exact merge commit;
+#   2. a post-deploy smoke test against real user journeys on the live URL.
+# The thing that actually keeps a broken commit off master is branch protection
+# with `CI gate` as a required check. Turning this into a true gate requires
+# disabling Vercel git auto-deploy and deploying from this workflow - that
+# option, with its cost/benefit, is documented in docs/DEPLOYMENT.md.
+name: Deploy (master)
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  # Never smoke-test two releases at once; queue instead of cancelling so the
+  # last commit on master is always the one verified.
+  group: deploy-master
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify master
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
+  smoke:
+    name: Post-deploy smoke test
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+      - name: Wait for the Vercel production deployment, then exercise it
+        env:
+          PRODUCTION_URL: https://moto-gp-chi.vercel.app
+          COMMIT_SHA: ${{ github.sha }}
+          # Optional. When present the script confirms the *this commit's*
+          # deployment is READY before testing, instead of guessing from timing.
+          # Secrets are read by the script from the environment and are never
+          # echoed; do not add `set -x` here.
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+        run: node scripts/smoke-production.mjs --wait
+      - name: Record result
+        if: always()
+        run: |
+          set -euo pipefail
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "Production smoke test passed for ${GITHUB_SHA}." >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "### Production smoke test FAILED"
+              echo ""
+              echo "Follow docs/RUNBOOK.md. If the failure is user-facing, roll back first:"
+              echo '`vercel rollback --scope <team> --yes` or Vercel dashboard -> Deployments -> previous -> Instant Rollback.'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
