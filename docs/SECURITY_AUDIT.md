@@ -48,7 +48,7 @@ defender's account — a practical asymmetric denial-of-service.
 apply them. Caps are a safety net, not paging: surfaces that must walk a large
 table should use a cursor, as the feed does.
 
-### S-2 — Curator slug squatting on a shared namespace · **Medium** · not fixed
+### S-2 — Curator slug squatting on a shared namespace · **Medium** · FIXED
 
 `city_circles.slug` is the primary key and `INSERT` only requires that the row's
 `curated_by` equals the inserter. First writer therefore owns a global name
@@ -59,13 +59,23 @@ permanently.
 curator, only they can update or delete those rows. Legitimate curation is
 locked out for good, and the content is world-readable.
 
-*Why not fixed here:* the correct fix is a curator/moderator role and an
-admin override policy. Who may curate a city is a product decision, and
-inventing one in a security pass would be the wrong call. Interim mitigation:
-insert the city rows from a trusted job under `service_role` and revoke
-`INSERT` from `authenticated`.
+*Fix:* curated content is now admin-only. `public.app_admins` holds the allowed
+accounts; it has RLS on and **no policies at all**, so no API client can read or
+write it — only `service_role` manages membership. `public.is_app_admin()` is
+`SECURITY DEFINER` so the policy check can consult that table without exposing
+its rows, and returns a boolean only. Insert/update/delete on `city_circles` and
+`model_playbooks` now require it; reads stay public.
 
-### S-3 — `curated_by` is nullable · **Low** · not fixed
+This also closes **S-3**: the admin policies no longer depend on `curated_by`,
+so a row with `curated_by IS NULL` is reachable again instead of being
+permanently immutable.
+
+Client behaviour is unchanged for everyone else: those writes were already
+fire-and-forget with the result discarded, so a denial is silent and the local
+view is unaffected. The client now also stops retrying curated writes for the
+rest of the session after the first denial.
+
+### S-3 — `curated_by` is nullable · **Low** · resolved by S-2
 
 A row with `curated_by IS NULL` satisfies no `UPDATE` or `DELETE` policy, so it
 becomes permanently immutable through the API — an accidental tombstone in a
@@ -120,7 +130,7 @@ transcript. Verified absent from the working tree.
 
 ## Recommendations, in priority order
 
-1. Decide the curator model and close S-2 before promoting city pages.
+1. ~~Decide the curator model and close S-2~~ — done: admin-only curation.
 2. Add cursor field validation (S-4) — cheap, removes a whole class of doubt.
 3. Rate limiting on post/comment writes. The publishable key means RLS answers
    *whose* row, never *how many*; a `write_budget` table plus a `before insert`
