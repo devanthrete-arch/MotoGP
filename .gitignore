@@ -16,3 +16,5 @@ server-kotlin/data/
 local.properties
 **/build/
 .pnpm-store/
+playwright-report/
+test-results/
