@@ -1,6 +1,6 @@
-# Autoflex community rules
+# Otofolks community rules
 
-Autoflex is built for useful ownership-detail culture, but the MVP should feel
+Otofolks is built for useful ownership-detail culture, but the MVP should feel
 fast, recoverable, and easy to moderate.
 
 ## Posting standard

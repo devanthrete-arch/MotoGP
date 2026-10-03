@@ -1,43 +1,38 @@
-# Autoflex staging deployment
+# Otofolks staging deployment
 
-The active hosted backend path ships as a TypeScript/Fastify API process.
-Service-center work remains separate under `/api/service-centers/*`.
+This MVP ships as one Ktor webapp/API process. Service-center work remains
+separate under `/api/service-centers/*`.
 
 ## Required environment
 
-- `PORT`: API port, default `3001`.
-- `API_DATA_PATH`: JSON persistence path, default `/data/autoflex-api.json` in Docker.
-- `ADMIN_TOKEN`: required for internal moderation and feedback queues; do not
-  use `dev-admin` outside local.
-- `APP_VERSION`: release label returned by `/health` and `/api/health`.
-- `CORS_ORIGINS`: comma-separated origin allowlist for shared environments.
+- `PORT`: web port, default `8080`.
+- `DATABASE_PATH`: SQLite path, default `/data/Otofolks.db` in Docker.
+- `UPLOAD_DIR`: uploaded cover image path, default `/data/uploads` in Docker.
+- `ADMIN_TOKEN`: required for `/admin`; do not use `dev-admin` outside local.
+- `APP_VERSION`: release label returned by `/api/health`.
 
 ## Build and run
 
 ```bash
-docker build -t autoflex-web:staging .
-docker run --rm -p 3001:3001 \
+docker build -t Otofolks-web:staging .
+docker run --rm -p 8080:8080 \
   -e ADMIN_TOKEN=change-me \
   -e APP_VERSION=staging \
-  -e CORS_ORIGINS=https://staging.example.com \
-  -v autoflex-data:/data \
-  autoflex-web:staging
+  -v Otofolks-data:/data \
+  Otofolks-web:staging
 ```
 
 ## Smoke checks
 
-1. Check `/api/health` returns `status: "ok"`, `version`,
-   `storage: "file"`, and `serviceCenterBoundary: "reserved"`.
-2. Submit a post, comment, report, feedback item, follow, save, garage vehicle,
-   timeline entry, shortlist item, and inspection session through the API.
-3. Restart the container and confirm the submitted records remain present.
-4. Confirm internal moderation and feedback list routes reject requests without
-   `x-admin-token` or `Authorization: Bearer <ADMIN_TOKEN>`.
-5. Check `/api/service-centers/search` still returns the reserved boundary
-   response owned by the separate service-center team.
+1. Open `/`.
+2. Open `/admin` and confirm reports, feedback, and client errors load.
+3. Check `/api/health` returns `status`, `version`, and
+   `service_center_status: "external"`.
+4. Check `/api/service-centers/status` still returns `owned_by:
+   "service-center-team"`.
+5. Submit road-test feedback from the webapp and confirm it appears in `/admin`.
 
 ## Backups
 
-Back up the mounted `/data` volume. In the TypeScript API beta path it contains
-the JSON API data file. Replace this file-backed persistence with the selected
-production database before public scale.
+Back up the mounted `/data` volume. It contains the SQLite database and uploaded
+cover images.

@@ -2,58 +2,35 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="application-name" content="AutoFlex" />
-    <meta name="apple-mobile-web-app-title" content="AutoFlex" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="application-name" content="Otofolks" />
+    <meta name="apple-mobile-web-app-title" content="Otofolks" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <!-- Obsidian Velocity dark surface. Must match public/manifest.json theme_color. -->
-    <meta name="theme-color" content="#141313" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)" />
     <meta
       name="description"
-      content="AutoFlex keeps owner notes, running costs, documents and buying decisions for Indian drivers in one place."
+      content="Otofolks customer web — trusted owner notes, service signals, Pit Stop clips, and model comparisons."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,700&display=swap"
+      rel="stylesheet"
     />
     <link rel="icon" href="/icon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
     <link rel="manifest" href="/manifest.json" />
-    <!--
-      Canonical origin. Keep in sync with `defaultShareOrigin` in src/app/sharing/share.ts
-      (src/app/sharing/share.test.ts asserts they match). Crawlers hitting a detail route are
-      rewritten to /api/og, which re-emits these tags with the live host and the
-      route's own title, description and URL.
-    -->
-    <link rel="canonical" href="https://moto-gp-chi.vercel.app/" />
-    <meta property="og:site_name" content="AutoFlex" />
-    <meta property="og:type" content="website" />
-    <meta property="og:locale" content="en_IN" />
-    <meta property="og:url" content="https://moto-gp-chi.vercel.app/" />
-    <meta property="og:title" content="AutoFlex — owner notes that survive the showroom pitch" />
+    <meta property="og:title" content="Otofolks" />
     <meta
       property="og:description"
-      content="Owner notes, running costs, service history and document vault for Indian drivers. Local-first, your data stays yours."
+      content="Trusted car owner notes, Pit Stop clips, and model comparisons."
     />
-    <meta
-      property="og:image"
-      content="https://moto-gp-chi.vercel.app/og-cover.png"
-    />
-    <meta property="og:image:type" content="image/png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="AutoFlex — owner notes that survive" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="AutoFlex — owner notes that survive the showroom pitch" />
-    <meta
-      name="twitter:description"
-      content="Owner notes, running costs, service history and document vault for Indian drivers."
-    />
-    <meta
-      name="twitter:image"
-      content="https://moto-gp-chi.vercel.app/og-cover.png"
-    />
-    <meta name="twitter:image:alt" content="AutoFlex — owner notes that survive" />
-    <title>AutoFlex</title>
+    <meta property="og:type" content="website" />
+    <title>Otofolks | Care you can trust</title>
   </head>
-  <!-- No inline style attribute: the CSP ships `style-src 'self'` with no 'unsafe-inline'. -->
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

@@ -1,10 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
-  <title id="title">Autoflex app icon</title>
-  <desc id="desc">A precision workshop mark with the Autoflex A and ownership ledger lines.</desc>
-  <rect width="512" height="512" fill="#101b17" />
-  <rect x="72" y="72" width="206" height="206" rx="12" fill="#f4c64e" />
-  <path d="M116 238 169 112h38l53 126h-39l-10-29h-48l-10 29h-37Zm57-61h28l-14-43-14 43Z" fill="#101b17" />
-  <path d="M326 122h112M326 174h112M326 226h76" fill="none" stroke="#eef2f0" stroke-width="18" stroke-linecap="square" />
-  <path d="M76 358h360M76 420h250" fill="none" stroke="#4fa393" stroke-width="22" stroke-linecap="square" />
-  <circle cx="408" cy="420" r="28" fill="#f4c64e" />
+  <title id="title">Otofolks app icon</title>
+  <desc id="desc">A white car outline with an orange wrench on brand navy.</desc>
+  <rect width="512" height="512" rx="96" fill="#023970" />
+  <path d="M112 286c22-55 64-86 116-92h88c44 5 73 32 92 78" fill="none" stroke="#fff" stroke-width="26" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M174 288h184" stroke="#E86201" stroke-width="30" stroke-linecap="round" />
+  <path d="M148 272l34 34M148 306l34-34" stroke="#E86201" stroke-width="18" stroke-linecap="round" />
+  <path d="M354 288l34-20 18 20-18 20z" fill="#E86201" />
+  <circle cx="178" cy="318" r="19" fill="#023970" stroke="#fff" stroke-width="16" />
+  <circle cx="336" cy="318" r="19" fill="#023970" stroke="#fff" stroke-width="16" />
+  <path d="M155 382h202" stroke="#fff" stroke-width="18" stroke-linecap="round" opacity=".86" />
+  <path d="M194 414h124" stroke="#E86201" stroke-width="10" stroke-linecap="round" />
 </svg>

@@ -1,11 +1,7 @@
 {
   "buildCommand": "npm run build",
+  "cleanUrls": true,
   "framework": "vite",
-  "git": {
-    "deploymentEnabled": {
-      "master": true
-    }
-  },
   "headers": [
     {
       "headers": [
@@ -19,39 +15,7 @@
         },
         {
           "key": "Permissions-Policy",
-          "value": "accelerometer=(), ambient-light-sensor=(), autoplay=(), battery=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(self), gamepad=(), geolocation=(), gyroscope=(), hid=(), idle-detection=(), local-fonts=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), usb=(), xr-spatial-tracking=()"
-        },
-        {
-          "key": "X-Frame-Options",
-          "value": "DENY"
-        },
-        {
-          "key": "Cross-Origin-Opener-Policy",
-          "value": "same-origin"
-        },
-        {
-          "key": "Cross-Origin-Resource-Policy",
-          "value": "same-origin"
-        },
-        {
-          "key": "Strict-Transport-Security",
-          "value": "max-age=63072000; includeSubDomains; preload"
-        },
-        {
-          "key": "Content-Security-Policy",
-          "value": "default-src 'self'; base-uri 'none'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; font-src 'self'; form-action 'self'; frame-ancestors 'none'; frame-src 'none'; img-src 'self' data: blob:; manifest-src 'self'; media-src 'self'; object-src 'none'; script-src 'self'; style-src 'self'; worker-src 'self'; upgrade-insecure-requests"
-        },
-        {
-          "key": "X-Permitted-Cross-Domain-Policies",
-          "value": "none"
-        },
-        {
-          "key": "X-DNS-Prefetch-Control",
-          "value": "off"
-        },
-        {
-          "key": "Origin-Agent-Cluster",
-          "value": "?1"
+          "value": "camera=(), microphone=(), geolocation=()"
         }
       ],
       "source": "/(.*)"
@@ -64,62 +28,14 @@
         }
       ],
       "source": "/assets/(.*)"
-    },
-    {
-      "headers": [
-        {
-          "key": "Vary",
-          "value": "User-Agent"
-        }
-      ],
-      "source": "/((?!assets/|.*\\..*).*)"
-    },
-    {
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        },
-        {
-          "key": "Service-Worker-Allowed",
-          "value": "/"
-        }
-      ],
-      "source": "/sw.js"
-    },
-    {
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=300, must-revalidate"
-        }
-      ],
-      "source": "/manifest.json"
     }
   ],
-  "installCommand": "npm ci",
+  "installCommand": "npm install",
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "destination": "/api/og?path=/:path",
-      "has": [
-        {
-          "key": "user-agent",
-          "type": "header",
-          "value": ".*([Ff]acebookexternalhit|Facebot|[Tt]witterbot|LinkedInBot|[Ss]lackbot|Slack-ImgProxy|[Dd]iscordbot|[Ww]hats[Aa]pp|TelegramBot|Pinterest|redditbot|Applebot|SkypeUriPreview|Embedly|Iframely|[Mm]astodon|vkShare|Snapchat|Flipboard|Tumblr|Nuzzel|Qwantify|bitlybot|Google-Read-Aloud).*"
-        }
-      ],
-      "missing": [
-        {
-          "key": "og",
-          "type": "query"
-        }
-      ],
-      "source": "/:path((?!api/|assets/|.*\\..*).*)"
-    },
-    {
       "destination": "/index.html",
-      "source": "/((?!assets/|.*\\..*).*)"
+      "source": "/((?!assets/|vite.svg|favicon.ico|manifest.json|icon.svg).*)"
     }
   ]
 }

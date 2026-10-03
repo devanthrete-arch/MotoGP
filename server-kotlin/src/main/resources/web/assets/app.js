@@ -35,9 +35,9 @@ const state = {
   offset: 0,
   limit: 20,
   mode: "all",
-  saved: new Set(JSON.parse(localStorage.getItem("autoflex.saved.ids") || "[]")),
-  saveToken: localStorage.getItem("autoflex.save.token") || createSaveToken(),
-  profile: JSON.parse(localStorage.getItem("autoflex.profile") || "null"),
+  saved: new Set(JSON.parse(localStorage.getItem("Otofolks.saved.ids") || "[]")),
+  saveToken: localStorage.getItem("Otofolks.save.token") || createSaveToken(),
+  profile: JSON.parse(localStorage.getItem("Otofolks.profile") || "null"),
 };
 
 const els = {
@@ -520,8 +520,8 @@ async function recoverProfile() {
 function applyProfile(profile) {
   state.profile = { displayName: profile.display_name, profileToken: profile.profile_token };
   state.saveToken = profile.profile_token;
-  localStorage.setItem("autoflex.profile", JSON.stringify(state.profile));
-  localStorage.setItem("autoflex.save.token", state.saveToken);
+  localStorage.setItem("Otofolks.profile", JSON.stringify(state.profile));
+  localStorage.setItem("Otofolks.save.token", state.saveToken);
   els.profileButton.textContent = state.profile.displayName;
   els.deleteProfile.disabled = false;
 }
@@ -532,9 +532,9 @@ async function deleteProfile() {
     await api.deleteProfile(state.saveToken);
     state.profile = null;
     state.saved.clear();
-    localStorage.removeItem("autoflex.profile");
-    localStorage.removeItem("autoflex.saved.ids");
-    localStorage.removeItem("autoflex.save.token");
+    localStorage.removeItem("Otofolks.profile");
+    localStorage.removeItem("Otofolks.saved.ids");
+    localStorage.removeItem("Otofolks.save.token");
     state.saveToken = createSaveToken();
     els.profileButton.textContent = "Profile";
     els.profileDialog.close();
@@ -772,7 +772,7 @@ async function sharePost(post) {
 async function shareModel(model) {
   await shareLink({
     title: `${model.brand} ${model.model} owner notebook`,
-    text: "Reviews, known issues, fixes, costs, and travelogues from Autoflex owners.",
+    text: "Reviews, known issues, fixes, costs, and travelogues from Otofolks owners.",
     url: shareUrl(`/share/models?${new URLSearchParams({ brand: model.brand, model: model.model })}`),
   });
 }
@@ -990,16 +990,16 @@ function showToast(message) {
 }
 
 function tokenKey(id) {
-  return `autoflex.edit.${id}`;
+  return `Otofolks.edit.${id}`;
 }
 
 function persistSaved() {
-  localStorage.setItem("autoflex.saved.ids", JSON.stringify([...state.saved]));
+  localStorage.setItem("Otofolks.saved.ids", JSON.stringify([...state.saved]));
 }
 
 function createSaveToken() {
   const token = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`.replace(".", "");
-  localStorage.setItem("autoflex.save.token", token);
+  localStorage.setItem("Otofolks.save.token", token);
   return token;
 }
 

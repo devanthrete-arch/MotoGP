@@ -1,33 +1,14 @@
-# Autoflex
+# Otofolks
 
-Autoflex is a web-first MVP for an ownership-focused auto community built around
+Otofolks is a web-first MVP for an ownership-focused auto community built around
 deep owner details, reviews, help articles, and useful discussions.
 The current active MVP path is a TypeScript webapp designed for Vercel-first
 iteration. The Kotlin/Ktor and Android work remains in the repo as the later
 backend/mobile conversion path.
 
-## Current product experience
-
-The web app is organized around four stable tasks:
-
-- **Today** — see the selected vehicle, the next useful action, costs, and recent owner evidence.
-- **Shortlist** — compare candidates, inspect risk, and keep decision notes.
-- **Garage** — maintain the ownership ledger, reminders, service records, and costs.
-- **Community** — search owner notes, inspect evidence, save useful posts, and contribute a note.
-
-The interface is responsive, keyboard-accessible, reduced-motion aware, and
-honest about its current local-first persistence. Stable hash routes support
-direct links and browser navigation, while a generated service worker keeps the
-last production app shell available when the network is unavailable. Product
-rationale is recorded in `docs/AUTOFLEX_DESIGN_REPORT.docx`; the client, API,
-persistence, and deployment boundaries are recorded in
-`docs/AUTOFLEX_SYSTEM_DESIGN.docx`. The generated Stitch exploration and the
-implementation decisions taken from it are recorded in
-`docs/STITCH_DESIGN_REFERENCE.md`.
-
 ## Project brief
 
-Autoflex is being built as a new-age, ownership-first automotive community:
+Otofolks is being built as a new-age, ownership-first automotive community:
 less like a thin social feed, more like a living garage notebook where car
 owners share real reviews, known issues, fixes, costs, travelogues, and buying
 advice. The first launch target is a webapp MVP. Android follows after the web
@@ -100,22 +81,19 @@ Service-center integration is intentionally kept separate under
 - [x] Decided the first hosted backend path: TypeScript/Fastify for the web MVP, with Kotlin/Ktor retained for the later Android/native path.
 - [x] Added the first TypeScript/Fastify API foundation for profiles, posts, comments, reports, moderation, follows, saved posts, garage vehicles, timeline entries, shortlist items, inspection sessions, and feedback ingestion.
 - [x] Added API tests that verify core hosted routes and confirm service-center routes remain reserved for the separate owning team.
-- [x] Added optional JSON-backed API persistence, `/api/health`, configurable CORS, admin-token protection for internal queues, and persistence tests.
-- [x] Added stable workspace deep links, browser Back support, production security headers, current install icons, and a versioned offline app shell.
-- [x] Added Supabase email sign-in, automatic private workspace sync, shared Community storage, and recovery snapshots.
 
 ### Yet to be done
 
 - [x] Merged the TypeScript web MVP feature PRs through post quality meter into `master`.
 - [ ] Deploy the TypeScript webapp on Vercel and record the production URL in the launch panel.
 - [ ] Run a visual responsive QA pass on the deployed Vercel URL, including the starter route, QA checklist, responsive QA matrix, and install prompt.
-- [x] Run a server-disconnected offline reload against the production build.
-- [x] Choose Supabase as the first production persistence backend for private account sync.
-- [x] Add hosted account sync and recovery while preserving local-first and offline behavior.
+- [ ] Run an offline-mode smoke check in the deployed browser.
+- [ ] Add durable hosted persistence behind the TypeScript/Fastify routes after the deployed web surface is validated.
+- [ ] Replace local backup/restore with hosted account sync once persistence exists.
 - [ ] Replace local subscription previews with real hosted notification jobs after accounts/persistence exist.
 - [ ] Wire the webapp to the hosted profile/report/comment/moderation APIs after durable persistence exists.
 - [ ] Replace share/copy fallbacks with hosted deep links and Open Graph metadata after deployment.
-- [x] Replace local shortlist with a hosted buyer workspace and cross-device sync.
+- [ ] Replace local shortlist with hosted buyer workspace and cross-device sync.
 - [ ] Replace local inspection checklists with hosted buyer inspection sessions and saved outcomes.
 - [ ] Replace local city circles with hosted city pages and city follows.
 - [ ] Replace local ownership playbooks with hosted model playbook pages and richer evidence scoring.
@@ -133,18 +111,8 @@ Service-center integration is intentionally kept separate under
 
 ## Project layout
 
-- `src` — active TypeScript webapp MVP, layered `core` / `infrastructure` / `ui` /
-  `features` / `app` with dependencies pointing inward only
-  - `src/core` — pure domain: entities, identity and slug rules, projections, vehicle catalog
-  - `src/infrastructure` — Supabase client, the non-throwing hosted data layer, local storage, cloud backup
-  - `src/ui` — design-system primitives shared across features
-  - `src/features` — one folder per bounded context (community, garage, buying, content, account),
-    each with its own `domain`, `data`, `hooks`, `ui` and a public `index.ts`
-  - `src/app` — composition root: provider, routing, sharing, shell, screens
-- `docs/ARCHITECTURE.md` — the layer rules, what moved where, and the seams left uncut
-- `tests/architecture/layers.test.ts` — fails the build if a layer rule is violated
+- `src` — active TypeScript webapp MVP
 - `server-ts` — first TypeScript/Fastify hosted API foundation for the web MVP
-- `scripts/build-service-worker.mjs` — generates the versioned production offline shell
 - `index.html`, `vite.config.ts`, `package.json` — Vercel-ready web build
 - `server-kotlin/src/main/resources/web` — previous Kotlin-served webapp retained for reference/conversion
 - `server-kotlin` — Ktor REST API and SQLite database
@@ -154,8 +122,6 @@ Service-center integration is intentionally kept separate under
 - `docs/COMMUNITY_RULES.md` — posting and moderation standard
 - `docs/SERVICE_CENTER_INTEGRATION.md` — separate service-center integration boundary
 - `docs/RELEASE_CHECKLIST.md` — web MVP release checks
-- `docs/AUTOFLEX_DESIGN_REPORT.docx` — product, interaction, and visual design rationale
-- `docs/AUTOFLEX_SYSTEM_DESIGN.docx` — client, API, persistence, and deployment architecture
 - `docs/PENDING_PRIORITIES.md` — prioritized remaining production work
 - `docs/HOSTED_BACKEND_DECISION.md` — TypeScript/Fastify-first backend decision
 - `docs/STAGING_DEPLOYMENT.md` — Docker staging runbook
@@ -174,21 +140,10 @@ Run the local API foundation with:
 npm run api:dev
 ```
 
-It starts a Fastify server on port `3001` by default. Current routes cover
-profiles, posts, comments, reports, moderation, follows, saved posts, garage
-vehicles, timeline entries, shortlist items, inspection sessions, and feedback.
-By default the API uses seeded in-memory data for local development and tests.
-Set `API_DATA_PATH` to persist the same contracts to a JSON file for staging or
-beta validation:
-
-```bash
-API_DATA_PATH=./data/autoflex-api.json ADMIN_TOKEN=change-me npm run api:dev
-```
-
-Internal moderation and feedback list routes require `x-admin-token` or
-`Authorization: Bearer <ADMIN_TOKEN>`. Public feedback submission and community
-report submission remain open. Use `CORS_ORIGINS` as a comma-separated allowlist
-for shared environments; local development stays permissive by default.
+It starts a Fastify server on port `3001` by default. Current routes are
+in-memory contracts for profiles, posts, comments, reports, moderation, follows,
+saved posts, garage vehicles, timeline entries, shortlist items, inspection
+sessions, and feedback. Durable persistence is the next backend step.
 - Android Studio with Android SDK 36 only when building the Android app
 
 ## Run locally
@@ -201,23 +156,6 @@ npm run dev
 ```
 
 Open `http://localhost:8080`.
-
-The production Supabase project URL and browser-safe publishable key are the
-application defaults. `.env.local` can override them for another environment.
-Never place a secret or `service_role` key in a `VITE_` variable. Apply the
-tracked migrations with the linked Supabase CLI before deploying:
-
-```bash
-VITE_SUPABASE_URL=https://your-project-ref.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your_key
-```
-
-The migrations explicitly grant Data API access and enable row-level security
-on every application table. Profile, Garage, Timeline, Shortlist, follows,
-preferences, saves, reports, and recovery rows are owner-only. Community posts
-and comments are publicly readable while writes remain tied to the signed-in
-author. Removals from Garage, Timeline, and Shortlist use reversible soft
-deletion during synchronization.
 
 The current TypeScript MVP is local-first so it can move quickly on Vercel while
 the hosted backend path is implemented. It includes owner posts, saved notes,
@@ -233,15 +171,11 @@ summarize owner signals and buyer checks from the same typed post data.
 The write flow includes a detail quality meter so new posts become more useful
 before they reach the community feed.
 
-The web shell includes `public/manifest.json`, SVG/PNG install icons, and a
-generated service worker so
-Chrome/Android and supporting desktop browsers can present Autoflex as an
-installable app surface. Production builds precache the exact generated shell;
-the browser uses the last valid shell when connectivity drops. User-created
-notes, garage entries, saved notes, and shortlist data remain local while
-signed out. After sign-in, changes sync automatically to owner-only normalized
-tables and a recovery snapshot. Shared Community notes and comments load from
-Supabase while the bundled starter content remains available offline.
+The web shell includes `public/manifest.json` and `public/icon.svg` so
+Chrome/Android and supporting desktop browsers can present Otofolks as an
+installable app surface.
+The webapp also shows online/offline status so testers know local notes,
+garage entries, saved notes, and shortlist work still work when connectivity drops.
 
 Run the web release gate before deploying:
 
@@ -279,10 +213,8 @@ Set `UPLOAD_DIR` to move them in a shared environment.
 - Deploy the active TypeScript webapp through Vercel.
 - Run `npm run release:check`.
 - Serve the future hosted API over HTTPS.
-- Set `ADMIN_TOKEN`, `API_DATA_PATH`, `APP_VERSION`, and `CORS_ORIGINS` for the
-  TypeScript API beta path.
-- Back up the API data file, or replace it with the selected production
-  database before public scale.
+- Set `ADMIN_TOKEN`, `DATABASE_PATH`, `UPLOAD_DIR`, and `APP_VERSION`.
+- Back up the database and upload directory.
 - Use [RELEASE_CHECKLIST.md](/Users/priyanshtyagi/Auto-Motive-Flex/docs/RELEASE_CHECKLIST.md:1).
 - Use [STAGING_DEPLOYMENT.md](/Users/priyanshtyagi/Auto-Motive-Flex/docs/STAGING_DEPLOYMENT.md:1) for the Docker staging path.
 - Use [PRIVACY_AND_DELETION.md](/Users/priyanshtyagi/Auto-Motive-Flex/docs/PRIVACY_AND_DELETION.md:1) as the MVP privacy baseline.

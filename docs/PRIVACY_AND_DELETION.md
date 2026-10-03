@@ -1,6 +1,6 @@
 # Privacy and deletion notes
 
-Autoflex web MVP stores the minimum needed for the community loop:
+Otofolks web MVP stores the minimum needed for the community loop:
 
 - Posts, comments, likes, reports, and uploaded cover images.
 - Lightweight profile display name.
