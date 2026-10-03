@@ -1,6 +1,6 @@
 # Service center integration boundary
 
-Another team owns service-center integration. Autoflex keeps that work separate
+Another team owns service-center integration. Otofolks keeps that work separate
 from the community MVP.
 
 Reserved namespace:

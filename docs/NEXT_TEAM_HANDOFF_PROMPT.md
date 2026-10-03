@@ -1,10 +1,10 @@
 # Prompt for the next implementation team
 
-You are taking over Autoflex after the TypeScript web MVP cleanup PR.
+You are taking over Otofolks after the TypeScript web MVP cleanup PR.
 
 ## Current product direction
 
-Autoflex is a web-first TypeScript MVP for a new-age automotive ownership
+Otofolks is a web-first TypeScript MVP for a new-age automotive ownership
 community. It should feel like a useful owner notebook and buyer research tool:
 real reviews, known issues, verified fixes, cost notes, travelogues, garage
 timelines, local city signals, model notebooks, buyer shortlist, inspection

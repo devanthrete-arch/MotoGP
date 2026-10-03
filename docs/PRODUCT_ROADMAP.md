@@ -1,8 +1,8 @@
-# Autoflex web-first product roadmap
+# Otofolks web-first product roadmap
 
 ## Direction
 
-Autoflex should launch as a webapp MVP first, then move to Android once the
+Otofolks should launch as a webapp MVP first, then move to Android once the
 community loop is validated. The product direction is deep ownership detail,
 useful discussions, reviews, travelogues, and help articles, made modern with
 faster publishing, recoverable profiles, saved knowledge, moderation, and later

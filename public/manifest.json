@@ -1,56 +1,40 @@
 {
-  "name": "AutoFlex",
-  "short_name": "AutoFlex",
-  "description": "A focused workspace for vehicle maintenance, running costs, buying decisions, and trusted owner notes.",
+  "name": "Otofolks",
+  "short_name": "Otofolks",
+  "description": "Care you can trust for owner notes, service signals, Pit Stop clips, and model comparisons.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#141313",
-  "theme_color": "#141313",
+  "background_color": "#023970",
+  "theme_color": "#023970",
   "orientation": "portrait-primary",
-  "categories": [
-    "autos",
-    "lifestyle",
-    "productivity"
-  ],
+  "categories": ["autos", "lifestyle", "productivity"],
   "icons": [
-    {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
     {
       "src": "/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ],
   "shortcuts": [
     {
-      "name": "Write note",
-      "short_name": "Write",
-      "description": "Add an ownership note.",
-      "url": "/#write"
+      "name": "Feed",
+      "short_name": "Feed",
+      "description": "Browse community car posts.",
+      "url": "/#feed"
     },
     {
-      "name": "Shortlist",
-      "short_name": "Shortlist",
-      "description": "Compare candidates and inspection checks.",
-      "url": "/#shortlist"
+      "name": "Pit Stop",
+      "short_name": "Pit Stop",
+      "description": "Open curated Instagram car clips.",
+      "url": "/#pit-stop"
     },
     {
-      "name": "Garage",
-      "short_name": "Garage",
-      "description": "Open your local garage.",
-      "url": "/#garage"
+      "name": "Compare",
+      "short_name": "Compare",
+      "description": "Turn owner notes into a buying decision.",
+      "url": "/#compare"
     }
   ]
 }

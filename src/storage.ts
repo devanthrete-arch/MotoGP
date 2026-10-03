@@ -1,0 +1,396 @@
+import type {
+  BuildRole,
+  DraftPost,
+  DraftReport,
+  DraftShortlistItem,
+  DraftTimelineEntry,
+  DraftVehicle,
+  FeedbackNote,
+  FeedbackStatus,
+  FollowState,
+  GarageVehicle,
+  OwnerPost,
+  Profile,
+  ReportRecord,
+  ShortlistItem,
+  ShortlistStatus,
+  SubscriptionSettings,
+  DraftTesterRun,
+  TesterRun,
+  TimelineEntry,
+} from "./domain";
+import { seedGarage, seedPosts, seedTimeline } from "./domain";
+
+const postsKey = "autoflex.web.posts.v1";
+const savedKey = "autoflex.web.saved.v1";
+const feedbackKey = "autoflex.web.feedback.v1";
+const followKey = "autoflex.web.follows.v1";
+const garageKey = "autoflex.web.garage.v1";
+const timelineKey = "autoflex.web.timeline.v1";
+const subscriptionKey = "autoflex.web.subscription.v1";
+const profileKey = "autoflex.web.profile.v1";
+const reportsKey = "autoflex.web.reports.v1";
+const shortlistKey = "autoflex.web.shortlist.v1";
+const qaSessionKey = "autoflex.web.qa-session.v1";
+const responsiveQaKey = "autoflex.web.responsive-qa.v1";
+const productionLaunchKey = "autoflex.web.production-launch.v1";
+const productionUrlKey = "autoflex.web.production-url.v1";
+const testerRunsKey = "autoflex.web.tester-runs.v1";
+const productionOpsKey = "autoflex.web.production-ops.v1";
+
+export type StorageLike = Pick<Storage, "getItem" | "setItem">;
+
+type StoredFeedbackNote = FeedbackNote | Omit<FeedbackNote, "loopStage"> | Omit<FeedbackNote, "status" | "loopStage">;
+type StoredShortlistItem = ShortlistItem | Omit<ShortlistItem, "status"> | (Omit<ShortlistItem, "status"> & { status: string });
+
+const feedbackLoopStageFallback: BuildRole = "Real user";
+
+export type OtofolksBackup = {
+  version: 1;
+  exportedAt: string;
+  data: {
+    feedback: FeedbackNote[];
+    follows: FollowState;
+    garage: GarageVehicle[];
+    posts: OwnerPost[];
+    profile: Profile;
+    productionLaunch: string[];
+    productionOps: string[];
+    productionUrl: string;
+    reports: ReportRecord[];
+    responsiveQa: string[];
+    saved: string[];
+    shortlist: ShortlistItem[];
+    subscriptionSettings: SubscriptionSettings;
+    testerRuns: TesterRun[];
+    timeline: TimelineEntry[];
+  };
+};
+
+export const safeJsonParse = <T,>(value: string | null, fallback: T): T => {
+  if (!value) return fallback;
+
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return fallback;
+  }
+};
+
+const getBrowserStorage = (): StorageLike | null => {
+  try {
+    return globalThis.localStorage ?? null;
+  } catch {
+    return null;
+  }
+};
+
+export const readStoredJson = <T,>(key: string, fallback: T, storage: StorageLike | null = getBrowserStorage()): T => {
+  if (!storage) return fallback;
+
+  try {
+    return safeJsonParse<T>(storage.getItem(key), fallback);
+  } catch {
+    return fallback;
+  }
+};
+
+export const writeStoredJson = <T,>(key: string, value: T, storage: StorageLike | null = getBrowserStorage()): void => {
+  if (!storage) return;
+
+  try {
+    storage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Storage can be blocked, full, or unavailable in private browsing. Keep the in-memory UI alive.
+  }
+};
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+const normalizeShortlistStatus = (status: unknown): ShortlistStatus => (status === "Test drive" ? "Test drive" : "New");
+
+const normalizeShortlistItems = (items: StoredShortlistItem[]): ShortlistItem[] =>
+  items.map((item) => ({ ...item, status: normalizeShortlistStatus("status" in item ? item.status : undefined) }));
+
+export const buildOtofolksBackup = (exportedAt = new Date().toISOString()): OtofolksBackup => ({
+  data: {
+    feedback: loadFeedback(),
+    follows: loadFollows(),
+    garage: loadGarage(),
+    posts: loadPosts(),
+    profile: loadProfile(),
+    productionLaunch: [...loadProductionLaunch()],
+    productionOps: [...loadProductionOps()],
+    productionUrl: loadProductionUrl(),
+    reports: loadReports(),
+    responsiveQa: [...loadResponsiveQa()],
+    saved: [...loadSaved()],
+    shortlist: loadShortlist(),
+    subscriptionSettings: loadSubscriptionSettings(),
+    testerRuns: loadTesterRuns(),
+    timeline: loadTimeline(),
+  },
+  exportedAt,
+  version: 1,
+});
+
+export const parseOtofolksBackup = (raw: string): OtofolksBackup | null => {
+  const parsed = safeJsonParse<unknown>(raw, null);
+  if (!isRecord(parsed) || parsed.version !== 1 || typeof parsed.exportedAt !== "string" || !isRecord(parsed.data)) {
+    return null;
+  }
+
+  return {
+    data: {
+      feedback: normalizeFeedbackNotes(Array.isArray(parsed.data.feedback) ? (parsed.data.feedback as StoredFeedbackNote[]) : []),
+      follows: isRecord(parsed.data.follows)
+        ? (parsed.data.follows as FollowState)
+        : {
+            models: [],
+            topics: [],
+          },
+      garage: Array.isArray(parsed.data.garage) ? (parsed.data.garage as GarageVehicle[]) : [],
+      posts: Array.isArray(parsed.data.posts) ? (parsed.data.posts as OwnerPost[]) : [],
+      profile: isRecord(parsed.data.profile)
+        ? (parsed.data.profile as Profile)
+        : {
+            city: "",
+            displayName: "",
+            garageRole: "Owner",
+          },
+      productionLaunch: Array.isArray(parsed.data.productionLaunch)
+        ? parsed.data.productionLaunch.filter((item): item is string => typeof item === "string")
+        : [],
+      productionOps: Array.isArray(parsed.data.productionOps)
+        ? parsed.data.productionOps.filter((item): item is string => typeof item === "string")
+        : [],
+      productionUrl: typeof parsed.data.productionUrl === "string" ? parsed.data.productionUrl : "",
+      reports: Array.isArray(parsed.data.reports) ? (parsed.data.reports as ReportRecord[]) : [],
+      responsiveQa: Array.isArray(parsed.data.responsiveQa)
+        ? parsed.data.responsiveQa.filter((item): item is string => typeof item === "string")
+        : [],
+      saved: Array.isArray(parsed.data.saved) ? parsed.data.saved.filter((item): item is string => typeof item === "string") : [],
+      shortlist: Array.isArray(parsed.data.shortlist)
+        ? normalizeShortlistItems(parsed.data.shortlist as StoredShortlistItem[])
+        : [],
+      subscriptionSettings: isRecord(parsed.data.subscriptionSettings)
+        ? (parsed.data.subscriptionSettings as SubscriptionSettings)
+        : {
+            browserAlerts: false,
+            emailDigest: true,
+            quietHours: true,
+          },
+      testerRuns: Array.isArray(parsed.data.testerRuns) ? (parsed.data.testerRuns as TesterRun[]) : [],
+      timeline: Array.isArray(parsed.data.timeline) ? (parsed.data.timeline as TimelineEntry[]) : [],
+    },
+    exportedAt: parsed.exportedAt,
+    version: 1,
+  };
+};
+
+export const restoreOtofolksBackup = (backup: OtofolksBackup): void => {
+  saveFeedback(backup.data.feedback);
+  saveFollows(backup.data.follows);
+  saveGarage(backup.data.garage);
+  savePosts(backup.data.posts);
+  saveProfile(backup.data.profile);
+  saveProductionLaunch(new Set(backup.data.productionLaunch));
+  saveProductionOps(new Set(backup.data.productionOps));
+  saveProductionUrl(backup.data.productionUrl);
+  saveReports(backup.data.reports);
+  saveResponsiveQa(new Set(backup.data.responsiveQa));
+  saveSaved(new Set(backup.data.saved));
+  saveShortlist(backup.data.shortlist);
+  saveSubscriptionSettings(backup.data.subscriptionSettings);
+  saveTesterRuns(backup.data.testerRuns);
+  saveTimeline(backup.data.timeline);
+};
+
+export const loadPosts = (): OwnerPost[] => {
+  const posts = readStoredJson<OwnerPost[]>(postsKey, seedPosts);
+  return posts.sort((first, second) => Date.parse(second.createdAt) - Date.parse(first.createdAt));
+};
+
+export const savePosts = (posts: OwnerPost[]): void => {
+  writeStoredJson(postsKey, posts);
+};
+
+export const createPost = (draft: DraftPost): OwnerPost => ({
+  ...draft,
+  id: `${draft.brand}-${draft.model}-${Date.now()}`.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+  createdAt: new Date().toISOString(),
+  helpful: 0,
+  fixesConfirmed: 0,
+  comments: [],
+});
+
+export const loadSaved = (): Set<string> => new Set(readStoredJson<string[]>(savedKey, []));
+
+export const saveSaved = (saved: Set<string>): void => {
+  writeStoredJson(savedKey, [...saved]);
+};
+
+export const loadQaSession = (): Set<string> => new Set(readStoredJson<string[]>(qaSessionKey, []));
+
+export const saveQaSession = (checkedIds: Set<string>): void => {
+  writeStoredJson(qaSessionKey, [...checkedIds]);
+};
+
+export const loadResponsiveQa = (): Set<string> => new Set(readStoredJson<string[]>(responsiveQaKey, []));
+
+export const saveResponsiveQa = (checkedIds: Set<string>): void => {
+  writeStoredJson(responsiveQaKey, [...checkedIds]);
+};
+
+export const loadProductionLaunch = (): Set<string> => new Set(readStoredJson<string[]>(productionLaunchKey, []));
+
+export const saveProductionLaunch = (checkedIds: Set<string>): void => {
+  writeStoredJson(productionLaunchKey, [...checkedIds]);
+};
+
+export const loadProductionOps = (): Set<string> => new Set(readStoredJson<string[]>(productionOpsKey, []));
+
+export const saveProductionOps = (checkedIds: Set<string>): void => {
+  writeStoredJson(productionOpsKey, [...checkedIds]);
+};
+
+export const loadProductionUrl = (): string => readStoredJson<string>(productionUrlKey, "");
+
+export const saveProductionUrl = (url: string): void => {
+  writeStoredJson(productionUrlKey, url);
+};
+
+export const loadTesterRuns = (): TesterRun[] =>
+  readStoredJson<TesterRun[]>(testerRunsKey, []).sort((first, second) => Date.parse(second.createdAt) - Date.parse(first.createdAt));
+
+export const saveTesterRuns = (runs: TesterRun[]): void => {
+  writeStoredJson(testerRunsKey, runs);
+};
+
+export const createTesterRun = (draft: DraftTesterRun): TesterRun => ({
+  ...draft,
+  id: `tester-run-${Date.now()}`,
+  createdAt: new Date().toISOString(),
+});
+
+export const normalizeFeedbackNotes = (notes: StoredFeedbackNote[]): FeedbackNote[] =>
+  notes
+    .map((note) => ({
+      loopStage: feedbackLoopStageFallback,
+      status: "New" as const,
+      ...note,
+    }))
+    .sort((first, second) => Date.parse(second.createdAt) - Date.parse(first.createdAt));
+
+export const loadFeedback = (): FeedbackNote[] => normalizeFeedbackNotes(readStoredJson<StoredFeedbackNote[]>(feedbackKey, []));
+
+export const saveFeedback = (feedback: FeedbackNote[]): void => {
+  writeStoredJson(feedbackKey, feedback);
+};
+
+export const addFeedback = (message: string): FeedbackNote[] => {
+  const next = [
+    {
+      id: `feedback-${Date.now()}`,
+      loopStage: feedbackLoopStageFallback,
+      message,
+      status: "New" as const,
+      createdAt: new Date().toISOString(),
+    },
+    ...loadFeedback(),
+  ];
+  saveFeedback(next);
+  return next;
+};
+
+export const updateFeedbackStatus = (
+  feedback: FeedbackNote[],
+  feedbackId: string,
+  status: FeedbackStatus,
+): FeedbackNote[] => feedback.map((note) => (note.id === feedbackId ? { ...note, status } : note));
+
+export const updateFeedbackLoopStage = (
+  feedback: FeedbackNote[],
+  feedbackId: string,
+  loopStage: BuildRole,
+): FeedbackNote[] => feedback.map((note) => (note.id === feedbackId ? { ...note, loopStage } : note));
+
+export const loadFollows = (): FollowState =>
+  readStoredJson<FollowState>(followKey, { models: [], topics: [] });
+
+export const saveFollows = (follows: FollowState): void => {
+  writeStoredJson(followKey, follows);
+};
+
+export const loadGarage = (): GarageVehicle[] => readStoredJson<GarageVehicle[]>(garageKey, seedGarage);
+
+export const saveGarage = (garage: GarageVehicle[]): void => {
+  writeStoredJson(garageKey, garage);
+};
+
+export const createVehicle = (draft: DraftVehicle): GarageVehicle => ({
+  ...draft,
+  id: `${draft.brand}-${draft.model}-${Date.now()}`.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+});
+
+export const loadTimeline = (): TimelineEntry[] =>
+  readStoredJson<TimelineEntry[]>(timelineKey, seedTimeline).sort(
+    (first, second) => Date.parse(second.happenedOn) - Date.parse(first.happenedOn),
+  );
+
+export const saveTimeline = (entries: TimelineEntry[]): void => {
+  writeStoredJson(timelineKey, entries);
+};
+
+export const createTimelineEntry = (draft: DraftTimelineEntry): TimelineEntry => ({
+  ...draft,
+  id: `${draft.vehicleId}-${draft.kind}-${Date.now()}`.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+});
+
+export const loadSubscriptionSettings = (): SubscriptionSettings =>
+  readStoredJson<SubscriptionSettings>(subscriptionKey, {
+    emailDigest: true,
+    browserAlerts: false,
+    quietHours: true,
+  });
+
+export const saveSubscriptionSettings = (settings: SubscriptionSettings): void => {
+  writeStoredJson(subscriptionKey, settings);
+};
+
+export const loadProfile = (): Profile =>
+  readStoredJson<Profile>(profileKey, {
+    city: "",
+    displayName: "",
+    garageRole: "Owner",
+  });
+
+export const saveProfile = (profile: Profile): void => {
+  writeStoredJson(profileKey, profile);
+};
+
+export const loadReports = (): ReportRecord[] => readStoredJson<ReportRecord[]>(reportsKey, []);
+
+export const saveReports = (reports: ReportRecord[]): void => {
+  writeStoredJson(reportsKey, reports);
+};
+
+export const createReport = (draft: DraftReport): ReportRecord => ({
+  ...draft,
+  id: `report-${draft.postId}-${Date.now()}`.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+  status: "Open",
+  createdAt: new Date().toISOString(),
+});
+
+export const loadShortlist = (): ShortlistItem[] =>
+  normalizeShortlistItems(readStoredJson<StoredShortlistItem[]>(shortlistKey, []));
+
+export const saveShortlist = (items: ShortlistItem[]): void => {
+  writeStoredJson(shortlistKey, items);
+};
+
+export const createShortlistItem = (draft: DraftShortlistItem): ShortlistItem => ({
+  ...draft,
+  id: `shortlist-${draft.brand}-${draft.model}-${Date.now()}`.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+});
