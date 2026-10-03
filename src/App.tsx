@@ -1,5 +1,6 @@
 import { FormEvent, MouseEvent, useEffect, useMemo, useState } from "react";
 import { SignInButton, SignUpButton, UserButton, useClerk, useUser } from "@clerk/react";
+import { ArrowRight, Bookmark, House, Menu, MessageCircle, Play, Scale, UserRound, X } from "lucide-react";
 import {
   buildLoop,
   knowledgeLabels,
@@ -73,6 +74,18 @@ import {
 } from "./storage";
 
 type FeedMode = "latest" | "helpful" | "saved" | "following";
+type AppView = "top" | "feed" | "pit-stop" | "compare" | "account";
+const viewFromHash = (): AppView => {
+  const hash = typeof window === "undefined" ? "" : window.location.hash.slice(1);
+  if (hash.startsWith("pit-stop")) return "pit-stop";
+  return hash === "feed" || hash === "compare" || hash === "account" ? hash : "top";
+};
+const destinations = [
+  { id: "top", label: "Home", icon: House },
+  { id: "feed", label: "Community", icon: MessageCircle },
+  { id: "pit-stop", label: "Pit Stop", icon: Play },
+  { id: "compare", label: "Compare", icon: Scale },
+] as const;
 
 type PitStopStatus = "published" | "pending" | "removed";
 
@@ -341,20 +354,8 @@ const ClerkAccountPanel = ({ savedCount }: { savedCount: number }) => {
     </>
   ) : (
     <>
-      <div className="instrument-metrics">
-        <span>
-          <strong>Clerk</strong>
-          Backend auth
-        </span>
-        <span>
-          <strong>{savedCount}</strong>
-          Saved notes
-        </span>
-        <span>
-          <strong>User</strong>
-          Default role
-        </span>
-      </div>
+      <h2>Make yourself at home</h2>
+      <p>Keep your favourite advice and car comparisons together.</p>
       <div className="auth-actions">
         <SignInButton mode="modal">
           <button className="primary-action" type="button">
@@ -374,9 +375,8 @@ const ClerkAccountPanel = ({ savedCount }: { savedCount: number }) => {
 const LoginGate = ({ isLoaded }: { isLoaded: boolean }) => (
   <section className="panel auth-gate" aria-label="Sign in required">
     <div>
-      <p className="eyebrow">Account required</p>
-      <h2>Log in or create an account to use Otofolks.</h2>
-      <p>Feed actions, Pit Stop clips, Compare, saves, comments, follows, and moderator tools are available after sign-in.</p>
+      <h2>Your Otofolks starts here</h2>
+      <p>Sign in to join other owners and save what helps.</p>
     </div>
     <div className="auth-actions">
       <SignInButton mode="modal">
@@ -501,7 +501,7 @@ const getInitialOnlineStatus = (): boolean => {
   }
 };
 
-function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: AppAuthState }) {
+export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: AppAuthState }) {
   const [posts, setPosts] = useState<OwnerPost[]>(() => loadPosts());
   const [profile, setProfile] = useState<Profile>(() => loadProfile());
   const [reports, setReports] = useState<ReportRecord[]>(() => loadReports());
@@ -532,6 +532,26 @@ function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: AppAuthS
   const [reportDraft, setReportDraft] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [navMenuOpen, setNavMenuOpen] = useState(false);
+  const [activeView, setActiveView] = useState<AppView>(viewFromHash);
+  useEffect(() => {
+    const syncView = () => {
+      setActiveView(viewFromHash());
+      setNavMenuOpen(false);
+      window.scrollTo({ top: 0 });
+    };
+    const closeMenu = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setNavMenuOpen(false);
+        document.querySelector<HTMLButtonElement>(".nav-toggle")?.focus();
+      }
+    };
+    window.addEventListener("hashchange", syncView);
+    window.addEventListener("keydown", closeMenu);
+    return () => {
+      window.removeEventListener("hashchange", syncView);
+      window.removeEventListener("keydown", closeMenu);
+    };
+  }, []);
   const [isOnline, setIsOnline] = useState(getInitialOnlineStatus);
 
   const notebooks = useMemo(() => groupByModel(posts), [posts]);
@@ -615,20 +635,6 @@ function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: AppAuthS
   );
   const shortlistDraftSource = priceSourceFor(shortlistDraft.state ?? defaultPriceState, shortlistDraft.status);
   const shortlistDraftDetails = modelDetailsFor(shortlistDraft.brand, shortlistDraft.model);
-
-  const stats = useMemo(
-    () => ({
-      posts: posts.length,
-      models: notebooks.length,
-      fixes: posts.filter((post) => post.label === "Fix").length,
-      confirmations: posts.reduce((total, post) => total + post.fixesConfirmed, 0),
-      follows: follows.models.length + follows.topics.length,
-      garage: garage.length,
-      reports: moderationSummary.openReports,
-      shortlist: shortlist.length,
-    }),
-    [follows.models.length, follows.topics.length, garage.length, moderationSummary.openReports, notebooks.length, posts, shortlist.length],
-  );
 
   useEffect(() => {
     const updateOnline = () => setIsOnline(true);
@@ -885,16 +891,16 @@ function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: AppAuthS
     });
   };
 
-  const shouldShowFeatures = !clerkEnabled || auth.isSignedIn;
+  const shouldShowFeatures = auth.isSignedIn;
   const requireSignIn = () => {
     if (shouldShowFeatures) return true;
     auth.requireSignIn();
-    setActionMessage("Log in or create an account to use this feature.");
+    setActionMessage(clerkEnabled ? "Sign in to continue." : "Sign-in is temporarily unavailable. Please try again later.");
     return false;
   };
   const handleFeatureNav = (event: MouseEvent<HTMLAnchorElement>) => {
     setNavMenuOpen(false);
-    if (!shouldShowFeatures) {
+    if (!["#top", "#account"].includes(event.currentTarget.hash) && !shouldShowFeatures) {
       event.preventDefault();
       requireSignIn();
     }
@@ -902,124 +908,78 @@ function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: AppAuthS
 
   return (
     <main className="app-shell">
-      <section className="hero">
+      <header className="app-header">
         <nav className="nav" aria-label="Primary navigation">
-          <a className="brand" href="#top" aria-label="Otofolks home" onClick={() => setNavMenuOpen(false)}>
-            <span className="logo-mark" aria-hidden="true">
-              <span className="logo-car" />
-              <span className="logo-wrench" />
-            </span>
+          <a className="brand" href="#top" onClick={() => setNavMenuOpen(false)}>
+            <span className="logo-mark" aria-hidden="true"><span className="logo-car" /><span className="logo-wrench" /></span>
             Otofolks
           </a>
-          <button
-            aria-controls="primary-nav-links"
-            aria-expanded={navMenuOpen}
-            className="nav-toggle"
-            type="button"
-            onClick={() => setNavMenuOpen((isOpen) => !isOpen)}
-          >
-            <span />
-            <span />
-            <span />
-            Menu
+          <button aria-controls="primary-nav-links" aria-expanded={navMenuOpen}
+            aria-label={navMenuOpen ? "Close menu" : "Open menu"} className="nav-toggle"
+            onClick={() => setNavMenuOpen((open) => !open)} type="button">
+            {navMenuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
           <div className={`nav-actions ${navMenuOpen ? "is-open" : ""}`} id="primary-nav-links">
-            <a href={shouldShowFeatures ? "#feed" : "#account"} onClick={handleFeatureNav}>
-              Feed
-            </a>
-            <a href={shouldShowFeatures ? "#pit-stop" : "#account"} onClick={handleFeatureNav}>
-              Pit Stop
-            </a>
-            <a href={shouldShowFeatures ? "#compare" : "#account"} onClick={handleFeatureNav}>
-              Compare
-            </a>
-            <a href="#account" onClick={() => setNavMenuOpen(false)}>
-              Sign in
+            {destinations.map(({ id, label, icon: Icon }) => (
+              <a href={`#${id}`} key={id} onClick={handleFeatureNav} aria-current={activeView === id ? "page" : undefined}>
+                <Icon size={20} aria-hidden="true" />{label}
+              </a>
+            ))}
+            <a href="#account" onClick={handleFeatureNav} aria-current={activeView === "account" ? "page" : undefined}>
+              <UserRound size={20} aria-hidden="true" />{auth.isSignedIn ? "Account" : "Sign in"}
             </a>
           </div>
         </nav>
+      </header>
 
-        <div className="hero-grid" id="top">
-          <div>
-            <div className="brand-lockup" aria-label="Otofolks logo lockup">
-              <span className="logo-mark splash-mark" aria-hidden="true">
-                <span className="logo-car" />
-                <span className="logo-wrench" />
-              </span>
-              <strong>
-                Oto<span>folks</span>
-              </strong>
-              <small>Care you can trust</small>
-            </div>
-            <span className="sys-badge">Service-ready community</span>
-            <p className="eyebrow">Otofolks customer web</p>
-            <h1>Useful car decisions start with trusted owner evidence.</h1>
-            <p className="hero-copy">
-              Otofolks keeps the customer surface focused: owner notes, service signals, short car clips, and model
-              comparisons that help buyers move from research to action.
-            </p>
-            <div className="service-sync-card" aria-label="Merged service app preview">
-              <div className="service-search">
-                <span aria-hidden="true" />
-                <strong>Search owner notes, experts, service types...</strong>
-                <button type="button" onClick={requireSignIn}>
-                  Filter
-                </button>
-              </div>
-              <div className="service-pill-row" aria-label="Service categories">
-                <span className="is-active">Car Service</span>
-                <span>Oil Change</span>
-                <span>Tyre</span>
-                <span>Owner Notes</span>
-              </div>
-              <div className="service-preview-grid">
-                <article className="offer-card">
-                  <span>Community + service</span>
-                  <h3>Find trusted car help backed by real owner evidence.</h3>
-                  <p>Community notes now share the same Otofolks rhythm as booking, providers, vehicles, and payments.</p>
-                </article>
-                <div className="phone-preview" aria-label="Otofolks service app screens">
-                  <img src="/app-screens/service-home.png" alt="Otofolks service app home screen" />
-                  <img src="/app-screens/provider-about.png" alt="Otofolks provider detail screen" />
-                  <img src="/app-screens/booking-schedule.png" alt="Otofolks booking schedule screen" />
-                </div>
-              </div>
-            </div>
-            <div className="hero-actions">
-              <a className="primary-action" href={shouldShowFeatures ? "#feed" : "#account"} onClick={handleFeatureNav}>
-                Open feed
-              </a>
-              <a className="secondary-action" href={shouldShowFeatures ? "#pit-stop" : "#account"} onClick={handleFeatureNav}>
-                Open Pit Stop
-              </a>
-            </div>
-          </div>
-
-          <div className="instrument-card" id="account" aria-label="Sign in and profile">
-            <p className="instrument-kicker">Account</p>
-            {clerkEnabled ? (
-              <ClerkAccountPanel savedCount={saved.size} />
-            ) : (
-              <>
-                <div className="instrument-metrics">
-                  <span>
-                    <strong>Clerk</strong>
-                    Add key
-                  </span>
-                  <span>
-                    <strong>{saved.size}</strong>
-                    Saved notes
-                  </span>
-                  <span>
-                    <strong>{profile.displayName.trim() ? "Set" : "Local"}</strong>
-                    Profile
-                  </span>
-                </div>
-                <p>Add VITE_CLERK_PUBLISHABLE_KEY to enable Clerk login. Until then, saves stay in this browser.</p>
-              </>
-            )}
+      <section className="home-view" hidden={activeView !== "top"} aria-label="Home">
+        <div className="home-heading">
+          <p className="eyebrow">Care you can trust</p>
+          <h1>A little help for every drive.</h1>
+          <p>Real owners. Useful advice. Happier kilometres.</p>
+        </div>
+        <div className="home-shortcuts">
+          {[
+            { id: "feed", label: "Ask the community", detail: "Advice from fellow owners", icon: MessageCircle },
+            { id: "pit-stop", label: "Take a Pit Stop", detail: "Car stories and inspiration", icon: Play },
+            { id: "compare", label: "Find your next car", detail: "Compare your favourites", icon: Scale },
+            { id: "feed", label: "Saved advice", detail: "Good tips, kept close", icon: Bookmark },
+          ].map(({ id, label, detail, icon: Icon }, index) => (
+            <a className="home-shortcut" href={`#${id}`} key={label} onClick={(event) => {
+              handleFeatureNav(event);
+              if (id === "feed" && shouldShowFeatures) setMode(index === 3 ? "saved" : "latest");
+            }}>
+              <Icon size={25} aria-hidden="true" />
+              <h2>{label}</h2><p>{detail}</p>
+              <ArrowRight size={18} aria-hidden="true" className="shortcut-arrow" />
+            </a>
+          ))}
+        </div>
+        <div className="owner-topics">
+          <h2>What is on your mind?</h2>
+          <div className="topic-links">
+            {["Service costs", "Tyres", "Mileage", "Road trips"].map((topic) => (
+              <a href="#feed" key={topic} onClick={(event) => {
+                handleFeatureNav(event);
+                if (shouldShowFeatures) { setQuery(topic === "Service costs" ? "service" : topic); setMode("latest"); }
+              }}>{topic}<ArrowRight size={16} aria-hidden="true" /></a>
+            ))}
           </div>
         </div>
+        <div className="service-coming">
+          <div><span className="eyebrow">Coming to Otofolks</span><h2>Car care, all together.</h2>
+            <p>Service bookings and your garage are on the way.</p></div>
+          <div className="service-screens">
+            <img src="/app-screens/service-home.png" alt="Preview of the upcoming Otofolks service home" />
+            <img src="/app-screens/provider-about.png" alt="Preview of service provider details" />
+            <img src="/app-screens/booking-schedule.png" alt="Preview of service scheduling" />
+          </div>
+        </div>
+      </section>
+
+      <section className="panel account-view" id="account" hidden={activeView !== "account"} aria-label="Account">
+        {clerkEnabled ? <ClerkAccountPanel savedCount={saved.size} /> :
+          <><h2>Sign-in is temporarily unavailable</h2><p>Please try again later.</p></>}
       </section>
 
       {actionMessage ? (
@@ -1028,7 +988,7 @@ function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: AppAuthS
         </div>
       ) : null}
 
-      <section className={`connection-strip ${connectionStatus.tone}`} aria-label="Connection status">
+      <section hidden={isOnline} className={`connection-strip ${connectionStatus.tone}`} aria-label="Connection status">
         <strong>{connectionStatus.label}</strong>
         <span>{connectionStatus.detail}</span>
       </section>
@@ -1232,41 +1192,11 @@ function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: AppAuthS
         </>
       ) : null}
 
-      <section className="panel pit-lane" aria-label="Digital pit lane">
-        <div className="section-head">
-          <div>
-            <p className="eyebrow">Digital Pit Lane</p>
-            <h2>Jump straight to a module.</h2>
-          </div>
-        </div>
-        <div className="module-grid">
-          <a className="module-card" href="#feed">
-            <span className="module-index">{String(stats.posts).padStart(2, "0")}</span>
-            <span className="module-open">OPEN</span>
-            <h3>Community</h3>
-            <span className="module-sub">Owner notes // fixes</span>
-          </a>
-          <a className="module-card" href="#pit-stop">
-            <span className="module-index">{String(publishedPitStopClips.length).padStart(2, "0")}</span>
-            <span className="module-open">OPEN</span>
-            <h3>Pit Stop</h3>
-            <span className="module-sub">Reels // clips</span>
-          </a>
-          <a className="module-card" href="#compare">
-            <span className="module-index">{String(stats.shortlist).padStart(2, "0")}</span>
-            <span className="module-open">OPEN</span>
-            <h3>Compare</h3>
-            <span className="module-sub">Models // pricing</span>
-          </a>
-        </div>
-      </section>
-
-      <section className="panel" id="feed">
+      <section className="panel" id="feed" hidden={activeView !== "feed"}>
         <div className="section-head">
           <div>
             <p className="eyebrow">Community feed</p>
-            <h2>Feed: owner notes, saved posts, and real problems.</h2>
-            <p className="section-note">Use “Save note” on any card, then open Saved notes here to see it again.</p>
+            <h2>From one owner to another</h2>
           </div>
           <div className="filters" aria-label="Feed filters">
             <input
@@ -1306,11 +1236,13 @@ function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: AppAuthS
                 <article
                   className={`post-card ${selectedPost?.id === post.id ? "is-selected" : ""}`}
                   key={post.id}
-                  onClick={() => setSelectedPost(post)}
                 >
                   <div>
                     <span className="pill">{post.label}</span>
-                    <h3>{post.title}</h3>
+                    <h3><button className="post-open" type="button" onClick={() => {
+                      setSelectedPost(post);
+                      requestAnimationFrame(() => document.getElementById("note-detail")?.focus());
+                    }}>{post.title}</button></h3>
                     <p>
                       {post.brand} {post.model} · {post.city} · {post.odometerKm.toLocaleString("en-IN")} km
                     </p>
@@ -1332,7 +1264,7 @@ function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: AppAuthS
             )}
           </div>
 
-          <aside className="detail-card">
+          <aside className="detail-card" id="note-detail" tabIndex={-1} aria-label="Owner note">
             {selectedPost ? (
               <>
                 <span className="pill">{selectedPost.label}</span>
@@ -1407,18 +1339,20 @@ function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: AppAuthS
                     Add comment
                   </button>
                 </form>
+                <details className="report-disclosure"><summary>Report this note</summary>
                 <form className="inline-form report-form" onSubmit={reportSelectedPost}>
                   <textarea
                     required
                     rows={3}
                     value={reportDraft}
                     onChange={(event) => setReportDraft(event.target.value)}
-                    placeholder="Report spam, abuse, fake lead, or dangerous advice. This goes into the local review queue."
+                    placeholder="Tell us what is wrong with this note."
                   />
                   <button className="save-button" type="submit">
                     Report for review
                   </button>
                 </form>
+                </details>
               </>
             ) : (
               <p>Select a post to inspect owner details.</p>
@@ -1427,11 +1361,11 @@ function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: AppAuthS
         </div>
       </section>
 
-      <section className="panel pit-stop-panel" id="pit-stop">
+      <section className="panel pit-stop-panel" id="pit-stop" hidden={activeView !== "pit-stop"}>
         <div className="section-head">
           <div>
             <p className="eyebrow">Pit Stop</p>
-            <h2>Short car clips tied to topics and models, not profiles.</h2>
+            <h2>A break for your car obsession</h2>
           </div>
           <div className="pit-stop-filters" aria-label="Pit Stop category filters">
             {pitStopCategories.map((category) => (
@@ -1494,11 +1428,11 @@ function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: AppAuthS
         ) : null}
       </section>
 
-      <section className="panel" id="compare">
+      <section className="panel" id="compare" hidden={activeView !== "compare"}>
         <div className="section-head">
           <div>
             <p className="eyebrow">Compare</p>
-            <h2>Turn owner notes into a decision.</h2>
+            <h2>Which car feels right?</h2>
           </div>
         </div>
         <div className="shortlist-grid">
@@ -1506,6 +1440,7 @@ function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: AppAuthS
             <h3>Add model to compare</h3>
             <div className="form-row">
               <select
+                aria-label="Car brand"
                 value={shortlistDraft.brand}
                 onChange={(event) => {
                   const brand = event.target.value;
@@ -1527,6 +1462,7 @@ function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: AppAuthS
                 ))}
               </select>
               <select
+                aria-label="Car model"
                 value={shortlistDraft.model}
                 onChange={(event) => {
                   const model = event.target.value;
@@ -1548,6 +1484,7 @@ function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: AppAuthS
             </div>
             <div className="form-row">
               <select
+                aria-label="Variant"
                 value={shortlistDraft.variant}
                 onChange={(event) => {
                   const variant = event.target.value;
@@ -1565,6 +1502,7 @@ function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: AppAuthS
                 ))}
               </select>
               <select
+                aria-label="State"
                 value={shortlistDraft.state}
                 onChange={(event) => {
                   const state = event.target.value as PriceState;
@@ -1589,6 +1527,7 @@ function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: AppAuthS
                 <small>{shortlistDraftSource}</small>
               </div>
               <select
+                aria-label="Car condition"
                 value={shortlistDraft.status}
                 onChange={(event) => {
                   const status = event.target.value as ShortlistItem["status"];
@@ -1642,9 +1581,9 @@ function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: AppAuthS
               </article>
             ) : (
               <article className="comparison-card one-to-one-card" aria-label="One to one comparison empty state">
-                <span className="confidence low">One-to-one comparison</span>
+                <span className="confidence">Side by side</span>
                 <h3>Add two cars to compare side by side.</h3>
-                <p>Metrics will show price, variant, state basis, status, body type, fuel, seats, mileage, and safety.</p>
+                <p>See prices, running costs and features together.</p>
               </article>
             )}
             <article className="comparison-card example-card" aria-label="Compare preview">
@@ -2197,11 +2136,14 @@ function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: AppAuthS
       ) : null}
         </>
       ) : (
-        <LoginGate isLoaded={auth.isLoaded} />
+        activeView !== "top" && activeView !== "account" ? (
+          clerkEnabled ? <LoginGate isLoaded={auth.isLoaded} /> :
+          <section className="panel auth-gate"><h2>Sign-in is temporarily unavailable</h2><p>Please try again later.</p></section>
+        ) : null
       )}
 
       <footer className="app-footer">
-        <span>Otofolks customer web</span>
+        <span>Otofolks</span>
         <span className="ok">Care you can trust</span>
       </footer>
     </main>

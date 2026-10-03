@@ -53,6 +53,10 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Run tests
         run: npm run test
+      - name: Install browser
+        run: npx playwright install --with-deps chromium
+      - name: Check responsive navigation
+        run: npm run test:e2e
 
   build:
     name: Production build
