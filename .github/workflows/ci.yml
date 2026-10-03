@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [master]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  NODE_VERSION: "22"
+
+jobs:
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Install
+        run: npm ci --no-audit --no-fund
+      - name: Typecheck
+        run: npx tsc -b --pretty false
+
+  test:
+    name: Unit tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Install
+        run: npm ci --no-audit --no-fund
+      - name: Run tests
+        run: npm run test
+
+  build:
+    name: Production build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - name: Install
+        run: npm ci --no-audit --no-fund
+      - name: Build
+        run: npm run build
+      - name: Verify build output
+        run: |
+          set -euo pipefail
+          test -f dist/index.html
+          test -d dist/assets
+
+  ci-gate:
+    name: CI gate
+    if: always()
+    needs: [typecheck, test, build]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Aggregate job results
+        env:
+          RESULTS: ${{ join(needs.*.result, ',') }}
+        run: |
+          set -euo pipefail
+          echo "job results: ${RESULTS}"
+          case "${RESULTS}" in
+            *failure*|*cancelled*)
+              echo "::error::One or more required CI jobs did not succeed."
+              exit 1
+              ;;
+          esac
+          echo "All required CI jobs succeeded."
