@@ -32,7 +32,7 @@ describe("Pit Stop clips", () => {
     expect(filterPitStopClipsByCategory([...clips], "All")).toHaveLength(2);
   });
 
-  it("keeps 50 individual reels for each master card", () => {
+  it("does not invent individual reels from a hashtag page", () => {
     const reels = buildTopPitStopReels([
       {
         addedAt: "2026-10-01T00:00:00.000Z",
@@ -47,14 +47,13 @@ describe("Pit Stop clips", () => {
       },
     ]);
 
-    expect(reels).toHaveLength(50);
-    expect(reels[49].title).toBe("Builds exhaust note reel #50");
+    expect(reels).toHaveLength(0);
   });
 
   it("uses prewritten prices for compare models", () => {
     expect(priceForModel("Tata", "Nexon", "XZ+ Diesel MT", "Maharashtra", "New")).toBe(950000);
-    expect(priceForModel("Tata", "Nexon", "XZ+ Diesel MT", "Maharashtra", "Test drive")).toBe(874000);
-    expect(priceForModel("Tata", "Nexon", "XZ+ Diesel MT", "Karnataka", "New")).toBe(921500);
+    expect(priceForModel("Tata", "Nexon", "XZ+ Diesel MT", "Maharashtra", "Test drive")).toBe(950000);
+    expect(priceForModel("Tata", "Nexon", "XZ+ Diesel MT", "Karnataka", "New")).toBe(950000);
     expect(priceForModel("Tata", "Unknown")).toBe(0);
   });
 

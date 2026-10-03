@@ -1,6 +1,8 @@
 import { FormEvent, MouseEvent, useEffect, useMemo, useState } from "react";
 import { SignInButton, SignUpButton, UserButton, useClerk, useUser } from "@clerk/react";
-import { ArrowRight, Bookmark, House, Menu, MessageCircle, Play, Scale, UserRound, X } from "lucide-react";
+import { ArrowRight, Bookmark, Car, House, Menu, MessageCircle, Play, Scale, UserRound, X } from "lucide-react";
+import { buildTopPitStopReels, filterPitStopClipsByCategory, pitStopClips, pitStopCategories, type PitStopClip } from "./pitstop";
+export { buildTopPitStopReels, filterPitStopClipsByCategory } from "./pitstop";
 import {
   buildLoop,
   knowledgeLabels,
@@ -71,46 +73,26 @@ import {
   saveShortlist,
   saveSubscriptionSettings,
   saveTimeline,
+  setStorageUser,
+  readStoredJson,
+  writeStoredJson,
 } from "./storage";
 
 type FeedMode = "latest" | "helpful" | "saved" | "following";
-type AppView = "top" | "feed" | "pit-stop" | "compare" | "account";
+type AppView = "top" | "feed" | "pit-stop" | "compare" | "account" | "garage" | "write";
 const viewFromHash = (): AppView => {
   const hash = typeof window === "undefined" ? "" : window.location.hash.slice(1);
   if (hash.startsWith("pit-stop")) return "pit-stop";
-  return hash === "feed" || hash === "compare" || hash === "account" ? hash : "top";
+  return hash === "feed" || hash === "compare" || hash === "account" || hash === "garage" || hash === "write" ? hash : "top";
 };
 const destinations = [
   { id: "top", label: "Home", icon: House },
+  { id: "garage", label: "My garage", icon: Car },
   { id: "feed", label: "Community", icon: MessageCircle },
   { id: "pit-stop", label: "Pit Stop", icon: Play },
   { id: "compare", label: "Compare", icon: Scale },
 ] as const;
 
-type PitStopStatus = "published" | "pending" | "removed";
-
-type PitStopClip = {
-  addedAt: string;
-  brand?: string;
-  category: "Builds" | "Launches" | "Ownership" | "India";
-  embedUrl: string;
-  id: string;
-  model?: string;
-  sourceLabel: string;
-  status: PitStopStatus;
-  summary: string;
-  thumbnailLabel: string;
-  title: string;
-};
-
-type PitStopReel = {
-  category: PitStopClip["category"];
-  embedUrl: string;
-  id: string;
-  sourceLabel: string;
-  summary: string;
-  title: string;
-};
 
 const showDeferredCommunityModules = false;
 const adminModeratorEmails = [
@@ -122,96 +104,12 @@ const adminModeratorEmails = [
 export const isAdminModeratorEmail = (email: string): boolean =>
   adminModeratorEmails.includes(email.toLowerCase() as (typeof adminModeratorEmails)[number]);
 
-const pitStopClips: PitStopClip[] = [
-  {
-    addedAt: "2026-10-01T00:00:00.000Z",
-    brand: "Mahindra",
-    category: "Builds",
-    embedUrl: "https://www.instagram.com/explore/tags/carsofinstagram/",
-    id: "pitstop-builds-carsofinstagram",
-    model: "Thar",
-    sourceLabel: "Instagram car clips",
-    status: "published",
-    summary: "Custom builds, tasteful mods, owner-shot walkarounds, and short-format garage inspiration.",
-    thumbnailLabel: "IG Builds",
-    title: "Car builds worth watching",
-  },
-  {
-    addedAt: "2026-10-01T00:00:00.000Z",
-    brand: "Hyundai",
-    category: "Launches",
-    embedUrl: "https://www.instagram.com/explore/tags/newcar/",
-    id: "pitstop-launches-newcar",
-    model: "Creta",
-    sourceLabel: "Instagram launch clips",
-    status: "published",
-    summary: "Quick launch clips, dealership first looks, and real-world walkarounds before deep reviews arrive.",
-    thumbnailLabel: "IG Launch",
-    title: "New car clips",
-  },
-  {
-    addedAt: "2026-10-01T00:00:00.000Z",
-    brand: "Honda",
-    category: "Ownership",
-    embedUrl: "https://www.instagram.com/explore/tags/carreview/",
-    id: "pitstop-ownership-carreview",
-    model: "City",
-    sourceLabel: "Instagram review clips",
-    status: "published",
-    summary: "Short owner opinions and driving impressions to pair with detailed community posts.",
-    thumbnailLabel: "IG Review",
-    title: "Review clips from owners",
-  },
-  {
-    addedAt: "2026-10-01T00:00:00.000Z",
-    brand: "Tata",
-    category: "India",
-    embedUrl: "https://www.instagram.com/explore/tags/indianautomotive/",
-    id: "pitstop-india-automotive",
-    model: "Nexon",
-    sourceLabel: "Instagram India auto clips",
-    status: "published",
-    summary: "India-focused clips around road presence, trims, city use, accessories, and buyer chatter.",
-    thumbnailLabel: "IG India",
-    title: "Indian automotive clips",
-  },
-];
-
-const pitStopCategories: Array<PitStopClip["category"] | "All"> = ["All", "Builds", "Launches", "Ownership", "India"];
 const pitStopCategoryFromHash = (): PitStopClip["category"] | null => {
   const hash = typeof window === "undefined" ? "" : window.location.hash.replace("#pit-stop-", "").toLowerCase();
   return pitStopCategories.find((category): category is PitStopClip["category"] => category !== "All" && category.toLowerCase() === hash) ?? null;
 };
 const pitStopCollectionUrl = (category: PitStopClip["category"]) => `/#pit-stop-${category.toLowerCase()}`;
 
-export const filterPitStopClipsByCategory = (
-  clips: PitStopClip[],
-  category: PitStopClip["category"] | "All",
-): PitStopClip[] => (category === "All" ? clips : clips.filter((clip) => clip.category === category));
-
-export const buildTopPitStopReels = (clips: PitStopClip[]): PitStopReel[] =>
-  clips.flatMap((clip) => {
-    const reelAngles = {
-      Builds: ["walkaround", "wheel fitment", "lighting setup", "interior trim", "exhaust note"],
-      India: ["city drive", "highway pull", "monsoon road", "accessory check", "delivery day"],
-      Launches: ["first look", "variant walkaround", "feature demo", "dealer stock", "road presence"],
-      Ownership: ["owner review", "service story", "fuel run", "problem check", "long-term note"],
-    }[clip.category];
-
-    return Array.from({ length: 50 }, (_, index) => {
-      const angle = reelAngles[index % reelAngles.length];
-      const rank = index + 1;
-
-      return {
-        category: clip.category,
-        embedUrl: clip.embedUrl,
-        id: `${clip.id}-reel-${rank}`,
-        sourceLabel: clip.sourceLabel,
-        summary: `Instagram ${angle} pick for ${clip.brand ?? "cars"}${clip.model ? ` ${clip.model}` : ""}. Auto-filled from the ${clip.category.toLowerCase()} source queue; replace with live Instagram API results when connected.`,
-        title: `${clip.model ?? clip.category} ${angle} reel #${rank}`,
-      };
-    });
-  });
 
 const priceStates = [
   "Andhra Pradesh",
@@ -259,7 +157,6 @@ const cityStateMap: Record<string, PriceState> = {
   "Delhi NCR": "Delhi",
   Pune: "Maharashtra",
 };
-const demoPriceFactor = 0.92;
 
 const modelPriceOptions = [
   { brand: "Tata", model: "Nexon", bodyType: "Compact SUV", fuel: "Petrol / Diesel", seating: 5, mileage: "17–24 km/l", safety: "5-star GNCAP", variants: [{ name: "Smart Petrol MT", price: 815000 }, { name: "XZ+ Diesel MT", price: 950000 }] },
@@ -289,10 +186,6 @@ const modelsForBrand = (brand: string) => modelPriceOptions.filter((option) => o
 const optionForModel = (brand: string, model: string) =>
   modelPriceOptions.find((option) => option.brand === brand && option.model === model);
 const variantsForModel = (brand: string, model: string) => optionForModel(brand, model)?.variants ?? [];
-const statePriceFactor = (state: string) => {
-  const stateIndex = priceStates.indexOf(state as PriceState);
-  return stateIndex >= 0 ? 0.96 + (stateIndex % 9) * 0.01 : 1;
-};
 export const priceForModel = (
   brand: string,
   model: string,
@@ -301,24 +194,25 @@ export const priceForModel = (
   status: ShortlistItem["status"] = "New",
 ): number => {
   const basePrice = variantsForModel(brand, model).find((option) => option.name === variant)?.price ?? 0;
-  return Math.round(basePrice * statePriceFactor(state) * (status === "Test drive" ? demoPriceFactor : 1));
+  void state;
+  void status;
+  return basePrice;
 };
 const firstModelForBrand = (brand: string) => modelsForBrand(brand)[0]?.model ?? "";
 const firstVariantForModel = (brand: string, model: string) => variantsForModel(brand, model)[0]?.name ?? "";
 const modelDetailsFor = (brand: string, model: string) => optionForModel(brand, model);
 const stateForCity = (city: string): PriceState | "" => cityStateMap[city.trim()] ?? "";
-const priceSourceFor = (state: string, status: ShortlistItem["status"]) =>
-  status === "Test drive"
-    ? `Indicative demo/test-drive estimate, ${state || defaultPriceState}`
-    : `Indicative ex-showroom estimate, ${state || defaultPriceState}`;
+const priceSourceFor = (state: string, _status: ShortlistItem["status"]) =>
+  `Example price only; confirm a dealer quote in ${state || defaultPriceState}`;
 type AppProps = {
   clerkEnabled?: boolean;
 };
 
 type AppAuthState = {
+  userId?: string;
   isLoaded: boolean;
   isSignedIn: boolean;
-  requireSignIn: () => void;
+  requireSignIn: (destination?: string) => void;
 };
 
 const ClerkAccountPanel = ({ savedCount }: { savedCount: number }) => {
@@ -394,16 +288,24 @@ const LoginGate = ({ isLoaded }: { isLoaded: boolean }) => (
 );
 
 const ClerkConnectedApp = () => {
-  const { isLoaded, isSignedIn } = useUser();
+  const { isLoaded, isSignedIn, user } = useUser();
   const clerk = useClerk();
+  const [pendingSignIn, setPendingSignIn] = useState<string | null>(null);
+  useEffect(() => {
+    if (!isLoaded || !pendingSignIn) return;
+    setPendingSignIn(null);
+    if (!isSignedIn) void clerk.openSignIn({ forceRedirectUrl: `${window.location.origin}/${pendingSignIn}` });
+  }, [clerk, isLoaded, isSignedIn, pendingSignIn]);
 
   return (
     <OtofolksApp
+      key={user?.id ?? "signed-out"}
       auth={{
+        userId: user?.id,
         isLoaded,
         isSignedIn: Boolean(isSignedIn),
-        requireSignIn: () => {
-          void clerk.openSignIn();
+        requireSignIn: (destination = "#top") => {
+          setPendingSignIn(destination);
         },
       }}
       clerkEnabled
@@ -502,6 +404,7 @@ const getInitialOnlineStatus = (): boolean => {
 };
 
 export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: AppAuthState }) {
+  setStorageUser(auth.isSignedIn ? auth.userId ?? null : null);
   const [posts, setPosts] = useState<OwnerPost[]>(() => loadPosts());
   const [profile, setProfile] = useState<Profile>(() => loadProfile());
   const [reports, setReports] = useState<ReportRecord[]>(() => loadReports());
@@ -528,10 +431,13 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
     vehicleId: loadGarage()[0]?.id ?? "",
   }));
   const [shortlistDraft, setShortlistDraft] = useState<DraftShortlistItem>(initialShortlistDraft);
+  const [dealerQuote, setDealerQuote] = useState(0);
   const [commentDraft, setCommentDraft] = useState("");
   const [reportDraft, setReportDraft] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [navMenuOpen, setNavMenuOpen] = useState(false);
+  const [helpfulIds, setHelpfulIds] = useState<string[]>(() => readStoredJson("otofolks.helpful.v1", []));
+  const [confirmedIds, setConfirmedIds] = useState<string[]>(() => readStoredJson("otofolks.confirmed.v1", []));
   const [activeView, setActiveView] = useState<AppView>(viewFromHash);
   useEffect(() => {
     const syncView = () => {
@@ -571,6 +477,12 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
       ? modeFilteredPosts
       : modeFilteredPosts.filter((post) => stateForCity(post.city) === selectedFeedState);
   }, [followedModelSet, followedTopicSet, mode, posts, query, saved, selectedFeedState, selectedLabel]);
+  useEffect(() => {
+    const next = filteredPosts.find(post => post.id === selectedPost?.id) ?? filteredPosts[0] ?? null;
+    if (next !== selectedPost) setSelectedPost(next);
+  }, [filteredPosts, selectedPost]);
+  useEffect(() => { setCommentDraft(""); setReportDraft(""); }, [selectedPost?.id]);
+  useEffect(() => { setDealerQuote(0); }, [shortlistDraft.brand, shortlistDraft.model, shortlistDraft.variant, shortlistDraft.state]);
 
   const publishedPitStopClips = useMemo(
     () => pitStopClips.filter((clip) => clip.status === "published"),
@@ -626,14 +538,14 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
   );
   const draftQuality = useMemo(() => assessPostQuality(draft), [draft]);
   const selectedPostQuality = useMemo(() => (selectedPost ? assessPostQuality(selectedPost) : null), [selectedPost]);
-  const shortlistDraftPrice = priceForModel(
+  const shortlistDraftPrice = dealerQuote || priceForModel(
     shortlistDraft.brand,
     shortlistDraft.model,
     shortlistDraft.variant,
     shortlistDraft.state,
     shortlistDraft.status,
   );
-  const shortlistDraftSource = priceSourceFor(shortlistDraft.state ?? defaultPriceState, shortlistDraft.status);
+  const shortlistDraftSource = dealerQuote ? "Your dealer quote" : priceSourceFor(shortlistDraft.state ?? defaultPriceState, shortlistDraft.status);
   const shortlistDraftDetails = modelDetailsFor(shortlistDraft.brand, shortlistDraft.model);
 
   useEffect(() => {
@@ -714,14 +626,22 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
   };
 
   const markHelpful = (postId: string) => {
-    const next = posts.map((post) => (post.id === postId ? { ...post, helpful: post.helpful + 1 } : post));
+    const removing = helpfulIds.includes(postId);
+    const ids = removing ? helpfulIds.filter(id => id !== postId) : [...helpfulIds, postId];
+    setHelpfulIds(ids);
+    writeStoredJson("otofolks.helpful.v1", ids);
+    const next = posts.map((post) => (post.id === postId ? { ...post, helpful: Math.max(0, post.helpful + (removing ? -1 : 1)) } : post));
     persistPosts(next);
     setSelectedPost(next.find((post) => post.id === postId) ?? null);
   };
 
   const confirmFix = (postId: string) => {
+    const removing = confirmedIds.includes(postId);
+    const ids = removing ? confirmedIds.filter(id => id !== postId) : [...confirmedIds, postId];
+    setConfirmedIds(ids);
+    writeStoredJson("otofolks.confirmed.v1", ids);
     const next = posts.map((post) =>
-      post.id === postId ? { ...post, fixesConfirmed: post.fixesConfirmed + 1, helpful: post.helpful + 1 } : post,
+      post.id === postId ? { ...post, fixesConfirmed: Math.max(0, post.fixesConfirmed + (removing ? -1 : 1)) } : post,
     );
     persistPosts(next);
     setSelectedPost(next.find((post) => post.id === postId) ?? null);
@@ -737,6 +657,7 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
     persistPosts(next);
     setSelectedPost(next.find((post) => post.id === selectedPost.id) ?? null);
     setCommentDraft("");
+    setActionMessage("Reply saved on this device. Other owners cannot see it yet.");
   };
 
   const reportSelectedPost = (event: FormEvent<HTMLFormElement>) => {
@@ -750,6 +671,7 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
     });
     persistReports([report, ...reports]);
     setReportDraft("");
+    setActionMessage("Report draft saved on this device. It has not been sent to moderators.");
   };
 
   const setReportStatus = (reportId: string, status: ReportRecord["status"]) => {
@@ -799,6 +721,10 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
   const addShortlistItem = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!shortlistDraft.model.trim()) return;
+    if (shortlist.some(item => item.brand === shortlistDraft.brand && item.model === shortlistDraft.model && item.variant === shortlistDraft.variant && item.state === shortlistDraft.state)) {
+      setActionMessage("That car and variant are already in your comparison.");
+      return;
+    }
     persistShortlist([
       {
         ...createShortlistItem({
@@ -810,6 +736,7 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
       ...shortlist,
     ]);
     setShortlistDraft(initialShortlistDraft);
+    setDealerQuote(0);
   };
 
   const addSelectedToShortlist = () => {
@@ -862,6 +789,12 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
     persistPosts(next);
     setSelectedPost(post);
     setDraft(initialDraft);
+    setQuery("");
+    setMode("latest");
+    setSelectedLabel("All");
+    setSelectedFeedState("All");
+    window.location.hash = "feed";
+    setActionMessage("Owner note saved on this device. It has not been published to other users.");
   };
 
   const addVehicle = (event: FormEvent<HTMLFormElement>) => {
@@ -873,6 +806,7 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
     });
     persistGarage([vehicle, ...garage]);
     setVehicleDraft(initialVehicleDraft);
+    setActionMessage("Vehicle saved on this device.");
   };
 
   const addTimelineNote = (event: FormEvent<HTMLFormElement>) => {
@@ -884,6 +818,7 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
       odometerKm: Number.isFinite(timelineDraft.odometerKm) ? timelineDraft.odometerKm : 0,
     });
     persistTimeline([entry, ...timeline]);
+    setActionMessage("Maintenance entry saved on this device.");
     setTimelineDraft({
       ...initialTimelineDraft,
       vehicleId: timelineDraft.vehicleId,
@@ -892,17 +827,21 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
   };
 
   const shouldShowFeatures = auth.isSignedIn;
-  const requireSignIn = () => {
+  const requireSignIn = (destination = "#top") => {
     if (shouldShowFeatures) return true;
-    auth.requireSignIn();
+    auth.requireSignIn(destination);
+    if (!auth.isLoaded) {
+      setActionMessage("Loading sign-in...");
+      return false;
+    }
     setActionMessage(clerkEnabled ? "Sign in to continue." : "Sign-in is temporarily unavailable. Please try again later.");
     return false;
   };
   const handleFeatureNav = (event: MouseEvent<HTMLAnchorElement>) => {
     setNavMenuOpen(false);
-    if (!["#top", "#account"].includes(event.currentTarget.hash) && !shouldShowFeatures) {
+    if (event.currentTarget.hash !== "#top" && !shouldShowFeatures) {
       event.preventDefault();
-      requireSignIn();
+      requireSignIn(event.currentTarget.hash);
     }
   };
 
@@ -940,14 +879,15 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
         </div>
         <div className="home-shortcuts">
           {[
+            { id: "garage", label: "My garage", detail: "Vehicles and maintenance", icon: Car },
             { id: "feed", label: "Ask the community", detail: "Advice from fellow owners", icon: MessageCircle },
             { id: "pit-stop", label: "Take a Pit Stop", detail: "Car stories and inspiration", icon: Play },
             { id: "compare", label: "Find your next car", detail: "Compare your favourites", icon: Scale },
             { id: "feed", label: "Saved advice", detail: "Good tips, kept close", icon: Bookmark },
-          ].map(({ id, label, detail, icon: Icon }, index) => (
+          ].map(({ id, label, detail, icon: Icon }) => (
             <a className="home-shortcut" href={`#${id}`} key={label} onClick={(event) => {
               handleFeatureNav(event);
-              if (id === "feed" && shouldShowFeatures) setMode(index === 3 ? "saved" : "latest");
+              if (id === "feed" && shouldShowFeatures) { setMode(label === "Saved advice" ? "saved" : "latest"); setQuery(""); }
             }}>
               <Icon size={25} aria-hidden="true" />
               <h2>{label}</h2><p>{detail}</p>
@@ -968,7 +908,7 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
         </div>
         <div className="service-coming">
           <div><span className="eyebrow">Coming to Otofolks</span><h2>Car care, all together.</h2>
-            <p>Service bookings and your garage are on the way.</p></div>
+            <p>Service bookings are on the way. Track your vehicles in My garage today.</p></div>
           <div className="service-screens">
             <img src="/app-screens/service-home.png" alt="Preview of the upcoming Otofolks service home" />
             <img src="/app-screens/provider-about.png" alt="Preview of service provider details" />
@@ -995,6 +935,9 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
 
       {shouldShowFeatures ? (
         <>
+      {activeView !== "top" && activeView !== "account" && activeView !== "pit-stop" ? (
+        <p className="data-notice" role="note">Saved on this device for your account. Community notes include examples; shared publishing and cloud sync are not connected yet.</p>
+      ) : null}
       {showDeferredCommunityModules ? (
         <>
       <section className="panel dashboard-panel" aria-label="Return user dashboard">
@@ -1197,6 +1140,7 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
           <div>
             <p className="eyebrow">Community feed</p>
             <h2>From one owner to another</h2>
+            <a className="primary-action" href="#write">Write an owner note</a>
           </div>
           <div className="filters" aria-label="Feed filters">
             <input
@@ -1286,11 +1230,11 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
                   </div>
                 ) : null}
                 <div className="signal-row">
-                  <button type="button" onClick={() => markHelpful(selectedPost.id)}>
+                  <button type="button" aria-pressed={helpfulIds.includes(selectedPost.id)} onClick={() => markHelpful(selectedPost.id)}>
                     Helpful · {selectedPost.helpful}
                   </button>
                   {selectedPost.label === "Fix" ? (
-                    <button type="button" onClick={() => confirmFix(selectedPost.id)}>
+                    <button type="button" aria-pressed={confirmedIds.includes(selectedPost.id)} onClick={() => confirmFix(selectedPost.id)}>
                       Worked for me · {selectedPost.fixesConfirmed}
                     </button>
                   ) : null}
@@ -1349,7 +1293,7 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
                     placeholder="Tell us what is wrong with this note."
                   />
                   <button className="save-button" type="submit">
-                    Report for review
+                    Save report draft
                   </button>
                 </form>
                 </details>
@@ -1386,9 +1330,8 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
         <div className="pit-stop-grid">
           {filteredPitStopClips.map((clip) => (
             <a
-              aria-pressed={selectedPitStopCollection === clip.category}
               className="pit-stop-card"
-              href={pitStopCollectionUrl(clip.category)}
+              href={clip.embedUrl}
               key={clip.id}
               rel="noreferrer"
               target="_blank"
@@ -1401,18 +1344,18 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
               <h3>{clip.title}</h3>
               <p>{clip.summary}</p>
               {clip.brand && clip.model ? <small>Related: {clip.brand} {clip.model}</small> : null}
-              <em>Open top 50 in new tab · {clip.sourceLabel}</em>
+              <em>Explore on Instagram (opens a new tab)</em>
             </a>
           ))}
         </div>
-        {selectedPitStopCollection ? (
+        {selectedPitStopCollection && selectedPitStopReels.length > 0 ? (
         <div className="pit-stop-reel-section" id={pitStopCollectionUrl(selectedPitStopCollection).slice(2)}>
           <div className="section-head compact">
             <div>
-              <p className="eyebrow">{selectedPitStopCollection} top 50</p>
-              <h3>Individual reel cards</h3>
+              <p className="eyebrow">{selectedPitStopCollection}</p>
+              <h3>Selected clips</h3>
             </div>
-            <span className="form-note">Top {selectedPitStopReels.length} kept from the selected source queue</span>
+            <span className="form-note">{selectedPitStopReels.length} clips</span>
           </div>
           <div className="pit-stop-reel-grid">
             {selectedPitStopReels.map((reel) => (
@@ -1522,7 +1465,7 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
             </div>
             <div className="form-row">
               <div className="price-display" aria-label="Model price">
-                <span>{shortlistDraft.status === "Test drive" ? "Test drive estimate" : "Ex-showroom estimate"}</span>
+                <span>{dealerQuote ? "Your dealer quote" : "Example price"}</span>
                 <strong>{formatMoney(shortlistDraftPrice)}</strong>
                 <small>{shortlistDraftSource}</small>
               </div>
@@ -1551,6 +1494,9 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
               onChange={(event) => setShortlistDraft({ ...shortlistDraft, notes: event.target.value })}
               placeholder="Why is it on the list? Dealer quote, family need, must-check concern..."
             />
+            <label>Dealer quote (INR, optional)
+              <input type="number" min="1" value={dealerQuote || ""} onChange={event => setDealerQuote(Number(event.target.value))} placeholder="Enter the price quoted to you" />
+            </label>
             <button className="primary-action" type="submit">
               Add to compare
             </button>
@@ -1649,17 +1595,6 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
                         value={comparison.item.status}
                         onChange={(event) =>
                           updateShortlistItem(comparison.item.id, {
-                            budget: priceForModel(
-                              comparison.item.brand,
-                              comparison.item.model,
-                              comparison.item.variant,
-                              comparison.item.state,
-                              event.target.value as ShortlistItem["status"],
-                            ),
-                            priceSource: priceSourceFor(
-                              comparison.item.state ?? defaultPriceState,
-                              event.target.value as ShortlistItem["status"],
-                            ),
                             status: event.target.value as ShortlistItem["status"],
                           })
                         }
@@ -1738,14 +1673,14 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
         </div>
       </section>
 
-      <section className="panel split-panel" id="write">
+        </>
+      ) : null}
+
+      <section className="panel split-panel" id="write" hidden={activeView !== "write"}>
         <div>
-          <p className="eyebrow">Publish</p>
-          <h2>Write like the next owner depends on it.</h2>
-          <p>
-            The form pushes users toward the context that makes ownership advice useful: variant, city, odometer, real
-            symptoms, costs, and outcomes.
-          </p>
+          <p className="eyebrow">Owner note</p>
+          <h2>What did you learn about your car?</h2>
+          <p>Your note will be saved on this device.</p>
           <div className={`quality-card ${draftQuality.grade.toLowerCase().replace(/\s+/g, "-")}`}>
             <div className="quality-meter" aria-label={`Draft detail quality ${draftQuality.score} of ${draftQuality.maxScore}`}>
               <span style={{ width: `${(draftQuality.score / draftQuality.maxScore) * 100}%` }} />
@@ -1819,16 +1754,16 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
             placeholder="Share symptoms, costs, decisions, failed attempts, and what you would tell the next owner."
           />
           <button className="primary-action" type="submit">
-            Publish note
+            Save owner note
           </button>
         </form>
       </section>
 
-      <section className="panel" id="garage">
+      <section className="panel" id="garage" hidden={activeView !== "garage"}>
         <div className="section-head">
           <div>
             <p className="eyebrow">Garage timeline</p>
-            <h2>Make ownership useful before something breaks.</h2>
+            <h2>Your vehicles and maintenance</h2>
           </div>
           <button className="save-button" type="button" onClick={exportGarage}>
             Export garage
@@ -1889,7 +1824,9 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
 
           <form className="composer" onSubmit={addTimelineNote}>
             <h3>Add timeline note</h3>
+            {!garage.length ? <p>Add a vehicle first to record its maintenance.</p> : null}
             <select
+              aria-label="Vehicle"
               required
               value={timelineDraft.vehicleId}
               onChange={(event) => setTimelineDraft({ ...timelineDraft, vehicleId: event.target.value })}
@@ -1944,7 +1881,7 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
               onChange={(event) => setTimelineDraft({ ...timelineDraft, note: event.target.value })}
               placeholder="Bill details, symptoms, shop notes, or what you would do differently."
             />
-            <button className="primary-action" type="submit">
+            <button className="primary-action" type="submit" disabled={!garage.length}>
               Add timeline note
             </button>
           </form>
@@ -2031,6 +1968,8 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
         </div>
       </section>
 
+      {showDeferredCommunityModules ? (
+        <>
       <section className="panel" id="notebooks">
         <div className="section-head">
           <div>

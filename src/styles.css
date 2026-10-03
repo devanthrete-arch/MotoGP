@@ -1123,6 +1123,23 @@ h2 { font-size: 26px; }
 .report-disclosure summary { cursor: pointer; padding: 12px 0; color: var(--muted); }
 .report-form { border: 0; padding: 0; }
 .quality-meter { margin-bottom: 12px; }
+.data-notice { margin: 0; padding: 14px 4%; background: var(--primary-soft); color: var(--on-surface-variant); font-size: 13px; }
+.section-head .primary-action { margin-top: 12px; }
+.home-shortcuts { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.signal-row button[aria-pressed="true"] { border-color: var(--primary-fg); color: var(--primary-fg); background: var(--primary-soft); }
+#write > div { margin-bottom: 24px; }
+#write .composer { max-width: 760px; }
+.composer label { display: grid; gap: 8px; }
+.timeline-board, .reminder-board, .ledger-board, .insight-grid { margin-top: 24px; }
+.timeline-entry { margin-top: 12px; }
+.timeline-entry span { display: block; margin-top: 8px; }
+@media (max-width: 1100px) {
+  .home-shortcuts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .home-shortcuts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .data-notice { padding: 12px 16px; }
+}
 .detail-card, .vehicle-card, .comparison-card, .pit-stop-card { overflow-wrap: anywhere; }
 .action-message { width: max-content; max-width: calc(100% - 32px); border-radius: 8px; text-transform: none; letter-spacing: 0; }
 .app-footer { margin: auto 0 0; padding: 20px 4%; border: 0; border-top: 1px solid var(--hair); border-radius: 0; background: var(--background); }
