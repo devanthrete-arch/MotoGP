@@ -2146,6 +2146,23 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
         <span>Otofolks</span>
         <span className="ok">Care you can trust</span>
       </footer>
+
+      <nav className="tab-bar" aria-label="Primary">
+        {destinations.map(({ id, label, icon: Icon }) => (
+          <a href={`#${id}`} key={id} onClick={handleFeatureNav}
+            className={activeView === id ? "is-active" : undefined}
+            aria-current={activeView === id ? "page" : undefined}>
+            <Icon size={22} aria-hidden="true" />
+            <span>{label}</span>
+          </a>
+        ))}
+        <a href="#account" onClick={handleFeatureNav}
+          className={activeView === "account" ? "is-active" : undefined}
+          aria-current={activeView === "account" ? "page" : undefined}>
+          <UserRound size={22} aria-hidden="true" />
+          <span>{auth.isSignedIn ? "Account" : "Sign in"}</span>
+        </a>
+      </nav>
     </main>
   );
 }

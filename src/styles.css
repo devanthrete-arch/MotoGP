@@ -1154,3 +1154,64 @@ h2 { font-size: 26px; }
   .topic-links { column-gap: 20px; }
   .section-head h2 { font-size: 22px; }
 }
+
+/* ============================================================
+   Companion-app navigation: bottom tab bar (mobile) + spacing
+   ============================================================ */
+.tab-bar { display: none; }
+
+/* Consistent heading rhythm on Home and auth/section intros */
+.home-heading { margin-bottom: 32px; }
+.home-heading .eyebrow { margin-bottom: 10px; }
+.home-heading h1 { margin: 0 0 10px; line-height: 1.15; }
+.home-heading p { margin: 0; font-size: 16px; }
+
+@media (max-width: 860px) {
+  /* Replace the top burger with a bottom tab bar */
+  .nav-toggle { display: none; }
+  .nav-actions { display: none !important; }
+  .nav { justify-content: center; min-height: 60px; }
+  .brand { margin: 0; }
+
+  /* Leave room for the fixed tab bar */
+  .app-shell { padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px)); }
+  .app-footer { display: none; }
+
+  .tab-bar {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 60;
+    background: var(--surface-container-low);
+    border-top: 1px solid var(--hair);
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.28);
+  }
+  .tab-bar a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 52px;
+    padding: 4px 2px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 10px;
+  }
+  .tab-bar a span { line-height: 1; }
+  .tab-bar a.is-active { color: var(--accent); }
+  .tab-bar a.is-active svg { color: var(--accent); }
+  .tab-bar a:active { background: var(--surface-container); }
+
+  /* Tighter mobile heading rhythm */
+  .home-heading { margin-bottom: 24px; }
+}
+
+/* Keep the bottom bar hidden on desktop; top nav stays primary there */
+@media (min-width: 861px) {
+  .tab-bar { display: none; }
+}
