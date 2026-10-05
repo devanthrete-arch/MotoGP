@@ -1,6 +1,6 @@
 import { FormEvent, MouseEvent, useEffect, useMemo, useState } from "react";
 import { SignInButton, SignUpButton, UserButton, useClerk, useUser } from "@clerk/react";
-import { ArrowRight, Bookmark, House, Menu, MessageCircle, Play, Scale, UserRound, X } from "lucide-react";
+import { ArrowRight, Bookmark, House, Menu, MessageCircle, PenLine, Play, Scale, UserRound, X } from "lucide-react";
 import {
   buildLoop,
   knowledgeLabels,
@@ -447,6 +447,81 @@ const compareMetricRows = (comparisons: ShortlistComparison[]) => {
   ];
 };
 
+const parseMileageKmpl = (m?: string) => {
+  const nums = m?.match(/\d+/g);
+  return nums ? Number(nums[0]) : 0;
+};
+const safetyScore = (s?: string) => {
+  if (!s) return 0;
+  const star = s.match(/(\d)-star/);
+  if (star) return Number(star[1]);
+  if (/adas/i.test(s)) return 4;
+  if (/airbag/i.test(s)) return 3;
+  return 2;
+};
+
+// A plain-language verdict for the one-to-one compare: the core difference and a
+// gentle "which to prefer" lean, derived from price + specs. A guide, not gospel.
+const buildCompareVerdict = (comparisons: ShortlistComparison[]) => {
+  const [a, b] = comparisons;
+  if (!a || !b) return null;
+  const da = modelDetailsFor(a.item.brand, a.item.model);
+  const db = modelDetailsFor(b.item.brand, b.item.model);
+  const nameA = `${a.item.brand} ${a.item.model}`;
+  const nameB = `${b.item.brand} ${b.item.model}`;
+  const priceA = a.item.budget;
+  const priceB = b.item.budget;
+  const priceGap = Math.abs(priceA - priceB);
+  const cheaper = priceA === priceB ? null : priceA < priceB ? nameA : nameB;
+
+  const diffs: string[] = [];
+  if (da && db && da.bodyType !== db.bodyType) {
+    diffs.push(`the ${nameA} is a ${da.bodyType.toLowerCase()}, while the ${nameB} is a ${db.bodyType.toLowerCase()}`);
+  }
+  if (da && db && da.seating !== db.seating) {
+    const roomier = da.seating > db.seating ? nameA : nameB;
+    diffs.push(`${roomier} seats more (${Math.max(da.seating, db.seating)})`);
+  }
+  if (da && db && da.fuel !== db.fuel) diffs.push(`fuel choices differ (${da.fuel} vs ${db.fuel})`);
+  if (cheaper && priceGap >= 50000) diffs.push(`${cheaper} costs about ${formatMoney(priceGap)} less`);
+  const coreDifference = diffs.length
+    ? `${diffs.slice(0, 2).join(", and ")}.`
+    : "They are closely matched on size, price and features — mostly a matter of brand feel.";
+
+  const rate = (d: ReturnType<typeof modelDetailsFor>) => safetyScore(d?.safety) + parseMileageKmpl(d?.mileage) / 5;
+  let sa = rate(da);
+  let sb = rate(db);
+  if (cheaper === nameA) sa += 1.5;
+  else if (cheaper === nameB) sb += 1.5;
+  const pick = Math.abs(sa - sb) < 0.5 ? null : sa > sb ? nameA : nameB;
+  const pd = pick === nameA ? da : pick === nameB ? db : null;
+  const other = pick === nameA ? db : da;
+  const reasons: string[] = [];
+  if (pick && cheaper === pick) reasons.push("lower price");
+  if (safetyScore(pd?.safety) >= 5) reasons.push("a top safety rating");
+  if (parseMileageKmpl(pd?.mileage) >= 18) reasons.push("better fuel economy");
+  if (pd && other && pd.seating > other.seating) reasons.push("more seating");
+  const reason = pick
+    ? `Lean towards the ${pick}${reasons.length ? ` for its ${reasons.slice(0, 3).join(", ")}` : ""}. The final call still comes down to your budget and must-haves — book a test drive before deciding.`
+    : "It is a close tie — decide on test-drive feel, service network nearby, and the best dealer offer.";
+  return { coreDifference, pick, reason };
+};
+
+// Turn an Instagram permalink into its embeddable player URL. Reel/post/tv
+// permalinks support /embed; anything else is returned as-is (and the modal
+// offers an "Open on Instagram" fallback if the page refuses to frame).
+const toEmbedSrc = (url: string) => {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes("instagram.com") && /\/(reel|p|tv)\//.test(u.pathname)) {
+      return `${u.origin}${u.pathname.replace(/\/$/, "")}/embed`;
+    }
+    return url;
+  } catch {
+    return url;
+  }
+};
+
 const initialDraft: DraftPost = {
   title: "",
   author: "",
@@ -532,16 +607,21 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
   const [reportDraft, setReportDraft] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [navMenuOpen, setNavMenuOpen] = useState(false);
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [activeReel, setActiveReel] = useState<PitStopClip | null>(null);
   const [activeView, setActiveView] = useState<AppView>(viewFromHash);
   useEffect(() => {
     const syncView = () => {
       setActiveView(viewFromHash());
       setNavMenuOpen(false);
+      setActiveReel(null);
+      setComposerOpen(false);
       window.scrollTo({ top: 0 });
     };
     const closeMenu = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setNavMenuOpen(false);
+        setActiveReel(null);
         document.querySelector<HTMLButtonElement>(".nav-toggle")?.focus();
       }
     };
@@ -619,6 +699,7 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
   const privacySummary = useMemo(() => buildPrivacyReadinessSummary(privacyReadinessItems), []);
   const shortlistComparisons = useMemo(() => buildShortlistComparisons(shortlist, posts), [posts, shortlist]);
   const oneToOneCompareRows = useMemo(() => compareMetricRows(shortlistComparisons), [shortlistComparisons]);
+  const compareVerdict = useMemo(() => buildCompareVerdict(shortlistComparisons), [shortlistComparisons]);
   const inspectionChecklists = useMemo(() => buildInspectionChecklists(shortlist, posts), [posts, shortlist]);
   const inspectionChecklistByItemId = useMemo(
     () => new Map(inspectionChecklists.map((checklist) => [checklist.item.id, checklist])),
@@ -862,6 +943,8 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
     persistPosts(next);
     setSelectedPost(post);
     setDraft(initialDraft);
+    setComposerOpen(false);
+    setMode("latest");
   };
 
   const addVehicle = (event: FormEvent<HTMLFormElement>) => {
@@ -891,7 +974,10 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
     });
   };
 
-  const shouldShowFeatures = auth.isSignedIn;
+  // Dev-only preview of the signed-in surface. Off by default; only works in
+  // `vite dev` with VITE_DEV_UNLOCK=1 in .env.local. Never unlocks in production.
+  const devUnlock = import.meta.env.DEV && import.meta.env.VITE_DEV_UNLOCK === "1";
+  const shouldShowFeatures = auth.isSignedIn || devUnlock;
   const requireSignIn = () => {
     if (shouldShowFeatures) return true;
     auth.requireSignIn();
@@ -1193,6 +1279,64 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
       ) : null}
 
       <section className="panel" id="feed" hidden={activeView !== "feed"}>
+        <div className="feed-composer">
+          {!composerOpen ? (
+            <button className="composer-prompt" type="button" onClick={() => setComposerOpen(true)}>
+              <span className="composer-avatar" aria-hidden="true">
+                {(profile.displayName.trim() || "O").charAt(0).toUpperCase()}
+              </span>
+              <span className="composer-placeholder">Share advice with the community…</span>
+              <PenLine size={18} aria-hidden="true" />
+            </button>
+          ) : (
+            <form className="composer composer-expanded" onSubmit={publishPost}>
+              <div className="composer-expanded-head">
+                <span className="composer-avatar" aria-hidden="true">
+                  {(profile.displayName.trim() || "O").charAt(0).toUpperCase()}
+                </span>
+                <strong>Post to the community</strong>
+                <button className="composer-close" type="button" aria-label="Close composer" onClick={() => setComposerOpen(false)}>
+                  <X size={18} />
+                </button>
+              </div>
+              <input
+                value={draft.title}
+                onChange={(event) => setDraft({ ...draft, title: event.target.value })}
+                placeholder="Title — e.g. Nexon clutch got heavy at 38k km"
+                required
+              />
+              <textarea
+                rows={3}
+                value={draft.body}
+                onChange={(event) => setDraft({ ...draft, body: event.target.value })}
+                placeholder="Share what happened, what you tried, and what helped…"
+                required
+              />
+              <div className="form-row">
+                <select value={draft.label} onChange={(event) => setDraft({ ...draft, label: event.target.value as KnowledgeLabel })}>
+                  {knowledgeLabels.map((label) => (
+                    <option key={label}>{label}</option>
+                  ))}
+                </select>
+                <select value={draft.brand} onChange={(event) => setDraft({ ...draft, brand: event.target.value })}>
+                  {brands.map((brand) => (
+                    <option key={brand}>{brand}</option>
+                  ))}
+                </select>
+                <input
+                  value={draft.model}
+                  onChange={(event) => setDraft({ ...draft, model: event.target.value })}
+                  placeholder="Model (optional)"
+                />
+              </div>
+              <div className="composer-actions">
+                <span className="form-note">Posting as {profile.displayName.trim() || "Anonymous owner"}</span>
+                <button className="primary-action" type="submit">Post</button>
+              </div>
+            </form>
+          )}
+        </div>
+
         <div className="section-head">
           <div>
             <p className="eyebrow">Community feed</p>
@@ -1385,15 +1529,14 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
         </div>
         <div className="pit-stop-grid">
           {filteredPitStopClips.map((clip) => (
-            <a
-              aria-pressed={selectedPitStopCollection === clip.category}
+            <button
               className="pit-stop-card"
-              href={pitStopCollectionUrl(clip.category)}
               key={clip.id}
-              rel="noreferrer"
-              target="_blank"
+              type="button"
+              onClick={() => setActiveReel(clip)}
             >
               <div className="pit-stop-thumb" aria-hidden="true">
+                <span className="play-badge"><Play size={20} /></span>
                 <strong>{clip.thumbnailLabel}</strong>
                 <small>{clip.brand ?? "Cars"}</small>
               </div>
@@ -1401,8 +1544,8 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
               <h3>{clip.title}</h3>
               <p>{clip.summary}</p>
               {clip.brand && clip.model ? <small>Related: {clip.brand} {clip.model}</small> : null}
-              <em>Open top 50 in new tab · {clip.sourceLabel}</em>
-            </a>
+              <em>Tap to play · {clip.sourceLabel}</em>
+            </button>
           ))}
         </div>
         {selectedPitStopCollection ? (
@@ -1578,6 +1721,21 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
                     </div>
                   ))}
                 </div>
+                {compareVerdict ? (
+                  <div className="compare-verdict">
+                    <div className="verdict-block">
+                      <h4>What is the core difference?</h4>
+                      <p>{compareVerdict.coreDifference}</p>
+                    </div>
+                    <div className="verdict-block verdict-pick">
+                      <h4>Which should you buy, and why?</h4>
+                      <p>
+                        {compareVerdict.pick ? <strong>{compareVerdict.pick}. </strong> : null}
+                        {compareVerdict.reason}
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
               </article>
             ) : (
               <article className="comparison-card one-to-one-card" aria-label="One to one comparison empty state">
@@ -2146,6 +2304,36 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
         <span>Otofolks</span>
         <span className="ok">Care you can trust</span>
       </footer>
+
+      {activeReel ? (
+        <div className="reel-modal" role="dialog" aria-modal="true" aria-label={activeReel.title}
+          onClick={(event) => { if (event.target === event.currentTarget) setActiveReel(null); }}>
+          <div className="reel-modal-card">
+            <div className="reel-modal-head">
+              <div>
+                <span className="pill">{activeReel.category}</span>
+                <h3>{activeReel.title}</h3>
+              </div>
+              <button className="composer-close" type="button" aria-label="Close" onClick={() => setActiveReel(null)}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className="reel-frame">
+              <iframe
+                src={toEmbedSrc(activeReel.embedUrl)}
+                title={activeReel.title}
+                loading="lazy"
+                allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+            <p>{activeReel.summary}</p>
+            <a className="secondary-action" href={activeReel.embedUrl} target="_blank" rel="noreferrer">
+              Open on Instagram
+            </a>
+          </div>
+        </div>
+      ) : null}
 
       <nav className="tab-bar" aria-label="Primary">
         {destinations.map(({ id, label, icon: Icon }) => (

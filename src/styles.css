@@ -1215,3 +1215,68 @@ h2 { font-size: 26px; }
 @media (min-width: 861px) {
   .tab-bar { display: none; }
 }
+
+/* ============================================================
+   Feed composer (LinkedIn-style), Pit Stop player modal,
+   Compare verdict
+   ============================================================ */
+.feed-composer { margin-bottom: 20px; }
+.composer-prompt {
+  width: 100%; display: flex; align-items: center; gap: 12px;
+  background: var(--surface-container-low); border: 1px solid var(--hair);
+  border-radius: 999px; padding: 10px 16px; cursor: pointer; text-align: left;
+}
+.composer-prompt:hover { border-color: var(--primary-fg); }
+.composer-placeholder { flex: 1; color: var(--muted); font-size: 15px; }
+.composer-prompt > svg { color: var(--muted); }
+.composer-avatar {
+  width: 40px; height: 40px; flex: 0 0 40px; border-radius: 50%;
+  background: var(--accent); color: #fff; display: grid; place-items: center;
+  font-weight: 700; font-size: 16px;
+}
+.composer-expanded {
+  background: var(--surface-container-low); border: 1px solid var(--hair);
+  border-radius: 14px; padding: 16px; gap: 12px;
+}
+.composer-expanded-head { display: flex; align-items: center; gap: 12px; }
+.composer-expanded-head strong { flex: 1; }
+.composer-close { background: none; border: 0; color: var(--muted); cursor: pointer; min-height: auto; padding: 4px; }
+.composer-close:hover { color: var(--on-surface); }
+.composer-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+/* Pit Stop card is now a button that opens the player */
+button.pit-stop-card { width: 100%; text-align: left; font: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: stretch; }
+.pit-stop-thumb { position: relative; }
+.play-badge {
+  position: absolute; inset: 0; margin: auto; width: 46px; height: 46px;
+  display: grid; place-items: center; border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55); color: #fff; backdrop-filter: blur(2px);
+}
+
+/* Reel player modal */
+.reel-modal {
+  position: fixed; inset: 0; z-index: 120; display: flex; align-items: center;
+  justify-content: center; padding: 20px; background: rgba(0, 0, 0, 0.72);
+}
+.reel-modal-card {
+  background: var(--surface-container-low); border: 1px solid var(--hair);
+  border-radius: 16px; width: 100%; max-width: 420px; max-height: 92vh;
+  overflow: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.reel-modal-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.reel-modal-head h3 { margin: 8px 0 0; font-size: 18px; }
+.reel-frame {
+  position: relative; width: 100%; height: 68vh; max-height: 600px;
+  background: #000; border-radius: 12px; overflow: hidden;
+}
+.reel-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.reel-modal-card > .secondary-action { align-self: flex-start; }
+
+/* Compare verdict */
+.compare-verdict { margin-top: 16px; display: grid; gap: 12px; }
+.verdict-block { background: var(--surface-container); border: 1px solid var(--hair); border-radius: 10px; padding: 12px 14px; }
+.verdict-block h4 { margin: 0 0 6px; font-size: 14px; }
+.verdict-block p { margin: 0; font-size: 14px; color: var(--on-surface-variant); line-height: 1.55; }
+.verdict-pick { border-left: 3px solid var(--accent); }
+.verdict-pick strong { color: var(--on-surface); }
