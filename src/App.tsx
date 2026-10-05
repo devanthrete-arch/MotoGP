@@ -282,6 +282,25 @@ const modelPriceOptions = [
   { brand: "Skoda", model: "Slavia", bodyType: "Sedan", fuel: "Petrol", seating: 5, mileage: "18–20 km/l", safety: "5-star GNCAP", variants: [{ name: "Active 1.0 TSI MT", price: 1069000 }, { name: "Style 1.5 TSI DSG", price: 1849000 }] },
   { brand: "Volkswagen", model: "Taigun", bodyType: "SUV", fuel: "Petrol", seating: 5, mileage: "18–19 km/l", safety: "5-star GNCAP", variants: [{ name: "Comfortline 1.0 TSI MT", price: 1117000 }, { name: "GT Plus 1.5 DSG", price: 1900000 }] },
   { brand: "Volkswagen", model: "Virtus", bodyType: "Sedan", fuel: "Petrol", seating: 5, mileage: "18–20 km/l", safety: "5-star GNCAP", variants: [{ name: "Comfortline 1.0 TSI MT", price: 1106000 }, { name: "GT Plus 1.5 DSG", price: 1900000 }] },
+  { brand: "Tata", model: "Tiago", bodyType: "Hatchback", fuel: "Petrol / CNG", seating: 5, mileage: "19–26 km/l", safety: "4-star GNCAP", variants: [{ name: "XE Petrol MT", price: 565000 }, { name: "XZ+ CNG", price: 862000 }] },
+  { brand: "Tata", model: "Altroz", bodyType: "Hatchback", fuel: "Petrol / Diesel / CNG", seating: 5, mileage: "18–23 km/l", safety: "5-star GNCAP", variants: [{ name: "XE Petrol MT", price: 665000 }, { name: "XZ+ Diesel MT", price: 1065000 }] },
+  { brand: "Tata", model: "Curvv", bodyType: "SUV Coupe", fuel: "Petrol / Diesel", seating: 5, mileage: "16–20 km/l", safety: "5-star BNCAP", variants: [{ name: "Smart Petrol MT", price: 1000000 }, { name: "Accomplished+ Diesel DCA", price: 1925000 }] },
+  { brand: "Maruti Suzuki", model: "Swift", bodyType: "Hatchback", fuel: "Petrol / CNG", seating: 5, mileage: "24–33 km/l", safety: "ESC available", variants: [{ name: "LXi Petrol MT", price: 649000 }, { name: "ZXi+ AMT", price: 999000 }] },
+  { brand: "Maruti Suzuki", model: "Baleno", bodyType: "Hatchback", fuel: "Petrol / CNG", seating: 5, mileage: "22–30 km/l", safety: "6 airbags available", variants: [{ name: "Sigma Petrol MT", price: 665000 }, { name: "Alpha AMT", price: 996000 }] },
+  { brand: "Maruti Suzuki", model: "Fronx", bodyType: "Crossover", fuel: "Petrol / CNG", seating: 5, mileage: "21–29 km/l", safety: "6 airbags available", variants: [{ name: "Sigma 1.2 MT", price: 749000 }, { name: "Turbo Alpha AT", price: 1320000 }] },
+  { brand: "Maruti Suzuki", model: "Ertiga", bodyType: "MPV", fuel: "Petrol / CNG", seating: 7, mileage: "20–26 km/l", safety: "6 airbags available", variants: [{ name: "LXi Petrol MT", price: 869000 }, { name: "ZXi+ AT", price: 1350000 }] },
+  { brand: "Hyundai", model: "i20", bodyType: "Hatchback", fuel: "Petrol", seating: 5, mileage: "17–20 km/l", safety: "6 airbags standard", variants: [{ name: "Magna Petrol MT", price: 735000 }, { name: "Asta(O) Turbo DCT", price: 1160000 }] },
+  { brand: "Hyundai", model: "Exter", bodyType: "Micro SUV", fuel: "Petrol / CNG", seating: 5, mileage: "19–27 km/l", safety: "6 airbags standard", variants: [{ name: "EX Petrol MT", price: 600000 }, { name: "SX(O) AMT", price: 1042000 }] },
+  { brand: "Hyundai", model: "Verna", bodyType: "Sedan", fuel: "Petrol", seating: 5, mileage: "18–21 km/l", safety: "5-star GNCAP", variants: [{ name: "EX Petrol MT", price: 1100000 }, { name: "SX(O) Turbo DCT", price: 1750000 }] },
+  { brand: "Kia", model: "Carens", bodyType: "MPV", fuel: "Petrol / Diesel", seating: 7, mileage: "16–21 km/l", safety: "6 airbags standard", variants: [{ name: "Premium Petrol MT", price: 1060000 }, { name: "Luxury+ Diesel AT", price: 1990000 }] },
+  { brand: "Mahindra", model: "XUV 3XO", bodyType: "Compact SUV", fuel: "Petrol / Diesel", seating: 5, mileage: "17–21 km/l", safety: "5-star GNCAP", variants: [{ name: "MX1 Petrol MT", price: 779000 }, { name: "AX7L Diesel AT", price: 1549000 }] },
+  { brand: "Mahindra", model: "Bolero", bodyType: "SUV", fuel: "Diesel", seating: 7, mileage: "16 km/l", safety: "2 airbags", variants: [{ name: "B4 Diesel MT", price: 998000 }, { name: "B6(O) Diesel MT", price: 1119000 }] },
+  { brand: "Toyota", model: "Fortuner", bodyType: "SUV", fuel: "Diesel", seating: 7, mileage: "10–15 km/l", safety: "7 airbags", variants: [{ name: "4x2 MT", price: 3343000 }, { name: "Legender 4x4 AT", price: 5134000 }] },
+  { brand: "Toyota", model: "Glanza", bodyType: "Hatchback", fuel: "Petrol / CNG", seating: 5, mileage: "22–30 km/l", safety: "6 airbags available", variants: [{ name: "E Petrol MT", price: 674000 }, { name: "V AMT", price: 999000 }] },
+  { brand: "Renault", model: "Kiger", bodyType: "Compact SUV", fuel: "Petrol / CNG", seating: 5, mileage: "19–20 km/l", safety: "4-star GNCAP", variants: [{ name: "RXE Petrol MT", price: 630000 }, { name: "RXZ Turbo CVT", price: 1150000 }] },
+  { brand: "Nissan", model: "Magnite", bodyType: "Compact SUV", fuel: "Petrol / CNG", seating: 5, mileage: "18–20 km/l", safety: "4-star GNCAP", variants: [{ name: "XE Petrol MT", price: 620000 }, { name: "Turbo CVT", price: 1146000 }] },
+  { brand: "MG", model: "Astor", bodyType: "SUV", fuel: "Petrol", seating: 5, mileage: "14–16 km/l", safety: "5-star GNCAP", variants: [{ name: "Style Petrol MT", price: 1050000 }, { name: "Savvy Turbo CVT", price: 1800000 }] },
+  { brand: "MG", model: "Hector", bodyType: "SUV", fuel: "Petrol / Diesel", seating: 5, mileage: "13–18 km/l", safety: "ADAS available", variants: [{ name: "Style Petrol MT", price: 1500000 }, { name: "Savvy Pro Diesel MT", price: 2240000 }] },
 ] as const;
 
 const brands = [...new Set(modelPriceOptions.map((option) => option.brand))];
@@ -510,16 +529,18 @@ const buildCompareVerdict = (comparisons: ShortlistComparison[]) => {
 // Turn an Instagram permalink into its embeddable player URL. Reel/post/tv
 // permalinks support /embed; anything else is returned as-is (and the modal
 // offers an "Open on Instagram" fallback if the page refuses to frame).
-const toEmbedSrc = (url: string) => {
+const isEmbeddableReel = (url: string) => {
   try {
     const u = new URL(url);
-    if (u.hostname.includes("instagram.com") && /\/(reel|p|tv)\//.test(u.pathname)) {
-      return `${u.origin}${u.pathname.replace(/\/$/, "")}/embed`;
-    }
-    return url;
+    return u.hostname.includes("instagram.com") && /\/(reel|p|tv)\//.test(u.pathname);
   } catch {
-    return url;
+    return false;
   }
+};
+const toEmbedSrc = (url: string) => {
+  if (!isEmbeddableReel(url)) return url;
+  const u = new URL(url);
+  return `${u.origin}${u.pathname.replace(/\/$/, "")}/embed`;
 };
 
 const initialDraft: DraftPost = {
@@ -2318,18 +2339,26 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
                 <X size={20} />
               </button>
             </div>
-            <div className="reel-frame">
-              <iframe
-                src={toEmbedSrc(activeReel.embedUrl)}
-                title={activeReel.title}
-                loading="lazy"
-                allow="autoplay; encrypted-media; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
+            {isEmbeddableReel(activeReel.embedUrl) ? (
+              <div className="reel-frame">
+                <iframe
+                  src={toEmbedSrc(activeReel.embedUrl)}
+                  title={activeReel.title}
+                  loading="lazy"
+                  allow="autoplay; encrypted-media; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            ) : (
+              <div className="reel-collection" aria-hidden="true">
+                <span className="play-badge"><Play size={24} /></span>
+                <strong>{activeReel.thumbnailLabel}</strong>
+                <small>{activeReel.category} · curated collection</small>
+              </div>
+            )}
             <p>{activeReel.summary}</p>
             <a className="secondary-action" href={activeReel.embedUrl} target="_blank" rel="noreferrer">
-              Open on Instagram
+              {isEmbeddableReel(activeReel.embedUrl) ? "Open on Instagram" : "Watch the collection on Instagram"}
             </a>
           </div>
         </div>
