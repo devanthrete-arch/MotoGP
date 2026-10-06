@@ -126,24 +126,28 @@ test("real Clerk sign-in opens directly from navigation", async ({ page }) => {
 test("comparison remains usable after adding cars and changing views", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 900 });
   await openApp(page, true, "#compare");
-  await page.getByRole("button", { name: "Add to compare", exact: true }).click();
-  await page.getByRole("combobox", { name: "Car brand", exact: true }).selectOption("Honda");
-  await page.getByRole("button", { name: "Add to compare", exact: true }).click();
-  await expect(page.getByRole("table", { name: "Compared metrics" })).toBeVisible();
-  const category = page.getByRole("combobox", { name: "Comparison category" });
-  await expect(category.locator("option")).toHaveText([
+  const sections = page.getByRole("region", { name: "Comparison categories" });
+  await expect(sections.locator("summary > span:nth-child(2)")).toHaveText([
     "Basic Information", "Engine & Transmission", "Fuel & Performance", "Suspension, Steering & Brakes",
     "Dimensions & Capacity", "Comfort & Convenience", "Interior", "Exterior", "Safety", "ADAS",
     "Advanced Internet", "Entertainment & Communication",
   ]);
-  await category.selectOption("Dimensions & Capacity");
-  await expect(page.getByRole("table", { name: "Compared metrics" })).toContainText("Body type");
-  await category.selectOption("Comfort & Convenience");
-  await expect(page.getByText("Details for this category are not available yet.")).toBeVisible();
+  await page.getByRole("button", { name: "Add to compare", exact: true }).click();
+  await page.getByRole("combobox", { name: "Car brand", exact: true }).selectOption("Honda");
+  await page.getByRole("button", { name: "Add to compare", exact: true }).click();
+  const basics = page.getByRole("table", { name: "Basic Information comparison" });
+  await expect(basics).toBeVisible();
+  expect(await basics.getByRole("columnheader").last().evaluate(
+    (cell) => cell.getBoundingClientRect().right <= window.innerWidth,
+  )).toBe(true);
+  await sections.locator("summary").filter({ hasText: "Dimensions & Capacity" }).click();
+  await expect(page.getByRole("table", { name: "Dimensions & Capacity comparison" })).toContainText("Body type");
+  await sections.locator("summary").filter({ hasText: "Comfort & Convenience" }).click();
+  await expect(sections.locator("details").nth(5).getByText("Details for this category are not available yet.")).toBeVisible();
   await expectNoOverflow(page);
   await page.getByRole("navigation", { name: "Primary", exact: true }).getByRole("link", { name: "Home", exact: true }).click();
   await page.getByRole("link", { name: "Find your next car" }).click();
-  await expect(page.getByRole("table", { name: "Compared metrics" })).toBeVisible();
+  await expect(page.getByRole("table", { name: "Basic Information comparison" })).toBeVisible();
   await page.screenshot({ path: "test-results/comparison-populated-mobile.png", fullPage: true });
 });
 

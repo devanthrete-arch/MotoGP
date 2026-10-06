@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { CloudWorkspacePanel } from "./CloudWorkspacePanel";
 import type { PrivateWorkspace } from "./cloudWorkspace";
 import { createClerkSupabaseClient, readCloudConfig, sessionTokenGetter } from "./supabase";
-import { ArrowRight, Bookmark, Car, House, LogOut, Menu, MessageCircle, PenLine, Play, Scale, UserRound, X } from "lucide-react";
+import { ArrowRight, Bookmark, Car, ChevronDown, House, LogOut, Menu, MessageCircle, PenLine, Play, Scale, UserRound, X } from "lucide-react";
 import { buildTopPitStopReels, filterPitStopClipsByCategory, pitStopClips, pitStopCategories, type PitStopClip } from "./pitstop";
 export { buildTopPitStopReels, filterPitStopClipsByCategory } from "./pitstop";
 import {
@@ -369,6 +369,11 @@ export function App({ clerkEnabled = false }: AppProps) {
 }
 
 type ComparisonSection = { title: string; rows: [string, string, string][] };
+const comparisonSectionTitles = [
+  "Basic Information", "Engine & Transmission", "Fuel & Performance", "Suspension, Steering & Brakes",
+  "Dimensions & Capacity", "Comfort & Convenience", "Interior", "Exterior", "Safety", "ADAS",
+  "Advanced Internet", "Entertainment & Communication",
+] as const;
 
 const compareMetricSections = (comparisons: ShortlistComparison[]): ComparisonSection[] => {
   const [first, second] = comparisons;
@@ -378,30 +383,25 @@ const compareMetricSections = (comparisons: ShortlistComparison[]): ComparisonSe
   const secondDetails = modelDetailsFor(second.item.brand, second.item.model);
   const adasNote = (safety?: string) => /adas/i.test(safety ?? "") ? "Available on some variants" : "Not verified";
 
-  return [
-    { title: "Basic Information", rows: [
+  const rowsByTitle: Partial<Record<(typeof comparisonSectionTitles)[number], ComparisonSection["rows"]>> = {
+    "Basic Information": [
       ["Model", `${first.item.brand} ${first.item.model}`, `${second.item.brand} ${second.item.model}`],
       ["Variant", first.item.variant ?? "Not selected", second.item.variant ?? "Not selected"],
       ["Example price", formatMoney(first.item.budget), formatMoney(second.item.budget)],
       ["Price region", first.item.state ?? defaultPriceState, second.item.state ?? defaultPriceState],
       ["Your status", first.item.status, second.item.status],
-    ] },
-    { title: "Engine & Transmission", rows: [["Fuel choices", firstDetails?.fuel ?? "Not verified", secondDetails?.fuel ?? "Not verified"]] },
-    { title: "Fuel & Performance", rows: [["Claimed mileage range", firstDetails?.mileage ?? "Not verified", secondDetails?.mileage ?? "Not verified"]] },
-    { title: "Suspension, Steering & Brakes", rows: [] },
-    { title: "Dimensions & Capacity", rows: [
+    ],
+    "Engine & Transmission": [["Fuel choices", firstDetails?.fuel ?? "Not verified", secondDetails?.fuel ?? "Not verified"]],
+    "Fuel & Performance": [["Claimed mileage range", firstDetails?.mileage ?? "Not verified", secondDetails?.mileage ?? "Not verified"]],
+    "Dimensions & Capacity": [
       ["Body type", firstDetails?.bodyType ?? "Not verified", secondDetails?.bodyType ?? "Not verified"],
       ["Seats", firstDetails ? `${firstDetails.seating}` : "Not verified", secondDetails ? `${secondDetails.seating}` : "Not verified"],
-    ] },
-    { title: "Comfort & Convenience", rows: [] },
-    { title: "Interior", rows: [] },
-    { title: "Exterior", rows: [] },
-    { title: "Safety", rows: [["Safety note", firstDetails?.safety ?? "Not verified", secondDetails?.safety ?? "Not verified"]] },
-    { title: "ADAS", rows: firstDetails && secondDetails && /adas/i.test(`${firstDetails.safety} ${secondDetails.safety}`)
-      ? [["Driver assistance", adasNote(firstDetails.safety), adasNote(secondDetails.safety)]] : [] },
-    { title: "Advanced Internet", rows: [] },
-    { title: "Entertainment & Communication", rows: [] },
-  ];
+    ],
+    Safety: [["Safety note", firstDetails?.safety ?? "Not verified", secondDetails?.safety ?? "Not verified"]],
+    ADAS: firstDetails && secondDetails && /adas/i.test(`${firstDetails.safety} ${secondDetails.safety}`)
+      ? [["Driver assistance", adasNote(firstDetails.safety), adasNote(secondDetails.safety)]] : [],
+  };
+  return comparisonSectionTitles.map((title) => ({ title, rows: rowsByTitle[title] ?? [] }));
 };
 
 const parseMileageKmpl = (m?: string) => {
@@ -550,7 +550,6 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
   const [mode, setMode] = useState<FeedMode>("latest");
   const [selectedLabel, setSelectedLabel] = useState<KnowledgeLabel | "All">("All");
   const [selectedFeedState, setSelectedFeedState] = useState<PriceState | "All">("All");
-  const [selectedCompareSection, setSelectedCompareSection] = useState("Basic Information");
   const initialPitStopCollection = pitStopCategoryFromHash();
   const [selectedPitStopCategory, setSelectedPitStopCategory] = useState<PitStopClip["category"] | "All">(
     initialPitStopCollection ?? "All",
@@ -669,7 +668,8 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
   const privacySummary = useMemo(() => buildPrivacyReadinessSummary(privacyReadinessItems), []);
   const shortlistComparisons = useMemo(() => buildShortlistComparisons(shortlist, posts), [posts, shortlist]);
   const comparisonSections = useMemo(() => compareMetricSections(shortlistComparisons), [shortlistComparisons]);
-  const activeComparisonSection = comparisonSections.find((section) => section.title === selectedCompareSection) ?? comparisonSections[0];
+  const displayedComparisonSections: ComparisonSection[] = comparisonSections.length
+    ? comparisonSections : comparisonSectionTitles.map((title) => ({ title, rows: [] }));
   const compareVerdict = useMemo(() => buildCompareVerdict(shortlistComparisons), [shortlistComparisons]);
   const inspectionChecklists = useMemo(() => buildInspectionChecklists(shortlist, posts), [posts, shortlist]);
   const inspectionChecklistByItemId = useMemo(
@@ -1716,38 +1716,40 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
           </form>
 
           <div className="compare-side">
-            {comparisonSections.length ? (
-              <article className="comparison-card one-to-one-card" aria-label="One to one comparison">
-                <span className="confidence high">One-to-one comparison</span>
-                <h3>
-                  {shortlistComparisons[0].item.brand} {shortlistComparisons[0].item.model} vs{" "}
-                  {shortlistComparisons[1].item.brand} {shortlistComparisons[1].item.model}
-                </h3>
-                <label className="comparison-section-control">
-                  Compare category
-                  <select aria-label="Comparison category" value={activeComparisonSection.title}
-                    onChange={(event) => setSelectedCompareSection(event.target.value)}>
-                    {comparisonSections.map((section) => <option key={section.title}>{section.title}</option>)}
-                  </select>
-                </label>
-                <div className="compare-table" role="table" aria-label="Compared metrics">
-                  <div role="row">
-                    <strong role="columnheader">Metric</strong>
-                    <strong role="columnheader">{shortlistComparisons[0].item.model}</strong>
-                    <strong role="columnheader">{shortlistComparisons[1].item.model}</strong>
-                  </div>
-                  {activeComparisonSection.rows.map(([metric, first, second]) => (
-                    <div role="row" key={metric}>
-                      <span role="rowheader">{metric}</span>
-                      <span role="cell">{first}</span>
-                      <span role="cell">{second}</span>
-                    </div>
-                  ))}
-                </div>
-                <p className="form-note">{activeComparisonSection.rows.length
-                  ? "Example model-level details. Confirm the selected variant with a dealer."
-                  : "Details for this category are not available yet."}</p>
-                {compareVerdict ? (
+            <article className="comparison-card one-to-one-card" aria-label="One to one comparison">
+              <span className="confidence high">Side by side</span>
+              <h3>{comparisonSections.length
+                ? `${shortlistComparisons[0].item.brand} ${shortlistComparisons[0].item.model} vs ${shortlistComparisons[1].item.brand} ${shortlistComparisons[1].item.model}`
+                : `Add ${2 - shortlistComparisons.length} more ${shortlistComparisons.length ? "car" : "cars"} to compare`}</h3>
+              <div className="comparison-sections" role="region" aria-label="Comparison categories">
+                {displayedComparisonSections.map((section, index) => (
+                  <details className="comparison-section" key={section.title} open={index === 0}>
+                    <summary><span className="comparison-section-number">{String(index + 1).padStart(2, "0")}</span>
+                      <span>{section.title}</span><ChevronDown size={18} aria-hidden="true" />
+                    </summary>
+                    {comparisonSections.length && section.rows.length ? (
+                      <div className="compare-table" role="table" aria-label={`${section.title} comparison`}>
+                        <div role="row">
+                          <strong role="columnheader">Metric</strong>
+                          <strong role="columnheader">{shortlistComparisons[0].item.model}</strong>
+                          <strong role="columnheader">{shortlistComparisons[1].item.model}</strong>
+                        </div>
+                        {section.rows.map(([metric, first, second]) => (
+                          <div role="row" key={metric}>
+                            <span role="rowheader">{metric}</span>
+                            <span role="cell">{first}</span>
+                            <span role="cell">{second}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : <p className="form-note comparison-section-note">{comparisonSections.length
+                      ? "Details for this category are not available yet."
+                      : "Add two cars to see this comparison."}</p>}
+                  </details>
+                ))}
+              </div>
+              {comparisonSections.length ? <p className="form-note">Example model-level details. Confirm the selected variant with a dealer.</p> : null}
+              {compareVerdict ? (
                   <div className="compare-verdict">
                     <div className="verdict-block">
                       <h4>What is the core difference?</h4>
@@ -1761,15 +1763,8 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
                       </p>
                     </div>
                   </div>
-                ) : null}
-              </article>
-            ) : (
-              <article className="comparison-card one-to-one-card" aria-label="One to one comparison empty state">
-                <span className="confidence">Side by side</span>
-                <h3>Add two cars to compare side by side.</h3>
-                <p>See prices, running costs and features together.</p>
-              </article>
-            )}
+              ) : null}
+            </article>
             <article className="comparison-card example-card" aria-label="Compare preview">
               <span className="confidence medium">Example preview</span>
               <h3>
