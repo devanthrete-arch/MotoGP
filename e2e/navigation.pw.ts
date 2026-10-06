@@ -38,8 +38,8 @@ for (const width of [320, 390, 768, 1440, 1920]) {
       }
       await page.screenshot({ path: `test-results/home-${width}-${colorScheme}.png`, fullPage: true });
       for (const id of ["garage", "feed", "pit-stop", "compare"]) {
-        if (width <= 860) await page.getByRole("button", { name: "Open menu" }).click();
-        await page.locator(`#primary-nav-links a[href='#${id}']`).click();
+        const navigation = width <= 860 ? page.locator(".tab-bar") : page.locator("#primary-nav-links");
+        await navigation.locator(`a[href='#${id}']`).click();
         await expect(page.locator(`#${id}`)).toBeVisible();
         await expect(page.locator(".home-view")).toBeHidden();
         for (const other of ["garage", "feed", "pit-stop", "compare"].filter(value => value !== id)) {

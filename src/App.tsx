@@ -4,7 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { CloudWorkspacePanel } from "./CloudWorkspacePanel";
 import type { PrivateWorkspace } from "./cloudWorkspace";
 import { createClerkSupabaseClient, readCloudConfig, sessionTokenGetter } from "./supabase";
-import { ArrowRight, Bookmark, Car, House, Menu, MessageCircle, Play, Scale, UserRound, X } from "lucide-react";
+import { ArrowRight, Bookmark, Car, House, Menu, MessageCircle, PenLine, Play, Scale, UserRound, X } from "lucide-react";
 import { buildTopPitStopReels, filterPitStopClipsByCategory, pitStopClips, pitStopCategories, type PitStopClip } from "./pitstop";
 export { buildTopPitStopReels, filterPitStopClipsByCategory } from "./pitstop";
 import {
@@ -536,7 +536,9 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
     initialPitStopCollection ?? "All",
   );
   const [selectedPitStopCollection, setSelectedPitStopCollection] = useState<PitStopClip["category"] | null>(initialPitStopCollection);
+  const [activeReel, setActiveReel] = useState<PitStopClip | null>(null);
   const [selectedPost, setSelectedPost] = useState<OwnerPost | null>(posts[0] ?? null);
+  const [composerOpen, setComposerOpen] = useState(false);
   const [draft, setDraft] = useState<DraftPost>(initialDraft);
   const [vehicleDraft, setVehicleDraft] = useState<DraftVehicle>(initialVehicleDraft);
   const [timelineDraft, setTimelineDraft] = useState<DraftTimelineEntry>(() => ({
