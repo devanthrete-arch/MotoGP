@@ -1,5 +1,9 @@
 import { FormEvent, MouseEvent, useEffect, useMemo, useState } from "react";
-import { SignInButton, SignUpButton, UserButton, useClerk, useUser } from "@clerk/react";
+import { SignInButton, SignUpButton, UserButton, useClerk, useUser, useSession } from "@clerk/react";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { CloudWorkspacePanel } from "./CloudWorkspacePanel";
+import type { PrivateWorkspace } from "./cloudWorkspace";
+import { createClerkSupabaseClient, readCloudConfig, sessionTokenGetter } from "./supabase";
 import { ArrowRight, Bookmark, Car, House, Menu, MessageCircle, Play, Scale, UserRound, X } from "lucide-react";
 import { buildTopPitStopReels, filterPitStopClipsByCategory, pitStopClips, pitStopCategories, type PitStopClip } from "./pitstop";
 export { buildTopPitStopReels, filterPitStopClipsByCategory } from "./pitstop";
@@ -229,6 +233,8 @@ type AppProps = {
 
 type AppAuthState = {
   userId?: string;
+  cloudClient?: SupabaseClient | null;
+  cloudError?: string;
   isLoaded: boolean;
   isSignedIn: boolean;
   requireSignIn: (destination?: string) => void;
@@ -308,7 +314,16 @@ const LoginGate = ({ isLoaded }: { isLoaded: boolean }) => (
 
 const ClerkConnectedApp = () => {
   const { isLoaded, isSignedIn, user } = useUser();
+  const { session } = useSession();
   const clerk = useClerk();
+  const cloud = useMemo(() => {
+    try {
+      const config = readCloudConfig(import.meta.env);
+      return { client: config && session ? createClerkSupabaseClient(config, sessionTokenGetter(session, () => clerk.session)) : null };
+    } catch {
+      return { client: null, error: "Account saving is temporarily unavailable. Your data stays on this device." };
+    }
+  }, [clerk, session]);
   const [pendingSignIn, setPendingSignIn] = useState<string | null>(null);
   useEffect(() => {
     if (!isLoaded || !pendingSignIn) return;
@@ -318,9 +333,11 @@ const ClerkConnectedApp = () => {
 
   return (
     <OtofolksApp
-      key={user?.id ?? "signed-out"}
+      key={session?.id ?? user?.id ?? "signed-out"}
       auth={{
         userId: user?.id,
+        cloudClient: cloud.client,
+        cloudError: cloud.error,
         isLoaded,
         isSignedIn: Boolean(isSignedIn),
         requireSignIn: (destination = "#top") => {
@@ -1020,6 +1037,20 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
       <section className="panel account-view" id="account" hidden={activeView !== "account"} aria-label="Account">
         {clerkEnabled ? <ClerkAccountPanel savedCount={saved.size} /> :
           <><h2>Sign-in is temporarily unavailable</h2><p>Please try again later.</p></>}
+        {auth.isSignedIn && auth.userId ? <CloudWorkspacePanel
+          client={auth.cloudClient ?? null} owner={auth.userId} configurationError={auth.cloudError}
+          workspace={{ version: 1, profile, garage, timeline, shortlist, follows, saved: [...saved] }}
+          onRestore={(data: PrivateWorkspace) => {
+            persistProfile(data.profile);
+            persistGarage(data.garage);
+            persistTimeline(data.timeline);
+            persistShortlist(data.shortlist);
+            persistFollows(data.follows);
+            setSaved(new Set(data.saved));
+            saveSaved(new Set(data.saved));
+            setTimelineDraft({ ...initialTimelineDraft, vehicleId: data.garage[0]?.id ?? "" });
+          }}
+        /> : null}
       </section>
 
       {actionMessage ? (
@@ -1036,7 +1067,7 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
       {shouldShowFeatures ? (
         <>
       {activeView !== "top" && activeView !== "account" && activeView !== "pit-stop" ? (
-        <p className="data-notice" role="note">Saved on this device for your account. Community notes include examples; shared publishing and cloud sync are not connected yet.</p>
+        <p className="data-notice" role="note">{auth.cloudClient ? "Changes stay on this device until you save them in Account. " : "Saved on this device for your account. "}Community notes include examples; shared publishing is not connected yet.</p>
       ) : null}
       {showDeferredCommunityModules ? (
         <>

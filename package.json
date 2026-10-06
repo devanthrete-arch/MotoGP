@@ -15,6 +15,7 @@
   "dependencies": {
     "@clerk/react": "^6.17.5",
     "@fastify/cors": "^11.3.0",
+    "@supabase/supabase-js": "^2.111.0",
     "@vitejs/plugin-react": "^4.3.4",
     "fastify": "^5.10.0",
     "lucide-react": "^1.51.0",
@@ -24,6 +25,7 @@
     "vite": "^6.0.7"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@playwright/test": "^1.63.0",
     "@types/node": "^26.1.1",
     "@types/react": "^19.0.2",
