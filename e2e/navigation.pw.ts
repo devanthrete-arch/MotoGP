@@ -130,6 +130,16 @@ test("comparison remains usable after adding cars and changing views", async ({ 
   await page.getByRole("combobox", { name: "Car brand", exact: true }).selectOption("Honda");
   await page.getByRole("button", { name: "Add to compare", exact: true }).click();
   await expect(page.getByRole("table", { name: "Compared metrics" })).toBeVisible();
+  const category = page.getByRole("combobox", { name: "Comparison category" });
+  await expect(category.locator("option")).toHaveText([
+    "Basic Information", "Engine & Transmission", "Fuel & Performance", "Suspension, Steering & Brakes",
+    "Dimensions & Capacity", "Comfort & Convenience", "Interior", "Exterior", "Safety", "ADAS",
+    "Advanced Internet", "Entertainment & Communication",
+  ]);
+  await category.selectOption("Dimensions & Capacity");
+  await expect(page.getByRole("table", { name: "Compared metrics" })).toContainText("Body type");
+  await category.selectOption("Comfort & Convenience");
+  await expect(page.getByText("Details for this category are not available yet.")).toBeVisible();
   await expectNoOverflow(page);
   await page.getByRole("navigation", { name: "Primary", exact: true }).getByRole("link", { name: "Home", exact: true }).click();
   await page.getByRole("link", { name: "Find your next car" }).click();

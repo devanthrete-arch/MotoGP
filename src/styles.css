@@ -919,13 +919,16 @@ select option { background: var(--surface-container); }
   display: grid;
   overflow: hidden;
 }
-.compare-table > div { display: grid; grid-template-columns: minmax(110px, 0.8fr) repeat(2, minmax(120px, 1fr)); }
+.comparison-section-control { display: grid; gap: 8px; margin: 18px 0 12px; font-weight: 600; }
+.comparison-section-control select { width: 100%; max-width: 360px; }
+.compare-table > div { display: grid; grid-template-columns: minmax(0, 0.9fr) repeat(2, minmax(0, 1fr)); }
 .compare-table > div:nth-child(odd) { background: var(--surface-container); }
 .compare-table span,
 .compare-table strong {
   border-right: 1px solid var(--outline-variant);
   color: var(--on-surface-variant);
   padding: 10px;
+  overflow-wrap: anywhere;
 }
 .compare-table span:last-child,
 .compare-table strong:last-child { border-right: 0; }
