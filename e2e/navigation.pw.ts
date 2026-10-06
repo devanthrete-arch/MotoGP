@@ -141,9 +141,12 @@ test("comparison remains usable after adding cars and changing views", async ({ 
     (cell) => cell.getBoundingClientRect().right <= window.innerWidth,
   )).toBe(true);
   await sections.locator("summary").filter({ hasText: "Dimensions & Capacity" }).click();
-  await expect(page.getByRole("table", { name: "Dimensions & Capacity comparison" })).toContainText("Body type");
+  await expect(page.getByRole("table", { name: "Dimensions & Capacity comparison" })).toContainText("Ground clearance");
   await sections.locator("summary").filter({ hasText: "Comfort & Convenience" }).click();
-  await expect(sections.locator("details").nth(5).getByText("Details for this category are not available yet.")).toBeVisible();
+  await expect(page.getByRole("table", { name: "Comfort & Convenience comparison" })).toContainText("Climate control");
+  await expect(page.getByRole("table", { name: "Comfort & Convenience comparison" })).toContainText("Not verified");
+  await expect(page.getByText("We cannot recommend one from incomplete variant specs.", { exact: false })).toBeVisible();
+  await expect(page.getByText("Lean towards", { exact: false })).toHaveCount(0);
   await expectNoOverflow(page);
   await page.getByRole("navigation", { name: "Primary", exact: true }).getByRole("link", { name: "Home", exact: true }).click();
   await page.getByRole("link", { name: "Find your next car" }).click();
@@ -162,4 +165,22 @@ test("dealer quotes survive status changes and duplicate cars are rejected", asy
   await expect(item).toContainText("8,76,543");
   await page.getByRole("button", { name: "Add to compare", exact: true }).click();
   await expect(page.locator(".comparison-grid .comparison-card")).toHaveCount(1);
+});
+
+test("comparison keeps manufacturer facts tied to the chosen variants", async ({ page }) => {
+  await openApp(page, true, "#compare");
+  await page.getByRole("combobox", { name: "Car brand", exact: true }).selectOption("Honda");
+  await page.getByRole("combobox", { name: "Car model", exact: true }).selectOption("Elevate");
+  await page.getByRole("button", { name: "Add to compare", exact: true }).click();
+  await page.getByRole("combobox", { name: "Car brand", exact: true }).selectOption("Hyundai");
+  await page.getByRole("combobox", { name: "Car model", exact: true }).selectOption("Creta");
+  await page.getByRole("combobox", { name: "Variant", exact: true }).selectOption("EX Petrol MT");
+  await page.getByRole("button", { name: "Add to compare", exact: true }).click();
+  const sections = page.getByRole("region", { name: "Comparison categories" });
+  await expect(page.getByRole("link", { name: "Honda India specifications" })).toHaveAttribute("href", /hondacarindia/);
+  await expect(page.getByRole("link", { name: "Hyundai India specifications" })).toHaveAttribute("href", /hyundai/);
+  await sections.locator("summary").filter({ hasText: "Fuel & Performance" }).click();
+  await expect(page.getByRole("table", { name: "Fuel & Performance comparison" })).toContainText("15.31 km/l");
+  await sections.locator("summary").filter({ hasText: "Safety" }).click();
+  await expect(page.getByRole("table", { name: "Safety comparison" })).toContainText("6");
 });

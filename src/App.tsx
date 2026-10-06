@@ -2,6 +2,7 @@ import { FormEvent, MouseEvent, useEffect, useMemo, useState } from "react";
 import { SignInButton, SignUpButton, UserButton, useClerk, useUser, useSession } from "@clerk/react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { CloudWorkspacePanel } from "./CloudWorkspacePanel";
+import { comparisonFields, legacyVariantSourceFor, verifiedComparisonFor } from "./comparisonCatalog";
 import type { PrivateWorkspace } from "./cloudWorkspace";
 import { createClerkSupabaseClient, readCloudConfig, sessionTokenGetter } from "./supabase";
 import { ArrowRight, Bookmark, Car, ChevronDown, House, LogOut, Menu, MessageCircle, PenLine, Play, Scale, UserRound, X } from "lucide-react";
@@ -179,8 +180,8 @@ const modelPriceOptions = [
   { brand: "Hyundai", model: "Venue", bodyType: "Compact SUV", fuel: "Petrol / Diesel", seating: 5, mileage: "17–23 km/l", safety: "6 airbags standard", variants: [{ name: "S Petrol MT", price: 795000 }, { name: "SX(O) Turbo DCT", price: 1350000 }] },
   { brand: "Toyota", model: "Hyryder", bodyType: "SUV", fuel: "Petrol / Hybrid / CNG", seating: 5, mileage: "20–27 km/l", safety: "AWD available", variants: [{ name: "S NeoDrive MT", price: 1149000 }, { name: "V Hybrid e-CVT", price: 1999000 }] },
   { brand: "Toyota", model: "Innova Hycross", bodyType: "MPV", fuel: "Petrol / Hybrid", seating: 7, mileage: "16–23 km/l", safety: "ADAS available", variants: [{ name: "GX 7S Petrol CVT", price: 1977000 }, { name: "ZX(O) Hybrid", price: 3056000 }] },
-  { brand: "Skoda", model: "Kushaq", bodyType: "SUV", fuel: "Petrol", seating: 5, mileage: "18–19 km/l", safety: "5-star GNCAP", variants: [{ name: "Onyx 1.0 TSI MT", price: 1089000 }, { name: "Style 1.5 TSI DSG", price: 1800000 }] },
-  { brand: "Skoda", model: "Slavia", bodyType: "Sedan", fuel: "Petrol", seating: 5, mileage: "18–20 km/l", safety: "5-star GNCAP", variants: [{ name: "Active 1.0 TSI MT", price: 1069000 }, { name: "Style 1.5 TSI DSG", price: 1849000 }] },
+  { brand: "Skoda", model: "Kushaq", bodyType: "SUV", fuel: "Petrol", seating: 5, mileage: "18–20 km/l", safety: "5-star GNCAP", variants: [{ name: "Classic+ 1.0 TSI MT", price: 1069000 }, { name: "Prestige 1.5 TSI DSG", price: 1879000 }] },
+  { brand: "Skoda", model: "Slavia", bodyType: "Sedan", fuel: "Petrol", seating: 5, mileage: "18–20 km/l", safety: "5-star GNCAP", variants: [{ name: "Classic 1.0 TSI MT", price: 999900 }, { name: "Prestige 1.5 TSI DSG", price: 1859000 }] },
   { brand: "Volkswagen", model: "Taigun", bodyType: "SUV", fuel: "Petrol", seating: 5, mileage: "18–19 km/l", safety: "5-star GNCAP", variants: [{ name: "Comfortline 1.0 TSI MT", price: 1117000 }, { name: "GT Plus 1.5 DSG", price: 1900000 }] },
   { brand: "Volkswagen", model: "Virtus", bodyType: "Sedan", fuel: "Petrol", seating: 5, mileage: "18–20 km/l", safety: "5-star GNCAP", variants: [{ name: "Comfortline 1.0 TSI MT", price: 1106000 }, { name: "GT Plus 1.5 DSG", price: 1900000 }] },
   { brand: "Tata", model: "Tiago", bodyType: "Hatchback", fuel: "Petrol / CNG", seating: 5, mileage: "19–26 km/l", safety: "4-star GNCAP", variants: [{ name: "XE Petrol MT", price: 565000 }, { name: "XZ+ CNG", price: 862000 }] },
@@ -191,14 +192,14 @@ const modelPriceOptions = [
   { brand: "Maruti Suzuki", model: "Fronx", bodyType: "Crossover", fuel: "Petrol / CNG", seating: 5, mileage: "21–29 km/l", safety: "6 airbags available", variants: [{ name: "Sigma 1.2 MT", price: 749000 }, { name: "Turbo Alpha AT", price: 1320000 }] },
   { brand: "Maruti Suzuki", model: "Ertiga", bodyType: "MPV", fuel: "Petrol / CNG", seating: 7, mileage: "20–26 km/l", safety: "6 airbags available", variants: [{ name: "LXi Petrol MT", price: 869000 }, { name: "ZXi+ AT", price: 1350000 }] },
   { brand: "Hyundai", model: "i20", bodyType: "Hatchback", fuel: "Petrol", seating: 5, mileage: "17–20 km/l", safety: "6 airbags standard", variants: [{ name: "Magna Petrol MT", price: 735000 }, { name: "Asta(O) Turbo DCT", price: 1160000 }] },
-  { brand: "Hyundai", model: "Exter", bodyType: "Micro SUV", fuel: "Petrol / CNG", seating: 5, mileage: "19–27 km/l", safety: "6 airbags standard", variants: [{ name: "EX Petrol MT", price: 600000 }, { name: "SX(O) AMT", price: 1042000 }] },
+  { brand: "Hyundai", model: "Exter", bodyType: "Micro SUV", fuel: "Petrol / CNG", seating: 5, mileage: "19–27 km/l", safety: "6 airbags standard", variants: [{ name: "HX 2 Petrol MT", price: 579900 }, { name: "HX 10 Petrol AMT", price: 941900 }] },
   { brand: "Hyundai", model: "Verna", bodyType: "Sedan", fuel: "Petrol", seating: 5, mileage: "18–21 km/l", safety: "5-star GNCAP", variants: [{ name: "EX Petrol MT", price: 1100000 }, { name: "SX(O) Turbo DCT", price: 1750000 }] },
   { brand: "Kia", model: "Carens", bodyType: "MPV", fuel: "Petrol / Diesel", seating: 7, mileage: "16–21 km/l", safety: "6 airbags standard", variants: [{ name: "Premium Petrol MT", price: 1060000 }, { name: "Luxury+ Diesel AT", price: 1990000 }] },
   { brand: "Mahindra", model: "XUV 3XO", bodyType: "Compact SUV", fuel: "Petrol / Diesel", seating: 5, mileage: "17–21 km/l", safety: "5-star GNCAP", variants: [{ name: "MX1 Petrol MT", price: 779000 }, { name: "AX7L Diesel AT", price: 1549000 }] },
   { brand: "Mahindra", model: "Bolero", bodyType: "SUV", fuel: "Diesel", seating: 7, mileage: "16 km/l", safety: "2 airbags", variants: [{ name: "B4 Diesel MT", price: 998000 }, { name: "B6(O) Diesel MT", price: 1119000 }] },
   { brand: "Toyota", model: "Fortuner", bodyType: "SUV", fuel: "Diesel", seating: 7, mileage: "10–15 km/l", safety: "7 airbags", variants: [{ name: "4x2 MT", price: 3343000 }, { name: "Legender 4x4 AT", price: 5134000 }] },
   { brand: "Toyota", model: "Glanza", bodyType: "Hatchback", fuel: "Petrol / CNG", seating: 5, mileage: "22–30 km/l", safety: "6 airbags available", variants: [{ name: "E Petrol MT", price: 674000 }, { name: "V AMT", price: 999000 }] },
-  { brand: "Renault", model: "Kiger", bodyType: "Compact SUV", fuel: "Petrol / CNG", seating: 5, mileage: "19–20 km/l", safety: "4-star GNCAP", variants: [{ name: "RXE Petrol MT", price: 630000 }, { name: "RXZ Turbo CVT", price: 1150000 }] },
+  { brand: "Renault", model: "Kiger", bodyType: "Compact SUV", fuel: "Petrol", seating: 5, mileage: "19–20 km/l", safety: "Check current rating", variants: [{ name: "Authentic 1.0 MT", price: 581000 }, { name: "RXZ Turbo CVT", price: 1150000 }] },
   { brand: "Nissan", model: "Magnite", bodyType: "Compact SUV", fuel: "Petrol / CNG", seating: 5, mileage: "18–20 km/l", safety: "4-star GNCAP", variants: [{ name: "XE Petrol MT", price: 620000 }, { name: "Turbo CVT", price: 1146000 }] },
   { brand: "MG", model: "Astor", bodyType: "SUV", fuel: "Petrol", seating: 5, mileage: "14–16 km/l", safety: "5-star GNCAP", variants: [{ name: "Style Petrol MT", price: 1050000 }, { name: "Savvy Turbo CVT", price: 1800000 }] },
   { brand: "MG", model: "Hector", bodyType: "SUV", fuel: "Petrol / Diesel", seating: 5, mileage: "13–18 km/l", safety: "ADAS available", variants: [{ name: "Style Petrol MT", price: 1500000 }, { name: "Savvy Pro Diesel MT", price: 2240000 }] },
@@ -369,11 +370,7 @@ export function App({ clerkEnabled = false }: AppProps) {
 }
 
 type ComparisonSection = { title: string; rows: [string, string, string][] };
-const comparisonSectionTitles = [
-  "Basic Information", "Engine & Transmission", "Fuel & Performance", "Suspension, Steering & Brakes",
-  "Dimensions & Capacity", "Comfort & Convenience", "Interior", "Exterior", "Safety", "ADAS",
-  "Advanced Internet", "Entertainment & Communication",
-] as const;
+const comparisonSectionTitles = comparisonFields.map((section) => section.title);
 
 const compareMetricSections = (comparisons: ShortlistComparison[]): ComparisonSection[] => {
   const [first, second] = comparisons;
@@ -381,55 +378,36 @@ const compareMetricSections = (comparisons: ShortlistComparison[]): ComparisonSe
 
   const firstDetails = modelDetailsFor(first.item.brand, first.item.model);
   const secondDetails = modelDetailsFor(second.item.brand, second.item.model);
-  const adasNote = (safety?: string) => /adas/i.test(safety ?? "") ? "Available on some variants" : "Not verified";
-
-  const rowsByTitle: Partial<Record<(typeof comparisonSectionTitles)[number], ComparisonSection["rows"]>> = {
-    "Basic Information": [
+  const firstVerified = verifiedComparisonFor(first.item.brand, first.item.model, first.item.variant);
+  const secondVerified = verifiedComparisonFor(second.item.brand, second.item.model, second.item.variant);
+  const knownValue = (value?: string) => value ?? "Not verified";
+  return comparisonFields.map((section) => {
+    const rows: ComparisonSection["rows"] = section.fields.map(([key, label]) => [
+      label,
+      key === "bodyType" ? knownValue(firstDetails?.bodyType) : key === "seats" ? knownValue(firstDetails && String(firstDetails.seating)) : knownValue(firstVerified?.values[key]),
+      key === "bodyType" ? knownValue(secondDetails?.bodyType) : key === "seats" ? knownValue(secondDetails && String(secondDetails.seating)) : knownValue(secondVerified?.values[key]),
+    ]);
+    if (section.title === "Basic Information") rows.unshift(
       ["Model", `${first.item.brand} ${first.item.model}`, `${second.item.brand} ${second.item.model}`],
       ["Variant", first.item.variant ?? "Not selected", second.item.variant ?? "Not selected"],
       ["Example price", formatMoney(first.item.budget), formatMoney(second.item.budget)],
       ["Price region", first.item.state ?? defaultPriceState, second.item.state ?? defaultPriceState],
       ["Your status", first.item.status, second.item.status],
-    ],
-    "Engine & Transmission": [["Fuel choices", firstDetails?.fuel ?? "Not verified", secondDetails?.fuel ?? "Not verified"]],
-    "Fuel & Performance": [["Claimed mileage range", firstDetails?.mileage ?? "Not verified", secondDetails?.mileage ?? "Not verified"]],
-    "Dimensions & Capacity": [
-      ["Body type", firstDetails?.bodyType ?? "Not verified", secondDetails?.bodyType ?? "Not verified"],
-      ["Seats", firstDetails ? `${firstDetails.seating}` : "Not verified", secondDetails ? `${secondDetails.seating}` : "Not verified"],
-    ],
-    Safety: [["Safety note", firstDetails?.safety ?? "Not verified", secondDetails?.safety ?? "Not verified"]],
-    ADAS: firstDetails && secondDetails && /adas/i.test(`${firstDetails.safety} ${secondDetails.safety}`)
-      ? [["Driver assistance", adasNote(firstDetails.safety), adasNote(secondDetails.safety)]] : [],
-  };
-  return comparisonSectionTitles.map((title) => ({ title, rows: rowsByTitle[title] ?? [] }));
+    );
+    return { title: section.title, rows };
+  });
 };
 
-const parseMileageKmpl = (m?: string) => {
-  const nums = m?.match(/\d+/g);
-  return nums ? Number(nums[0]) : 0;
-};
-const safetyScore = (s?: string) => {
-  if (!s) return 0;
-  const star = s.match(/(\d)-star/);
-  if (star) return Number(star[1]);
-  if (/adas/i.test(s)) return 4;
-  if (/airbag/i.test(s)) return 3;
-  return 2;
-};
-
-// A plain-language verdict for the one-to-one compare: the core difference and a
-// gentle "which to prefer" lean, derived from price + specs. A guide, not gospel.
+// Keep guidance descriptive until both selected variants have dependable data.
 const buildCompareVerdict = (comparisons: ShortlistComparison[]) => {
   const [a, b] = comparisons;
   if (!a || !b) return null;
   const da = modelDetailsFor(a.item.brand, a.item.model);
   const db = modelDetailsFor(b.item.brand, b.item.model);
+  const va = verifiedComparisonFor(a.item.brand, a.item.model, a.item.variant);
+  const vb = verifiedComparisonFor(b.item.brand, b.item.model, b.item.variant);
   const nameA = `${a.item.brand} ${a.item.model}`;
   const nameB = `${b.item.brand} ${b.item.model}`;
-  const priceA = a.item.budget;
-  const priceB = b.item.budget;
-  const priceGap = Math.abs(priceA - priceB);
-  const cheaper = priceA === priceB ? null : priceA < priceB ? nameA : nameB;
 
   const diffs: string[] = [];
   if (da && db && da.bodyType !== db.bodyType) {
@@ -439,29 +417,23 @@ const buildCompareVerdict = (comparisons: ShortlistComparison[]) => {
     const roomier = da.seating > db.seating ? nameA : nameB;
     diffs.push(`${roomier} seats more (${Math.max(da.seating, db.seating)})`);
   }
-  if (da && db && da.fuel !== db.fuel) diffs.push(`fuel choices differ (${da.fuel} vs ${db.fuel})`);
-  if (cheaper && priceGap >= 50000) diffs.push(`${cheaper} costs about ${formatMoney(priceGap)} less`);
+  if (va?.values.fuel && vb?.values.fuel && va.values.fuel !== vb.values.fuel) {
+    diffs.push(`these variants use different fuels (${va.values.fuel} vs ${vb.values.fuel})`);
+  }
+  if (va?.values.mileage && vb?.values.mileage && va.values.mileage !== vb.values.mileage) {
+    diffs.push(`their certified mileage differs (${va.values.mileage} vs ${vb.values.mileage})`);
+  }
+  if (a.item.priceSource === "Your dealer quote" && b.item.priceSource === "Your dealer quote" && a.item.budget !== b.item.budget) {
+    const cheaper = a.item.budget < b.item.budget ? nameA : nameB;
+    diffs.push(`your quote for the ${cheaper} is ${formatMoney(Math.abs(a.item.budget - b.item.budget))} lower`);
+  }
   const coreDifference = diffs.length
     ? `${diffs.slice(0, 2).join(", and ")}.`
-    : "They are closely matched on size, price and features — mostly a matter of brand feel.";
-
-  const rate = (d: ReturnType<typeof modelDetailsFor>) => safetyScore(d?.safety) + parseMileageKmpl(d?.mileage) / 5;
-  let sa = rate(da);
-  let sb = rate(db);
-  if (cheaper === nameA) sa += 1.5;
-  else if (cheaper === nameB) sb += 1.5;
-  const pick = Math.abs(sa - sb) < 0.5 ? null : sa > sb ? nameA : nameB;
-  const pd = pick === nameA ? da : pick === nameB ? db : null;
-  const other = pick === nameA ? db : da;
-  const reasons: string[] = [];
-  if (pick && cheaper === pick) reasons.push("lower price");
-  if (safetyScore(pd?.safety) >= 5) reasons.push("a top safety rating");
-  if (parseMileageKmpl(pd?.mileage) >= 18) reasons.push("better fuel economy");
-  if (pd && other && pd.seating > other.seating) reasons.push("more seating");
-  const reason = pick
-    ? `Lean towards the ${pick}${reasons.length ? ` for its ${reasons.slice(0, 3).join(", ")}` : ""}. The final call still comes down to your budget and must-haves — book a test drive before deciding.`
-    : "It is a close tie — decide on test-drive feel, service network nearby, and the best dealer offer.";
-  return { coreDifference, pick, reason };
+    : "The verified details are not enough to identify a clear difference yet.";
+  const reason = va && vb
+    ? "Compare your dealer quotes, test-drive both variants and check service support near you before deciding."
+    : "We cannot recommend one from incomplete variant specs. Check the manufacturer links, get dealer quotes and test-drive both.";
+  return { coreDifference, reason };
 };
 
 // Turn an Instagram permalink into its embeddable player URL. Reel/post/tv
@@ -1676,6 +1648,9 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
                 ))}
               </select>
             </div>
+            {legacyVariantSourceFor(shortlistDraft.brand, shortlistDraft.model, shortlistDraft.variant) ? (
+              <p className="form-note">This variant is not listed in the manufacturer's current online range. It may still be available as old stock or used.</p>
+            ) : null}
             <div className="form-row">
               <div className="price-display" aria-label="Model price">
                 <span>{dealerQuote ? "Your dealer quote" : "Example price"}</span>
@@ -1721,6 +1696,21 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
               <h3>{comparisonSections.length
                 ? `${shortlistComparisons[0].item.brand} ${shortlistComparisons[0].item.model} vs ${shortlistComparisons[1].item.brand} ${shortlistComparisons[1].item.model}`
                 : `Add ${2 - shortlistComparisons.length} more ${shortlistComparisons.length ? "car" : "cars"} to compare`}</h3>
+              {comparisonSections.length ? (
+                <div className="comparison-sources">
+                  <p className="form-note">Manufacturer-verified specs are shown where available. "Not verified" does not mean "No". Catalog body type, seats and example prices still need a dealer check.</p>
+                  {shortlistComparisons.slice(0, 2).map((comparison) => {
+                    const verified = verifiedComparisonFor(comparison.item.brand, comparison.item.model, comparison.item.variant);
+                    const legacy = legacyVariantSourceFor(comparison.item.brand, comparison.item.model, comparison.item.variant);
+                    return <p key={comparison.item.id} className="form-note">
+                      <strong>{comparison.item.brand} {comparison.item.model} {comparison.item.variant}:</strong>{" "}
+                      {verified ? <a href={verified.source.url} target="_blank" rel="noopener noreferrer">{verified.source.label} specifications</a>
+                        : legacy ? <>Not listed in the current online range. <a href={legacy.url} target="_blank" rel="noopener noreferrer">Check {legacy.label}</a></>
+                          : "Manufacturer specs pending for this variant"}
+                    </p>;
+                  })}
+                </div>
+              ) : null}
               <div className="comparison-sections" role="region" aria-label="Comparison categories">
                 {displayedComparisonSections.map((section, index) => (
                   <details className="comparison-section" key={section.title} open={index === 0}>
@@ -1748,7 +1738,6 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
                   </details>
                 ))}
               </div>
-              {comparisonSections.length ? <p className="form-note">Example model-level details. Confirm the selected variant with a dealer.</p> : null}
               {compareVerdict ? (
                   <div className="compare-verdict">
                     <div className="verdict-block">
@@ -1756,11 +1745,8 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
                       <p>{compareVerdict.coreDifference}</p>
                     </div>
                     <div className="verdict-block verdict-pick">
-                      <h4>Which should you buy, and why?</h4>
-                      <p>
-                        {compareVerdict.pick ? <strong>{compareVerdict.pick}. </strong> : null}
-                        {compareVerdict.reason}
-                      </p>
+                      <h4>What should you check next?</h4>
+                      <p>{compareVerdict.reason}</p>
                     </div>
                   </div>
               ) : null}
