@@ -1093,6 +1093,10 @@ h2 { font-size: 26px; }
 .account-view { min-height: 65vh; }
 .account-view > p { max-width: 50ch; color: var(--muted); }
 .account-view .instrument-metrics { max-width: 560px; }
+.cloud-workspace { border-top: 1px solid var(--hair); margin-top: 28px; padding-top: 24px; max-width: 680px; }
+.cloud-workspace h3 { margin: 0 0 12px; }
+.cloud-workspace p { overflow-wrap: anywhere; }
+.cloud-workspace .auth-actions button { align-items: center; display: inline-flex; gap: 8px; justify-content: center; }
 .auth-actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-top: 20px; overflow-wrap: anywhere; }
 .auth-gate { min-height: 65vh; }
 .primary-action, .secondary-action, .save-button { text-transform: none; letter-spacing: 0; font-size: 14px; border-radius: 8px; min-height: 44px; }
