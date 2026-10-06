@@ -14,7 +14,10 @@ async function openApp(page: Page, signedIn: boolean, hash = "") {
       }));`,
   }));
   await page.goto(`/${hash}`);
-  await expect(page.getByRole("navigation")).toBeVisible();
+  await expect(page.getByRole("navigation", {
+    name: (page.viewportSize()?.width ?? 1440) <= 860 ? "Primary" : "Primary navigation",
+    exact: true,
+  })).toBeVisible();
 }
 
 async function expectNoOverflow(page: Page) {
@@ -53,14 +56,15 @@ for (const width of [320, 390, 768, 1440, 1920]) {
   }
 }
 
-test("mobile menu closes on Escape and restores focus", async ({ page }) => {
+test("mobile tab bar tracks the active view", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openApp(page, true);
-  await page.getByRole("button", { name: "Open menu" }).click();
-  await expect(page.locator("#primary-nav-links")).toBeVisible();
+  const tabs = page.getByRole("navigation", { name: "Primary", exact: true });
+  await expect(page.getByRole("button", { name: "Open menu" })).toBeHidden();
+  await tabs.locator("a[href='#feed']").click();
+  await expect(tabs.locator("a[href='#feed']")).toHaveAttribute("aria-current", "page");
   await page.keyboard.press("Escape");
-  await expect(page.locator("#primary-nav-links")).toBeHidden();
-  await expect(page.getByRole("button", { name: "Open menu" })).toBeFocused();
+  await expect(tabs).toBeVisible();
 });
 
 test("signed-out actions request login and never reveal feature data", async ({ page }) => {
@@ -127,8 +131,7 @@ test("comparison remains usable after adding cars and changing views", async ({ 
   await page.getByRole("button", { name: "Add to compare", exact: true }).click();
   await expect(page.getByRole("table", { name: "Compared metrics" })).toBeVisible();
   await expectNoOverflow(page);
-  await page.getByRole("button", { name: "Open menu" }).click();
-  await page.getByRole("link", { name: "Home", exact: true }).click();
+  await page.getByRole("navigation", { name: "Primary", exact: true }).getByRole("link", { name: "Home", exact: true }).click();
   await page.getByRole("link", { name: "Find your next car" }).click();
   await expect(page.getByRole("table", { name: "Compared metrics" })).toBeVisible();
   await page.screenshot({ path: "test-results/comparison-populated-mobile.png", fullPage: true });
