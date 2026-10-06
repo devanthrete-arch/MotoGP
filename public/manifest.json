@@ -1,7 +1,7 @@
 {
   "name": "Otofolks",
   "short_name": "Otofolks",
-  "description": "Care you can trust for owner notes, service signals, Pit Stop clips, and model comparisons.",
+  "description": "Your car companion for owner notes, service signals, Pit Stop clips, and model comparisons.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

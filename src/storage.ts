@@ -40,6 +40,13 @@ const productionOpsKey = "autoflex.web.production-ops.v1";
 
 export type StorageLike = Pick<Storage, "getItem" | "setItem">;
 
+let storageUserId: string | null = null;
+
+// Set before initializing account state; null preserves the legacy browser namespace.
+export const setStorageUser = (userId: string | null): void => {
+  storageUserId = userId;
+};
+
 type StoredFeedbackNote = FeedbackNote | Omit<FeedbackNote, "loopStage"> | Omit<FeedbackNote, "status" | "loopStage">;
 type StoredShortlistItem = ShortlistItem | Omit<ShortlistItem, "status"> | (Omit<ShortlistItem, "status"> & { status: string });
 
@@ -79,7 +86,15 @@ export const safeJsonParse = <T,>(value: string | null, fallback: T): T => {
 
 const getBrowserStorage = (): StorageLike | null => {
   try {
-    return globalThis.localStorage ?? null;
+    const storage = globalThis.localStorage;
+    if (!storage) return null;
+    if (storageUserId === null) return storage;
+
+    const prefix = `autoflex.user.${encodeURIComponent(storageUserId)}:`;
+    return {
+      getItem: (key) => storage.getItem(`${prefix}${key}`),
+      setItem: (key, value) => storage.setItem(`${prefix}${key}`, value),
+    };
   } catch {
     return null;
   }
@@ -323,7 +338,8 @@ export const saveFollows = (follows: FollowState): void => {
   writeStoredJson(followKey, follows);
 };
 
-export const loadGarage = (): GarageVehicle[] => readStoredJson<GarageVehicle[]>(garageKey, seedGarage);
+export const loadGarage = (): GarageVehicle[] =>
+  readStoredJson<GarageVehicle[]>(garageKey, storageUserId === null ? seedGarage : []);
 
 export const saveGarage = (garage: GarageVehicle[]): void => {
   writeStoredJson(garageKey, garage);
@@ -335,7 +351,7 @@ export const createVehicle = (draft: DraftVehicle): GarageVehicle => ({
 });
 
 export const loadTimeline = (): TimelineEntry[] =>
-  readStoredJson<TimelineEntry[]>(timelineKey, seedTimeline).sort(
+  readStoredJson<TimelineEntry[]>(timelineKey, storageUserId === null ? seedTimeline : []).sort(
     (first, second) => Date.parse(second.happenedOn) - Date.parse(first.happenedOn),
   );
 

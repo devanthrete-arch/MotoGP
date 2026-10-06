@@ -1,16 +1,110 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { FeedbackNote } from "./domain";
+import { seedGarage, seedPosts, seedTimeline } from "./domain";
 import {
   createTesterRun,
+  loadGarage,
+  loadPosts,
+  loadProfile,
+  loadTimeline,
   normalizeFeedbackNotes,
   parseOtofolksBackup,
   readStoredJson,
   safeJsonParse,
+  saveGarage,
+  saveProfile,
+  saveTimeline,
+  setStorageUser,
   type StorageLike,
   updateFeedbackLoopStage,
   updateFeedbackStatus,
   writeStoredJson,
 } from "./storage";
+
+describe("account-scoped browser storage", () => {
+  let values: Map<string, string>;
+  let storage: StorageLike;
+
+  beforeEach(() => {
+    setStorageUser(null);
+    values = new Map();
+    storage = {
+      getItem: (key) => values.get(key) ?? null,
+      setItem: (key, value) => { values.set(key, value); },
+    };
+    vi.stubGlobal("localStorage", storage);
+  });
+
+  afterEach(() => {
+    setStorageUser(null);
+    vi.unstubAllGlobals();
+  });
+
+  it.each([
+    "posts", "saved", "feedback", "follows", "garage", "timeline", "subscription",
+    "profile", "reports", "shortlist", "qa-session", "responsive-qa",
+    "production-launch", "production-url", "tester-runs", "production-ops",
+  ])("isolates %s across accounts and the legacy namespace", (name) => {
+    const key = `autoflex.web.${name}.v1`;
+    writeStoredJson(key, "legacy");
+    setStorageUser("user:a");
+    expect(readStoredJson(key, "empty")).toBe("empty");
+    writeStoredJson(key, "account-a");
+    setStorageUser("user%3Aa");
+    expect(readStoredJson(key, "empty")).toBe("empty");
+    writeStoredJson(key, "account-b");
+    setStorageUser("user:a");
+    expect(readStoredJson(key, "empty")).toBe("account-a");
+    setStorageUser("user%3Aa");
+    expect(readStoredJson(key, "empty")).toBe("account-b");
+    setStorageUser(null);
+    expect(readStoredJson(key, "empty")).toBe("legacy");
+  });
+
+  it("does not import legacy private records into a signed-in account", () => {
+    const profile = { displayName: "Legacy owner", city: "Pune", garageRole: "Owner" as const };
+    saveProfile(profile);
+    saveGarage(seedGarage);
+    saveTimeline(seedTimeline);
+    setStorageUser("new-user");
+    expect(loadProfile().displayName).toBe("");
+    expect(loadGarage()).toEqual([]);
+    expect(loadTimeline()).toEqual([]);
+    setStorageUser(null);
+    expect(loadProfile()).toEqual(profile);
+    expect(loadGarage()).toEqual(seedGarage);
+    expect(loadTimeline()).toHaveLength(seedTimeline.length);
+  });
+
+  it("starts scoped garages and timelines empty but keeps example posts", () => {
+    setStorageUser("account-a");
+    expect(loadGarage()).toEqual([]);
+    expect(loadTimeline()).toEqual([]);
+    expect(loadPosts()).toHaveLength(seedPosts.length);
+    saveGarage(seedGarage);
+    saveTimeline(seedTimeline);
+    setStorageUser("account-b");
+    expect(loadGarage()).toEqual([]);
+    expect(loadTimeline()).toEqual([]);
+    setStorageUser("account-a");
+    expect(loadGarage()).toEqual(seedGarage);
+    expect(loadTimeline()).toHaveLength(seedTimeline.length);
+    setStorageUser(null);
+    expect(loadGarage()).toEqual(seedGarage);
+    expect(loadTimeline()).toHaveLength(seedTimeline.length);
+  });
+
+  it("keeps explicitly supplied adapters unscoped", () => {
+    setStorageUser("account-a");
+    writeStoredJson("fixture", "explicit", storage);
+    expect(values.get("fixture")).toBe(JSON.stringify("explicit"));
+    expect(readStoredJson("fixture", "empty", storage)).toBe("explicit");
+    expect(readStoredJson("fixture", "empty")).toBe("empty");
+    expect(readStoredJson("fixture", "empty", null)).toBe("empty");
+    writeStoredJson("disabled", "ignored", null);
+    expect(values.has("disabled")).toBe(false);
+  });
+});
 
 describe("Otofolks storage safety", () => {
   it("falls back when stored JSON is missing or corrupt", () => {
