@@ -240,6 +240,13 @@ type AppAuthState = {
   requireSignIn: (destination?: string) => void;
 };
 
+const clerkReturnUrl = (destination?: string) => {
+  const url = new URL(window.location.href);
+  if (destination) url.hash = destination;
+  url.searchParams.set("clerk_return", "1");
+  return url.toString();
+};
+
 const ClerkAccountPanel = ({ savedCount }: { savedCount: number }) => {
   const clerk = useClerk();
   const { isLoaded, isSignedIn, user } = useUser();
@@ -280,12 +287,12 @@ const ClerkAccountPanel = ({ savedCount }: { savedCount: number }) => {
       <h2>Make yourself at home</h2>
       <p>Keep your favourite advice and car comparisons together.</p>
       <div className="auth-actions">
-        <SignInButton mode="modal" forceRedirectUrl={window.location.href}>
+        <SignInButton mode="modal" forceRedirectUrl={clerkReturnUrl()}>
           <button className="primary-action" type="button">
             Log in
           </button>
         </SignInButton>
-        <SignUpButton mode="modal" forceRedirectUrl={window.location.href}>
+        <SignUpButton mode="modal" forceRedirectUrl={clerkReturnUrl()}>
           <button className="secondary-action" type="button">
             Create account
           </button>
@@ -302,12 +309,12 @@ const LoginGate = ({ isLoaded }: { isLoaded: boolean }) => (
       <p>Sign in to join other owners and save what helps.</p>
     </div>
     <div className="auth-actions">
-      <SignInButton mode="modal" forceRedirectUrl={window.location.href}>
+      <SignInButton mode="modal" forceRedirectUrl={clerkReturnUrl()}>
         <button className="primary-action" disabled={!isLoaded} type="button">
           Log in
         </button>
       </SignInButton>
-      <SignUpButton mode="modal" forceRedirectUrl={window.location.href}>
+      <SignUpButton mode="modal" forceRedirectUrl={clerkReturnUrl()}>
         <button className="secondary-action" disabled={!isLoaded} type="button">
           Create account
         </button>
@@ -332,7 +339,7 @@ const ClerkConnectedApp = () => {
   useEffect(() => {
     if (!isLoaded || !pendingSignIn) return;
     setPendingSignIn(null);
-    if (!isSignedIn) void clerk.openSignIn({ forceRedirectUrl: `${window.location.origin}/${pendingSignIn}` });
+    if (!isSignedIn) void clerk.openSignIn({ forceRedirectUrl: clerkReturnUrl(pendingSignIn) });
   }, [clerk, isLoaded, isSignedIn, pendingSignIn]);
 
   return (
