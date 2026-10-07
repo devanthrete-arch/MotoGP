@@ -919,8 +919,16 @@ select option { background: var(--surface-container); }
   display: grid;
   overflow: hidden;
 }
-.comparison-section-control { display: grid; gap: 8px; margin: 18px 0 12px; font-weight: 600; }
-.comparison-section-control select { width: 100%; max-width: 360px; }
+.comparison-sections { border: 1px solid var(--outline-variant); border-radius: 8px; margin-top: 18px; overflow: hidden; }
+.comparison-section + .comparison-section { border-top: 1px solid var(--outline-variant); }
+.comparison-section summary { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 12px 14px; cursor: pointer; list-style: none; font-weight: 650; }
+.comparison-section summary::-webkit-details-marker { display: none; }
+.comparison-section summary:hover, .comparison-section[open] summary { background: var(--surface-container); }
+.comparison-section summary svg { flex: 0 0 auto; margin-left: auto; transition: transform 0.15s ease; }
+.comparison-section[open] summary svg { transform: rotate(180deg); }
+.comparison-section-number { color: var(--muted); flex: 0 0 2ch; font-size: 12px; font-variant-numeric: tabular-nums; }
+.comparison-section .compare-table { border: 0; border-top: 1px solid var(--outline-variant); border-radius: 0; }
+.comparison-section-note { margin: 0; padding: 12px 14px; border-top: 1px solid var(--outline-variant); }
 .compare-table > div { display: grid; grid-template-columns: minmax(0, 0.9fr) repeat(2, minmax(0, 1fr)); }
 .compare-table > div:nth-child(odd) { background: var(--surface-container); }
 .compare-table span,
@@ -1117,7 +1125,6 @@ h2 { font-size: 26px; }
 .shortlist-grid { grid-template-columns: minmax(260px, 340px) minmax(0, 1fr); gap: 24px; }
 .notebook-tags, .quality-prompts { display: flex; flex-wrap: wrap; }
 .compare-table { overflow-x: auto; }
-.compare-table > div { min-width: 420px; }
 .composer { gap: 16px; }
 .composer p { margin: 0; }
 .comparison-card > .confidence { display: inline-block; margin-bottom: 12px; }
@@ -1164,6 +1171,8 @@ h2 { font-size: 26px; }
   .filters { flex-basis: auto; width: 100%; max-width: none; }
 }
 @media (max-width: 480px) {
+  .comparison-section summary { gap: 8px; padding: 10px; }
+  .compare-table span, .compare-table strong { padding: 8px 5px; font-size: 10px; }
   h1 { font-size: 28px; } h2 { font-size: 22px; }
   .home-view, .app-shell > .panel { padding: 24px 16px; }
   .home-shortcuts { gap: 12px; }
