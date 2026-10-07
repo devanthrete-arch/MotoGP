@@ -280,12 +280,12 @@ const ClerkAccountPanel = ({ savedCount }: { savedCount: number }) => {
       <h2>Make yourself at home</h2>
       <p>Keep your favourite advice and car comparisons together.</p>
       <div className="auth-actions">
-        <SignInButton mode="modal">
+        <SignInButton mode="modal" forceRedirectUrl={window.location.href}>
           <button className="primary-action" type="button">
             Log in
           </button>
         </SignInButton>
-        <SignUpButton mode="modal">
+        <SignUpButton mode="modal" forceRedirectUrl={window.location.href}>
           <button className="secondary-action" type="button">
             Create account
           </button>
@@ -302,12 +302,12 @@ const LoginGate = ({ isLoaded }: { isLoaded: boolean }) => (
       <p>Sign in to join other owners and save what helps.</p>
     </div>
     <div className="auth-actions">
-      <SignInButton mode="modal">
+      <SignInButton mode="modal" forceRedirectUrl={window.location.href}>
         <button className="primary-action" disabled={!isLoaded} type="button">
           Log in
         </button>
       </SignInButton>
-      <SignUpButton mode="modal">
+      <SignUpButton mode="modal" forceRedirectUrl={window.location.href}>
         <button className="secondary-action" disabled={!isLoaded} type="button">
           Create account
         </button>
