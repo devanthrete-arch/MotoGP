@@ -72,6 +72,7 @@ import {
   saveSubscriptionSettings,
   saveTimeline,
 } from "./storage";
+import { PitStopSection, type PitStopClip } from "./PitStopSection";
 
 type FeedMode = "latest" | "helpful" | "saved" | "following";
 type AppView = "top" | "feed" | "pit-stop" | "compare" | "account";
@@ -87,31 +88,6 @@ const destinations = [
   { id: "compare", label: "Compare", icon: Scale },
 ] as const;
 
-type PitStopStatus = "published" | "pending" | "removed";
-
-type PitStopClip = {
-  addedAt: string;
-  brand?: string;
-  category: "Builds" | "Launches" | "Ownership" | "India";
-  embedUrl: string;
-  id: string;
-  model?: string;
-  sourceLabel: string;
-  status: PitStopStatus;
-  summary: string;
-  thumbnailLabel: string;
-  title: string;
-};
-
-type PitStopReel = {
-  category: PitStopClip["category"];
-  embedUrl: string;
-  id: string;
-  sourceLabel: string;
-  summary: string;
-  title: string;
-};
-
 const showDeferredCommunityModules = false;
 const adminModeratorEmails = [
   "piyushdtu23@gmail.com",
@@ -121,97 +97,6 @@ const adminModeratorEmails = [
 ] as const;
 export const isAdminModeratorEmail = (email: string): boolean =>
   adminModeratorEmails.includes(email.toLowerCase() as (typeof adminModeratorEmails)[number]);
-
-const pitStopClips: PitStopClip[] = [
-  {
-    addedAt: "2026-10-01T00:00:00.000Z",
-    brand: "Mahindra",
-    category: "Builds",
-    embedUrl: "https://www.instagram.com/explore/tags/carsofinstagram/",
-    id: "pitstop-builds-carsofinstagram",
-    model: "Thar",
-    sourceLabel: "Instagram car clips",
-    status: "published",
-    summary: "Custom builds, tasteful mods, owner-shot walkarounds, and short-format garage inspiration.",
-    thumbnailLabel: "IG Builds",
-    title: "Car builds worth watching",
-  },
-  {
-    addedAt: "2026-10-01T00:00:00.000Z",
-    brand: "Hyundai",
-    category: "Launches",
-    embedUrl: "https://www.instagram.com/explore/tags/newcar/",
-    id: "pitstop-launches-newcar",
-    model: "Creta",
-    sourceLabel: "Instagram launch clips",
-    status: "published",
-    summary: "Quick launch clips, dealership first looks, and real-world walkarounds before deep reviews arrive.",
-    thumbnailLabel: "IG Launch",
-    title: "New car clips",
-  },
-  {
-    addedAt: "2026-10-01T00:00:00.000Z",
-    brand: "Honda",
-    category: "Ownership",
-    embedUrl: "https://www.instagram.com/explore/tags/carreview/",
-    id: "pitstop-ownership-carreview",
-    model: "City",
-    sourceLabel: "Instagram review clips",
-    status: "published",
-    summary: "Short owner opinions and driving impressions to pair with detailed community posts.",
-    thumbnailLabel: "IG Review",
-    title: "Review clips from owners",
-  },
-  {
-    addedAt: "2026-10-01T00:00:00.000Z",
-    brand: "Tata",
-    category: "India",
-    embedUrl: "https://www.instagram.com/explore/tags/indianautomotive/",
-    id: "pitstop-india-automotive",
-    model: "Nexon",
-    sourceLabel: "Instagram India auto clips",
-    status: "published",
-    summary: "India-focused clips around road presence, trims, city use, accessories, and buyer chatter.",
-    thumbnailLabel: "IG India",
-    title: "Indian automotive clips",
-  },
-];
-
-const pitStopCategories: Array<PitStopClip["category"] | "All"> = ["All", "Builds", "Launches", "Ownership", "India"];
-const pitStopCategoryFromHash = (): PitStopClip["category"] | null => {
-  const hash = typeof window === "undefined" ? "" : window.location.hash.replace("#pit-stop-", "").toLowerCase();
-  return pitStopCategories.find((category): category is PitStopClip["category"] => category !== "All" && category.toLowerCase() === hash) ?? null;
-};
-const pitStopCollectionUrl = (category: PitStopClip["category"]) => `/#pit-stop-${category.toLowerCase()}`;
-
-export const filterPitStopClipsByCategory = (
-  clips: PitStopClip[],
-  category: PitStopClip["category"] | "All",
-): PitStopClip[] => (category === "All" ? clips : clips.filter((clip) => clip.category === category));
-
-export const buildTopPitStopReels = (clips: PitStopClip[]): PitStopReel[] =>
-  clips.flatMap((clip) => {
-    const reelAngles = {
-      Builds: ["walkaround", "wheel fitment", "lighting setup", "interior trim", "exhaust note"],
-      India: ["city drive", "highway pull", "monsoon road", "accessory check", "delivery day"],
-      Launches: ["first look", "variant walkaround", "feature demo", "dealer stock", "road presence"],
-      Ownership: ["owner review", "service story", "fuel run", "problem check", "long-term note"],
-    }[clip.category];
-
-    return Array.from({ length: 50 }, (_, index) => {
-      const angle = reelAngles[index % reelAngles.length];
-      const rank = index + 1;
-
-      return {
-        category: clip.category,
-        embedUrl: clip.embedUrl,
-        id: `${clip.id}-reel-${rank}`,
-        sourceLabel: clip.sourceLabel,
-        summary: `Instagram ${angle} pick for ${clip.brand ?? "cars"}${clip.model ? ` ${clip.model}` : ""}. Auto-filled from the ${clip.category.toLowerCase()} source queue; replace with live Instagram API results when connected.`,
-        title: `${clip.model ?? clip.category} ${angle} reel #${rank}`,
-      };
-    });
-  });
 
 const priceStates = [
   "Andhra Pradesh",
@@ -526,23 +411,6 @@ const buildCompareVerdict = (comparisons: ShortlistComparison[]) => {
   return { coreDifference, pick, reason };
 };
 
-// Turn an Instagram permalink into its embeddable player URL. Reel/post/tv
-// permalinks support /embed; anything else is returned as-is (and the modal
-// offers an "Open on Instagram" fallback if the page refuses to frame).
-const isEmbeddableReel = (url: string) => {
-  try {
-    const u = new URL(url);
-    return u.hostname.includes("instagram.com") && /\/(reel|p|tv)\//.test(u.pathname);
-  } catch {
-    return false;
-  }
-};
-const toEmbedSrc = (url: string) => {
-  if (!isEmbeddableReel(url)) return url;
-  const u = new URL(url);
-  return `${u.origin}${u.pathname.replace(/\/$/, "")}/embed`;
-};
-
 const initialDraft: DraftPost = {
   title: "",
   author: "",
@@ -599,6 +467,7 @@ const getInitialOnlineStatus = (): boolean => {
 
 export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: AppAuthState }) {
   const [posts, setPosts] = useState<OwnerPost[]>(() => loadPosts());
+  const [pitStopClips, setPitStopClips] = useState<PitStopClip[]>([]);
   const [profile, setProfile] = useState<Profile>(() => loadProfile());
   const [reports, setReports] = useState<ReportRecord[]>(() => loadReports());
   const [shortlist, setShortlist] = useState<ShortlistItem[]>(() => loadShortlist());
@@ -611,11 +480,6 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
   const [mode, setMode] = useState<FeedMode>("latest");
   const [selectedLabel, setSelectedLabel] = useState<KnowledgeLabel | "All">("All");
   const [selectedFeedState, setSelectedFeedState] = useState<PriceState | "All">("All");
-  const initialPitStopCollection = pitStopCategoryFromHash();
-  const [selectedPitStopCategory, setSelectedPitStopCategory] = useState<PitStopClip["category"] | "All">(
-    initialPitStopCollection ?? "All",
-  );
-  const [selectedPitStopCollection, setSelectedPitStopCollection] = useState<PitStopClip["category"] | null>(initialPitStopCollection);
   const [selectedPost, setSelectedPost] = useState<OwnerPost | null>(posts[0] ?? null);
   const [draft, setDraft] = useState<DraftPost>(initialDraft);
   const [vehicleDraft, setVehicleDraft] = useState<DraftVehicle>(initialVehicleDraft);
@@ -629,20 +493,25 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
   const [actionMessage, setActionMessage] = useState("");
   const [navMenuOpen, setNavMenuOpen] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
-  const [activeReel, setActiveReel] = useState<PitStopClip | null>(null);
   const [activeView, setActiveView] = useState<AppView>(viewFromHash);
+  useEffect(() => {
+    let active = true;
+    fetch("/pitstop-videos.json", { cache: "no-cache" })
+      .then((response) => response.ok ? response.json() as Promise<{ clips?: PitStopClip[] }> : null)
+      .then((catalog) => { if (active && Array.isArray(catalog?.clips)) setPitStopClips(catalog.clips); })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, []);
   useEffect(() => {
     const syncView = () => {
       setActiveView(viewFromHash());
       setNavMenuOpen(false);
-      setActiveReel(null);
       setComposerOpen(false);
       window.scrollTo({ top: 0 });
     };
     const closeMenu = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setNavMenuOpen(false);
-        setActiveReel(null);
         document.querySelector<HTMLButtonElement>(".nav-toggle")?.focus();
       }
     };
@@ -675,18 +544,8 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
 
   const publishedPitStopClips = useMemo(
     () => pitStopClips.filter((clip) => clip.status === "published"),
-    [],
+    [pitStopClips],
   );
-  const pitStopReels = useMemo(() => buildTopPitStopReels(publishedPitStopClips), [publishedPitStopClips]);
-  const filteredPitStopClips = useMemo(
-    () => filterPitStopClipsByCategory(publishedPitStopClips, selectedPitStopCategory),
-    [publishedPitStopClips, selectedPitStopCategory],
-  );
-  const selectedPitStopReels = useMemo(
-    () => pitStopReels.filter((reel) => reel.category === selectedPitStopCollection).slice(0, 50),
-    [pitStopReels, selectedPitStopCollection],
-  );
-
   const returnNudges = useMemo(
     () => buildReturnNudges({ followedModelSet, followedTopicSet, garage, posts, savedCount: saved.size }),
     [followedModelSet, followedTopicSet, garage, posts, saved.size],
@@ -1526,71 +1385,7 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
         </div>
       </section>
 
-      <section className="panel pit-stop-panel" id="pit-stop" hidden={activeView !== "pit-stop"}>
-        <div className="section-head">
-          <div>
-            <p className="eyebrow">Pit Stop</p>
-            <h2>A break for your car obsession</h2>
-          </div>
-          <div className="pit-stop-filters" aria-label="Pit Stop category filters">
-            {pitStopCategories.map((category) => (
-              <button
-                aria-pressed={selectedPitStopCategory === category}
-                key={category}
-                onClick={() => {
-                  setSelectedPitStopCategory(category);
-                  setSelectedPitStopCollection(category === "All" ? null : category);
-                }}
-                type="button"
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="pit-stop-grid">
-          {filteredPitStopClips.map((clip) => (
-            <button
-              className="pit-stop-card"
-              key={clip.id}
-              type="button"
-              onClick={() => setActiveReel(clip)}
-            >
-              <div className="pit-stop-thumb" aria-hidden="true">
-                <span className="play-badge"><Play size={20} /></span>
-                <strong>{clip.thumbnailLabel}</strong>
-                <small>{clip.brand ?? "Cars"}</small>
-              </div>
-              <span>{clip.category}</span>
-              <h3>{clip.title}</h3>
-              <p>{clip.summary}</p>
-              {clip.brand && clip.model ? <small>Related: {clip.brand} {clip.model}</small> : null}
-              <em>Tap to play · {clip.sourceLabel}</em>
-            </button>
-          ))}
-        </div>
-        {selectedPitStopCollection ? (
-        <div className="pit-stop-reel-section" id={pitStopCollectionUrl(selectedPitStopCollection).slice(2)}>
-          <div className="section-head compact">
-            <div>
-              <p className="eyebrow">{selectedPitStopCollection} top 50</p>
-              <h3>Individual reel cards</h3>
-            </div>
-            <span className="form-note">Top {selectedPitStopReels.length} kept from the selected source queue</span>
-          </div>
-          <div className="pit-stop-reel-grid">
-            {selectedPitStopReels.map((reel) => (
-              <a className="pit-stop-reel-card" href={reel.embedUrl} key={reel.id} rel="noreferrer" target="_blank">
-                <span>{reel.category}</span>
-                <h4>{reel.title}</h4>
-                <p>{reel.summary}</p>
-                <em>{reel.sourceLabel}</em>
-              </a>
-            ))}
-          </div>
-        </div>
-        ) : null}
-      </section>
+      <PitStopSection clips={publishedPitStopClips} hidden={activeView !== "pit-stop"} />
 
       <section className="panel" id="compare" hidden={activeView !== "compare"}>
         <div className="section-head">
@@ -1599,7 +1394,7 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
             <h2>Which car feels right?</h2>
           </div>
         </div>
-        <div className="shortlist-grid">
+        <div className="shortlist-grid compare-workspace">
           <form className="composer" onSubmit={addShortlistItem}>
             <h3>Add model to compare</h3>
             <div className="form-row">
@@ -1721,71 +1516,72 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
           </form>
 
           <div className="compare-side">
-            {oneToOneCompareRows.length ? (
-              <article className="comparison-card one-to-one-card" aria-label="One to one comparison">
-                <span className="confidence high">One-to-one comparison</span>
-                <h3>
-                  {shortlistComparisons[0].item.brand} {shortlistComparisons[0].item.model} vs{" "}
-                  {shortlistComparisons[1].item.brand} {shortlistComparisons[1].item.model}
-                </h3>
-                <div className="compare-table" role="table" aria-label="Compared metrics">
-                  <div role="row">
-                    <strong role="columnheader">Metric</strong>
-                    <strong role="columnheader">{shortlistComparisons[0].item.model}</strong>
-                    <strong role="columnheader">{shortlistComparisons[1].item.model}</strong>
-                  </div>
-                  {oneToOneCompareRows.map(([metric, first, second]) => (
-                    <div role="row" key={metric}>
-                      <span role="rowheader">{metric}</span>
-                      <span role="cell">{first}</span>
-                      <span role="cell">{second}</span>
+            <article className="comparison-card one-to-one-card compare-result" aria-label="Side-by-side vehicle comparison">
+              <div className="compare-opponents">
+                {[0, 1].map((index) => {
+                  const comparison = shortlistComparisons[index];
+                  const details = comparison ? modelDetailsFor(comparison.item.brand, comparison.item.model) : null;
+                  return (
+                    <div className={`compare-opponent ${comparison ? "is-selected" : "is-empty"}`} key={index}>
+                      <span className="compare-opponent-label">{index === 0 ? "Your first car" : "Your other option"}</span>
+                      {comparison ? (
+                        <>
+                          <h3>{comparison.item.brand} {comparison.item.model}</h3>
+                          <p>{comparison.item.variant || "Variant not selected"}</p>
+                          <strong className="compare-opponent-price">{formatMoney(comparison.item.budget)}</strong>
+                          <div className="compare-opponent-facts">
+                            <span>{details?.bodyType ?? "Body type not listed"}</span>
+                            <span>{details?.fuel ?? "Fuel not listed"}</span>
+                            {details ? <span>{details.seating} seats</span> : null}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <h3>{shortlistComparisons.length ? "Add one more car" : "Choose your first car"}</h3>
+                          <p>Pick a make and model in the form, then add it here.</p>
+                        </>
+                      )}
                     </div>
-                  ))}
-                </div>
-                {compareVerdict ? (
-                  <div className="compare-verdict">
-                    <div className="verdict-block">
-                      <h4>What is the core difference?</h4>
-                      <p>{compareVerdict.coreDifference}</p>
-                    </div>
-                    <div className="verdict-block verdict-pick">
-                      <h4>Which should you buy, and why?</h4>
-                      <p>
-                        {compareVerdict.pick ? <strong>{compareVerdict.pick}. </strong> : null}
-                        {compareVerdict.reason}
-                      </p>
-                    </div>
-                  </div>
-                ) : null}
-              </article>
-            ) : (
-              <article className="comparison-card one-to-one-card" aria-label="One to one comparison empty state">
-                <span className="confidence">Side by side</span>
-                <h3>Add two cars to compare side by side.</h3>
-                <p>See prices, running costs and features together.</p>
-              </article>
-            )}
-            <article className="comparison-card example-card" aria-label="Compare preview">
-              <span className="confidence medium">Example preview</span>
-              <h3>
-                {shortlistDraft.brand} {shortlistDraft.model}
-              </h3>
-              <p>{shortlistDraft.variant}</p>
-              <p>{formatMoney(shortlistDraftPrice)} estimated price</p>
-              {shortlistDraftDetails ? (
-                <div className="spec-grid" aria-label="Selected car details">
-                  <span>{shortlistDraftDetails.bodyType}</span>
-                  <span>{shortlistDraftDetails.fuel}</span>
-                  <span>{shortlistDraftDetails.seating} seats</span>
-                  <span>{shortlistDraftDetails.mileage}</span>
-                  <span>{shortlistDraftDetails.safety}</span>
-                </div>
-              ) : null}
-              <div className="comparison-stats">
-                <span>{shortlistDraft.status}</span>
-                <span>{shortlistDraft.state}</span>
+                  );
+                })}
+                <span className="compare-vs" aria-hidden="true">VS</span>
               </div>
-              <small>{shortlistDraftSource}</small>
+              {oneToOneCompareRows.length ? (
+                <>
+                  <div className="compare-details-heading">
+                    <div><p className="eyebrow">Side by side</p><h3>What matters day to day</h3></div>
+                    <span>{oneToOneCompareRows.length} details</span>
+                  </div>
+                  <div className="compare-table" role="table" aria-label="Compared vehicle details">
+                    <div role="row">
+                      <strong role="columnheader">Details</strong>
+                      <strong role="columnheader">{shortlistComparisons[0].item.model}</strong>
+                      <strong role="columnheader">{shortlistComparisons[1].item.model}</strong>
+                    </div>
+                    {oneToOneCompareRows.filter(([metric]) => metric !== "Model").map(([metric, first, second]) => (
+                      <div role="row" key={metric}>
+                        <span role="rowheader">{metric}</span>
+                        <span role="cell">{first}</span>
+                        <span role="cell">{second}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {compareVerdict ? (
+                    <div className="compare-verdict">
+                      <div className="verdict-block">
+                        <h4>The main difference</h4>
+                        <p>{compareVerdict.coreDifference}</p>
+                      </div>
+                      <div className="verdict-block verdict-pick">
+                        <h4>A useful starting point</h4>
+                        <p>{compareVerdict.pick ? <strong>{compareVerdict.pick}. </strong> : null}{compareVerdict.reason}</p>
+                      </div>
+                    </div>
+                  ) : null}
+                </>
+              ) : (
+                <p className="compare-hint">Add two cars to see their prices, comfort, fuel choices and safety together.</p>
+              )}
             </article>
             <div className="comparison-grid">
             {shortlistComparisons.length ? (
@@ -2325,44 +2121,6 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
         <span>Otofolks</span>
         <span className="ok">Care you can trust</span>
       </footer>
-
-      {activeReel ? (
-        <div className="reel-modal" role="dialog" aria-modal="true" aria-label={activeReel.title}
-          onClick={(event) => { if (event.target === event.currentTarget) setActiveReel(null); }}>
-          <div className="reel-modal-card">
-            <div className="reel-modal-head">
-              <div>
-                <span className="pill">{activeReel.category}</span>
-                <h3>{activeReel.title}</h3>
-              </div>
-              <button className="composer-close" type="button" aria-label="Close" onClick={() => setActiveReel(null)}>
-                <X size={20} />
-              </button>
-            </div>
-            {isEmbeddableReel(activeReel.embedUrl) ? (
-              <div className="reel-frame">
-                <iframe
-                  src={toEmbedSrc(activeReel.embedUrl)}
-                  title={activeReel.title}
-                  loading="lazy"
-                  allow="autoplay; encrypted-media; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
-            ) : (
-              <div className="reel-collection" aria-hidden="true">
-                <span className="play-badge"><Play size={24} /></span>
-                <strong>{activeReel.thumbnailLabel}</strong>
-                <small>{activeReel.category} · curated collection</small>
-              </div>
-            )}
-            <p>{activeReel.summary}</p>
-            <a className="secondary-action" href={activeReel.embedUrl} target="_blank" rel="noreferrer">
-              {isEmbeddableReel(activeReel.embedUrl) ? "Open on Instagram" : "Watch the collection on Instagram"}
-            </a>
-          </div>
-        </div>
-      ) : null}
 
       <nav className="tab-bar" aria-label="Primary">
         {destinations.map(({ id, label, icon: Icon }) => (
