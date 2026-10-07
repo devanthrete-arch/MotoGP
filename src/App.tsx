@@ -2,9 +2,10 @@ import { FormEvent, MouseEvent, useEffect, useMemo, useState } from "react";
 import { SignInButton, SignUpButton, UserButton, useClerk, useUser, useSession } from "@clerk/react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { CloudWorkspacePanel } from "./CloudWorkspacePanel";
+import { isSharedPost, loadCommunityComments, loadCommunityPosts, publishCommunityComment, publishCommunityPost } from "./communityCloud";
 import { comparisonFields, legacyVariantSourceFor, verifiedComparisonFor } from "./comparisonCatalog";
 import type { PrivateWorkspace } from "./cloudWorkspace";
-import { createClerkSupabaseClient, readCloudConfig, sessionTokenGetter } from "./supabase";
+import { createClerkSupabaseClient, readCloudConfig, sessionTokenGetter, type ClerkTokenGetter } from "./supabase";
 import { ArrowRight, Bookmark, Car, ChevronDown, House, LogOut, Menu, MessageCircle, PenLine, Play, Scale, UserRound, X } from "lucide-react";
 import { buildTopPitStopReels, filterPitStopClipsByCategory, pitStopClips, pitStopCategories, type PitStopClip } from "./pitstop";
 export { buildTopPitStopReels, filterPitStopClipsByCategory } from "./pitstop";
@@ -12,6 +13,7 @@ import {
   buildLoop,
   knowledgeLabels,
   privacyReadinessItems,
+  seedPosts,
   shortlistStatuses,
   starterRoutes,
   timelineKinds,
@@ -55,7 +57,6 @@ import {
   type ShortlistComparison,
 } from "./insights";
 import {
-  createPost,
   createReport,
   createShortlistItem,
   createTimelineEntry,
@@ -84,6 +85,8 @@ import {
 } from "./storage";
 
 type FeedMode = "latest" | "helpful" | "saved" | "following";
+const seedPostIds = new Set(seedPosts.map(post => post.id));
+const postSource = (id: string) => isSharedPost(id) ? "Shared" : seedPostIds.has(id) ? "Example" : "On this device";
 type AppView = "top" | "feed" | "pit-stop" | "compare" | "account" | "garage" | "write";
 const viewFromHash = (): AppView => {
   const hash = typeof window === "undefined" ? "" : window.location.hash.slice(1);
@@ -235,6 +238,7 @@ type AppProps = {
 type AppAuthState = {
   userId?: string;
   cloudClient?: SupabaseClient | null;
+  cloudToken?: ClerkTokenGetter | null;
   cloudError?: string;
   isLoaded: boolean;
   isSignedIn: boolean;
@@ -324,7 +328,8 @@ const ClerkConnectedApp = () => {
   const cloud = useMemo(() => {
     try {
       const config = readCloudConfig(import.meta.env);
-      return { client: config && session ? createClerkSupabaseClient(config, sessionTokenGetter(session, () => clerk.session)) : null };
+      const getToken = config && session ? sessionTokenGetter(session, () => clerk.session) : null;
+      return { client: config && getToken ? createClerkSupabaseClient(config, getToken) : null, getToken };
     } catch {
       return { client: null, error: "Account saving is temporarily unavailable. Your data stays on this device." };
     }
@@ -342,6 +347,7 @@ const ClerkConnectedApp = () => {
       auth={{
         userId: user?.id,
         cloudClient: cloud.client,
+        cloudToken: cloud.getToken,
         cloudError: cloud.error,
         isLoaded,
         isSignedIn: Boolean(isSignedIn),
@@ -510,6 +516,10 @@ const getInitialOnlineStatus = (): boolean => {
 export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: AppAuthState }) {
   setStorageUser(auth.isSignedIn ? auth.userId ?? null : null);
   const [posts, setPosts] = useState<OwnerPost[]>(() => loadPosts());
+  const [sharedPosts, setSharedPosts] = useState<OwnerPost[]>([]);
+  const [communityStatus, setCommunityStatus] = useState("Loading shared notes...");
+  const [communityBusy, setCommunityBusy] = useState(false);
+  const [communityRefresh, setCommunityRefresh] = useState(0);
   const [profile, setProfile] = useState<Profile>(() => loadProfile());
   const [reports, setReports] = useState<ReportRecord[]>(() => loadReports());
   const [shortlist, setShortlist] = useState<ShortlistItem[]>(() => loadShortlist());
@@ -568,13 +578,42 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
     };
   }, []);
   const [isOnline, setIsOnline] = useState(getInitialOnlineStatus);
+  const feedPosts = useMemo(() => [...sharedPosts, ...posts], [sharedPosts, posts]);
+
+  useEffect(() => {
+    if (!auth.isSignedIn) { setSharedPosts([]); return; }
+    if (!auth.cloudClient || !auth.cloudToken) {
+      setCommunityStatus("Shared community is not configured. Local examples remain available.");
+      return;
+    }
+    if (!isOnline) { setCommunityStatus("Offline. Shared notes cannot refresh right now."); return; }
+    let active = true;
+    loadCommunityPosts(auth.cloudClient, auth.cloudToken).then(next => {
+      if (active) { setSharedPosts(next); setCommunityStatus(""); }
+    }).catch(error => {
+      if (active) setCommunityStatus(error instanceof Error ? error.message : "Shared notes could not load.");
+    });
+    return () => { active = false; };
+  }, [auth.cloudClient, auth.cloudToken, auth.isSignedIn, communityRefresh, isOnline]);
+
+  useEffect(() => {
+    if (!auth.isSignedIn || !auth.cloudClient || !auth.cloudToken || !selectedPost || !isSharedPost(selectedPost.id) || !isOnline) return;
+    const id = selectedPost.id;
+    let active = true;
+    loadCommunityComments(auth.cloudClient, auth.cloudToken, id).then(comments => {
+      if (active) setSharedPosts(current => current.map(post => post.id === id ? { ...post, comments } : post));
+    }).catch(() => {
+      if (active) setCommunityStatus("Comments could not load. Please retry when connected.");
+    });
+    return () => { active = false; };
+  }, [auth.cloudClient, auth.cloudToken, auth.isSignedIn, isOnline, selectedPost?.id]);
 
   const notebooks = useMemo(() => groupByModel(posts), [posts]);
   const followedModelSet = useMemo(() => new Set(follows.models), [follows.models]);
   const followedTopicSet = useMemo(() => new Set(follows.topics), [follows.topics]);
 
   const filteredPosts = useMemo(() => {
-    const modeFilteredPosts = filterPostsByMode(posts, {
+    const modeFilteredPosts = filterPostsByMode(feedPosts, {
         followedModelSet,
         followedTopicSet,
         mode,
@@ -585,7 +624,7 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
     return selectedFeedState === "All"
       ? modeFilteredPosts
       : modeFilteredPosts.filter((post) => stateForCity(post.city) === selectedFeedState);
-  }, [followedModelSet, followedTopicSet, mode, posts, query, saved, selectedFeedState, selectedLabel]);
+  }, [feedPosts, followedModelSet, followedTopicSet, mode, query, saved, selectedFeedState, selectedLabel]);
   useEffect(() => {
     const next = filteredPosts.find(post => post.id === selectedPost?.id) ?? filteredPosts[0] ?? null;
     if (next !== selectedPost) setSelectedPost(next);
@@ -738,6 +777,7 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
   };
 
   const markHelpful = (postId: string) => {
+    if (isSharedPost(postId)) return;
     const removing = helpfulIds.includes(postId);
     const ids = removing ? helpfulIds.filter(id => id !== postId) : [...helpfulIds, postId];
     setHelpfulIds(ids);
@@ -748,6 +788,7 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
   };
 
   const confirmFix = (postId: string) => {
+    if (isSharedPost(postId)) return;
     const removing = confirmedIds.includes(postId);
     const ids = removing ? confirmedIds.filter(id => id !== postId) : [...confirmedIds, postId];
     setConfirmedIds(ids);
@@ -759,17 +800,35 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
     setSelectedPost(next.find((post) => post.id === postId) ?? null);
   };
 
-  const addComment = (event: FormEvent<HTMLFormElement>) => {
+  const addComment = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!selectedPost || !commentDraft.trim()) return;
-    const author = profile.displayName.trim() || "Anonymous garage member";
-    const next = posts.map((post) =>
-      post.id === selectedPost.id ? { ...post, comments: [`${author}: ${commentDraft.trim()}`, ...post.comments] } : post,
-    );
-    persistPosts(next);
-    setSelectedPost(next.find((post) => post.id === selectedPost.id) ?? null);
-    setCommentDraft("");
-    setActionMessage("Reply saved on this device. Other owners cannot see it yet.");
+    if (!isSharedPost(selectedPost.id)) {
+      setCommunityStatus("This is a local example. Select a shared note to join its discussion.");
+      return;
+    }
+    if (!auth.isSignedIn) { auth.requireSignIn("#feed"); return; }
+    if (!auth.cloudClient || !isOnline) { setCommunityStatus("Connect to publish a comment."); return; }
+    const id = selectedPost.id;
+    const author = (profile.displayName.trim() || "Anonymous garage member").slice(0, 80);
+    const body = commentDraft.trim();
+    setCommunityBusy(true);
+    try {
+      await publishCommunityComment(auth.cloudClient, id, author, body);
+      setSharedPosts(current => current.map(post => post.id === id
+        ? { ...post, comments: [`${author}: ${body}`, ...post.comments] } : post));
+      setCommentDraft("");
+      setCommunityStatus("");
+      try {
+        if (!auth.cloudToken) throw new Error("Sign in to read comments.");
+        const comments = await loadCommunityComments(auth.cloudClient, auth.cloudToken, id);
+        setSharedPosts(current => current.map(post => post.id === id ? { ...post, comments } : post));
+      } catch {
+        setCommunityStatus("Comment published. Discussion could not refresh yet.");
+      }
+    } catch (error) {
+      setCommunityStatus(error instanceof Error ? error.message : "Comment failed. Please retry.");
+    } finally { setCommunityBusy(false); }
   };
 
   const reportSelectedPost = (event: FormEvent<HTMLFormElement>) => {
@@ -890,23 +949,32 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
     persistShortlist(shortlist.filter((item) => item.id !== itemId));
   };
 
-  const publishPost = (event: FormEvent<HTMLFormElement>) => {
+  const publishPost = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const post = createPost({
-      ...draft,
-      author: draft.author.trim() || "Anonymous owner",
-      odometerKm: Number.isFinite(draft.odometerKm) ? draft.odometerKm : 0,
-    });
-    const next = [post, ...posts];
-    persistPosts(next);
-    setSelectedPost(post);
-    setDraft(initialDraft);
-    setQuery("");
-    setMode("latest");
-    setSelectedLabel("All");
-    setSelectedFeedState("All");
-    window.location.hash = "feed";
-    setActionMessage("Owner note saved on this device. It has not been published to other users.");
+    if (!auth.isSignedIn) { auth.requireSignIn("#feed"); return; }
+    if (!auth.cloudClient || !isOnline) {
+      setCommunityStatus("Shared publishing is unavailable. Connect and retry.");
+      return;
+    }
+    setCommunityBusy(true);
+    try {
+      const post = await publishCommunityPost(auth.cloudClient, {
+        ...draft,
+        author: (draft.author.trim() || "Anonymous owner").slice(0, 80),
+        odometerKm: Number.isFinite(draft.odometerKm) ? draft.odometerKm : 0,
+      });
+      setSharedPosts(current => [post, ...current]);
+      setSelectedPost(post);
+      setDraft(initialDraft);
+      setQuery("");
+      setMode("latest");
+      setSelectedLabel("All");
+      setSelectedFeedState("All");
+      window.location.hash = "feed";
+      setCommunityStatus("Published to the shared community.");
+    } catch (error) {
+      setCommunityStatus(error instanceof Error ? error.message : "Publishing failed. Please retry.");
+    } finally { setCommunityBusy(false); }
   };
 
   const addVehicle = (event: FormEvent<HTMLFormElement>) => {
@@ -1062,7 +1130,10 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
       {shouldShowFeatures ? (
         <>
       {activeView !== "top" && activeView !== "account" && activeView !== "pit-stop" ? (
-        <p className="data-notice" role="note">{auth.cloudClient ? "Changes stay on this device until you save them in Account. " : "Saved on this device for your account. "}Community notes include examples; shared publishing is not connected yet.</p>
+        <p className="data-notice" role="note">{activeView === "feed" || activeView === "write"
+          ? "Shared notes are visible to signed-in members. Local examples stay on this device."
+          : auth.cloudClient ? "Changes stay on this device until you save them in Account."
+            : "Saved on this device for your account."}</p>
       ) : null}
       {showDeferredCommunityModules ? (
         <>
@@ -1262,6 +1333,11 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
       ) : null}
 
       <section className="panel" id="feed" hidden={activeView !== "feed"}>
+        {communityStatus ? <p role="status">{communityStatus}</p> : null}
+        {auth.cloudClient && isOnline ? <button className="save-button" type="button" onClick={() => {
+          setCommunityStatus("Loading shared notes...");
+          setCommunityRefresh(current => current + 1);
+        }}>Refresh shared notes</button> : null}
         <div className="feed-composer">
           {!composerOpen ? (
             <button className="composer-prompt" type="button" onClick={() => setComposerOpen(true)}>
@@ -1284,12 +1360,14 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
               </div>
               <input
                 value={draft.title}
+                maxLength={160}
                 onChange={(event) => setDraft({ ...draft, title: event.target.value })}
                 placeholder="Title — e.g. Nexon clutch got heavy at 38k km"
                 required
               />
               <textarea
                 rows={3}
+                maxLength={10000}
                 value={draft.body}
                 onChange={(event) => setDraft({ ...draft, body: event.target.value })}
                 placeholder="Share what happened, what you tried, and what helped…"
@@ -1314,7 +1392,7 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
               </div>
               <div className="composer-actions">
                 <span className="form-note">Posting as {profile.displayName.trim() || "Anonymous owner"}</span>
-                <button className="primary-action" type="submit">Post</button>
+                <button className="primary-action" disabled={communityBusy || !auth.cloudClient || !isOnline} type="submit">Post</button>
               </div>
             </form>
           )}
@@ -1367,6 +1445,7 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
                 >
                   <div>
                     <span className="pill">{post.label}</span>
+                    <span className="pill">{postSource(post.id)}</span>
                     <h3><button className="post-open" type="button" onClick={() => {
                       setSelectedPost(post);
                       requestAnimationFrame(() => document.getElementById("note-detail")?.focus());
@@ -1396,6 +1475,7 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
             {selectedPost ? (
               <>
                 <span className="pill">{selectedPost.label}</span>
+                <span className="pill">{postSource(selectedPost.id)}</span>
                 <h2>{selectedPost.title}</h2>
                 <p className="owner-line">
                   By {selectedPost.author} · {selectedPost.brand} {selectedPost.model} {selectedPost.variant} ·{" "}
@@ -1414,11 +1494,11 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
                   </div>
                 ) : null}
                 <div className="signal-row">
-                  <button type="button" aria-pressed={helpfulIds.includes(selectedPost.id)} onClick={() => markHelpful(selectedPost.id)}>
+                  <button disabled={isSharedPost(selectedPost.id)} type="button" aria-pressed={helpfulIds.includes(selectedPost.id)} onClick={() => markHelpful(selectedPost.id)}>
                     Helpful · {selectedPost.helpful}
                   </button>
                   {selectedPost.label === "Fix" ? (
-                    <button type="button" aria-pressed={confirmedIds.includes(selectedPost.id)} onClick={() => confirmFix(selectedPost.id)}>
+                    <button disabled={isSharedPost(selectedPost.id)} type="button" aria-pressed={confirmedIds.includes(selectedPost.id)} onClick={() => confirmFix(selectedPost.id)}>
                       Worked for me · {selectedPost.fixesConfirmed}
                     </button>
                   ) : null}
@@ -1459,11 +1539,12 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
                   <textarea
                     required
                     rows={3}
+                    maxLength={4000}
                     value={commentDraft}
                     onChange={(event) => setCommentDraft(event.target.value)}
                     placeholder="Add a useful reply, correction, bill detail, or ownership question."
                   />
-                  <button className="primary-action" type="submit">
+                  <button className="primary-action" disabled={communityBusy || !isOnline || !isSharedPost(selectedPost.id)} type="submit">
                     Add comment
                   </button>
                 </form>
@@ -1899,7 +1980,8 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
         <div>
           <p className="eyebrow">Owner note</p>
           <h2>What did you learn about your car?</h2>
-          <p>Your note will be saved on this device.</p>
+          <p>Your note will be published to signed-in community members.</p>
+          {communityStatus ? <p role="status">{communityStatus}</p> : null}
           <div className={`quality-card ${draftQuality.grade.toLowerCase().replace(/\s+/g, "-")}`}>
             <div className="quality-meter" aria-label={`Draft detail quality ${draftQuality.score} of ${draftQuality.maxScore}`}>
               <span style={{ width: `${(draftQuality.score / draftQuality.maxScore) * 100}%` }} />
@@ -1917,6 +1999,7 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
         <form className="composer" onSubmit={publishPost}>
           <input
             required
+            maxLength={160}
             value={draft.title}
             onChange={(event) => setDraft({ ...draft, title: event.target.value })}
             placeholder="Title"
@@ -1968,12 +2051,13 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
           <textarea
             required
             rows={7}
+            maxLength={10000}
             value={draft.body}
             onChange={(event) => setDraft({ ...draft, body: event.target.value })}
             placeholder="Share symptoms, costs, decisions, failed attempts, and what you would tell the next owner."
           />
-          <button className="primary-action" type="submit">
-            Save owner note
+          <button className="primary-action" disabled={communityBusy || !auth.cloudClient || !isOnline} type="submit">
+            Publish owner note
           </button>
         </form>
       </section>

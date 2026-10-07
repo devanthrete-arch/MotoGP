@@ -1,16 +1,20 @@
 import { expect, test, type Page } from "@playwright/test";
 
 // Exercise the app's auth boundary without depending on a live Clerk account.
-async function openApp(page: Page, signedIn: boolean, hash = "") {
+async function openApp(page: Page, signedIn: boolean, hash = "", cloud = false) {
   page.on("pageerror", error => console.error(error.message));
   await page.route("**/src/main.tsx*", route => route.fulfill({
     contentType: "application/javascript",
     body: `import React from '/node_modules/.vite/deps/react.js';
       import ReactDOM from '/node_modules/.vite/deps/react-dom_client.js';
       import { OtofolksApp } from '/src/App.tsx';
+      ${cloud ? "import { createClerkSupabaseClient } from '/src/supabase.ts';" : ""}
       import '/src/styles.css';
+      ${cloud ? "const token = async () => 'test-clerk-token'; const client = createClerkSupabaseClient({ url: 'https://example.supabase.co', publishableKey: 'sb_publishable_fixture' }, token);" : ""}
       ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(OtofolksApp, {
-        auth: { userId: 'browser-test-user', isLoaded: true, isSignedIn: ${signedIn}, requireSignIn: () => { window.signInRequested = true; } }
+        auth: { userId: 'browser-test-user', isLoaded: true, isSignedIn: ${signedIn},
+          ${cloud ? "cloudClient: client, cloudToken: token," : ""}
+          requireSignIn: () => { window.signInRequested = true; } }
       }));`,
   }));
   await page.goto(`/${hash}`);
@@ -96,22 +100,63 @@ test("vehicle and maintenance records survive reload", async ({ page }) => {
   await page.screenshot({ path: "test-results/garage-with-maintenance.png", fullPage: true });
 });
 
-test("owner note, comments and filters work without stale detail", async ({ page }) => {
+test("unavailable shared publishing preserves the draft and local examples stay distinct", async ({ page }) => {
   await openApp(page, true, "#feed");
   await page.getByRole("link", { name: "Write an owner note" }).click();
   const composer = page.locator("#write");
   await composer.getByPlaceholder("Title", { exact: true }).fill("My service visit");
   await composer.getByPlaceholder("Model", { exact: true }).fill("Nexon");
   await composer.locator("textarea").fill("The oil change cost 4200 rupees and resolved the noise.");
-  await composer.getByRole("button", { name: "Save owner note" }).click();
+  await expect(composer.getByRole("button", { name: "Publish owner note" })).toBeDisabled();
+  await expect(composer.getByPlaceholder("Title", { exact: true })).toHaveValue("My service visit");
+  await page.getByRole("link", { name: "Community", exact: true }).last().click();
   await expect(page.locator("#feed")).toBeVisible();
+  await expect(page.locator("#feed")).toContainText("Local example");
+  await expect(page.getByRole("button", { name: "Add comment", exact: true })).toBeDisabled();
+  await page.getByPlaceholder("Search brand, model, city, issue...").fill("no-matching-vehicle-ever");
+  await expect(page.locator("#note-detail")).not.toContainText("Nexon");
+});
+
+test("shared note and reply publish through the Clerk-bound cloud client", async ({ page }) => {
+  const posts: Record<string, unknown>[] = [];
+  const comments: Record<string, unknown>[] = [];
+  await page.route("https://example.supabase.co/rest/v1/**", async route => {
+    const request = route.request();
+    const table = new URL(request.url()).pathname.split("/").pop();
+    const headers = { "access-control-allow-origin": "*", "access-control-allow-headers": "apikey, authorization, content-type, prefer", "content-type": "application/json" };
+    if (request.method() === "OPTIONS") return route.fulfill({ status: 200, headers });
+    expect(request.headers().authorization).toBe("Bearer test-clerk-token");
+    if (table === "community_posts") {
+      if (request.method() === "POST") {
+        const row = { ...request.postDataJSON(), id: "post-test-id", createdAt: "2026-10-07T00:00:00Z", status: "published" };
+        posts.unshift(row);
+        return route.fulfill({ status: 201, headers, body: JSON.stringify(row) });
+      }
+      return route.fulfill({ status: 200, headers, body: JSON.stringify(posts) });
+    }
+    if (table === "community_comments") {
+      if (request.method() === "POST") {
+        comments.unshift(request.postDataJSON());
+        return route.fulfill({ status: 204, headers });
+      }
+      return route.fulfill({ status: 200, headers, body: JSON.stringify(comments) });
+    }
+    return route.fulfill({ status: 404, headers });
+  });
+  await openApp(page, true, "#feed", true);
+  await page.getByRole("link", { name: "Write an owner note" }).click();
+  const composer = page.locator("#write");
+  await composer.getByPlaceholder("Title", { exact: true }).fill("My service visit");
+  await composer.getByPlaceholder("Model", { exact: true }).fill("Nexon");
+  await composer.locator("textarea").fill("The oil change cost 4200 rupees and resolved the noise.");
+  await composer.getByRole("button", { name: "Publish owner note" }).click();
   await expect(page.locator("#note-detail")).toContainText("My service visit");
   await page.locator("#note-detail .inline-form").first().locator("textarea").fill("Keep the invoice.");
   await page.getByRole("button", { name: "Add comment", exact: true }).click();
-  await page.reload();
   await expect(page.locator("#note-detail")).toContainText("Keep the invoice.");
-  await page.getByPlaceholder("Search brand, model, city, issue...").fill("no-matching-vehicle-ever");
-  await expect(page.locator("#note-detail")).not.toContainText("My service visit");
+  await page.reload();
+  await page.locator("#feed .post-open").filter({ hasText: "My service visit" }).click();
+  await expect(page.locator("#note-detail")).toContainText("Keep the invoice.");
 });
 
 test("real Clerk sign-in opens directly from navigation", async ({ page }) => {
