@@ -7,6 +7,13 @@ import "./styles.css";
 
 const clerkPublishableKey = (import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ||
   import.meta.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) as string | undefined;
+
+const startupUrl = new URL(window.location.href);
+if (startupUrl.searchParams.has("clerk_return")) {
+  startupUrl.searchParams.delete("clerk_return");
+  window.history.replaceState(window.history.state, "", `${startupUrl.pathname}${startupUrl.search}${startupUrl.hash}`);
+}
+
 const app = (
   <ErrorBoundary>
     <App clerkEnabled={Boolean(clerkPublishableKey)} />
