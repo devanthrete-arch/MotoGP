@@ -1,0 +1,19 @@
+/* Layout for the development gallery only. Rules reach the gallery's own chrome and nothing inside
+   a primitive, so what the gallery shows is what a primitive looks like on a real screen. */
+@layer ui {
+  .ui-gallery { max-width: 960px; margin: 0 auto; padding: 32px 20px 96px; display: grid; gap: 36px; }
+  .ui-gallery__head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .ui-gallery__eyebrow {
+    margin: 0 0 4px; font: 600 12px/1 var(--font-sans); letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--color-accent-text);
+  }
+  .ui-gallery__head h1 { margin: 0; font-size: 32px; }
+  .ui-gallery > section { display: grid; gap: 14px; min-width: 0; }
+  .ui-gallery > section > h2 { margin: 0; font-size: 18px; }
+  .ui-gallery__row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .ui-gallery__grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+  .ui-gallery__narrow { max-width: 420px; }
+  .ui-gallery__phone { max-width: 288px; }
+  .ui-gallery__stack { display: grid; gap: 10px; }
+  .ui-gallery__mono { font: 500 22px/1.2 var(--font-mono); font-variant-numeric: tabular-nums; }
+}

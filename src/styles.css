@@ -1,12 +1,14 @@
 /* Otofolks styles entry.
    tokens.css  – design tokens for both themes, plus aliases the legacy rules read
    skin.css    – redesign pass over existing markup (layer: skin)
+   ui/ui.css   – component primitives from src/ui (layer: ui)
    below       – the pre-redesign stylesheet, held in the lowest layer so new CSS always wins */
-@layer legacy, skin;
+@layer legacy, skin, ui;
 @import "@fontsource-variable/geist/index.css";
 @import "@fontsource-variable/geist-mono/index.css";
 @import "./styles/tokens.css";
 @import "./styles/skin.css";
+@import "./ui/ui.css";
 
 @layer legacy {
 * { box-sizing: border-box; }

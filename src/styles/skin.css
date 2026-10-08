@@ -72,7 +72,6 @@
   .filters button,
   .pit-stop-filters button,
   .nav-toggle,
-  .theme-toggle,
   .action-message { border-radius: var(--radius-pill); }
 
   .primary-action,
@@ -99,7 +98,7 @@
   .signal-row button[aria-pressed="true"],
   .filters button[aria-pressed="true"],
   .pit-stop-filters button[aria-pressed="true"] {
-    background: var(--color-accent-soft);
+    background: var(--color-accent-surface);
     border-color: var(--color-accent-text);
     color: var(--color-accent-text);
   }
@@ -128,21 +127,8 @@
   h1,
   h2 { letter-spacing: -0.02em; }
 
-  /* Theme switch in the header. */
-  .theme-toggle {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    min-height: 44px;
-    flex: 0 0 auto;
-    margin-left: 8px;
-    padding: 0;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.08);
-    color: #fff;
-  }
-  .theme-toggle:hover { background: rgba(255, 255, 255, 0.16); }
+  /* Theme switch in the header: placement only; its look comes from src/ui. */
+  .theme-toggle { flex: 0 0 auto; margin-left: 8px; }
 
   @media (max-width: 860px) {
     .nav { position: relative; }

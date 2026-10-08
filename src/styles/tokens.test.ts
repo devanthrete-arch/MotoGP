@@ -41,6 +41,15 @@ const contrast = (theme: Map<string, string>, foreground: string, background: st
 };
 
 describe("design tokens", () => {
+  it("turns glass opaque under reduced transparency in both themes", () => {
+    // The dark blocks have higher specificity than a bare :root, so the override must name them too.
+    const start = css.indexOf("@media (prefers-reduced-transparency: reduce)");
+    const selectors = css.slice(start, css.indexOf("--glass-fill", start));
+    for (const selector of [":root,", ':root[data-theme="dark"],', ':root:not([data-theme="light"])']) {
+      expect(selectors).toContain(selector);
+    }
+  });
+
   it("keeps the two dark blocks identical", () => {
     expect([...darkSystem]).toEqual([...darkChosen]);
     expect(darkChosen.size).toBeGreaterThan(20);
@@ -70,6 +79,10 @@ describe("design tokens", () => {
         const fill = luminance(stop);
         expect((Math.max(label, fill) + 0.05) / (Math.min(label, fill) + 0.05), `label on ${stop}`).toBeGreaterThanOrEqual(4.5);
       }
+    });
+    it(`${name}: amber text reads at AA on its own opaque chip ground`, () => {
+      // Chips and pressed filters sit on glass and gradients; an opaque ground keeps this ratio fixed.
+      expect(contrast(tokens, "--color-accent-text", "--color-accent-surface")).toBeGreaterThanOrEqual(4.5);
     });
     it(`${name}: header text and the accent fill stay legible`, () => {
       // White nav text on the header bar; accent as a fill or large numeral needs 3:1.
