@@ -178,6 +178,40 @@ test("toast clears itself and never covers the mobile tab bar", async ({ page })
   await expect(toast).toHaveCount(0, { timeout: 8000 });
 });
 
+test("theme switch overrides the system setting and survives reload; buttons are Geist pills", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await openApp(page, true, "#garage");
+  const html = page.locator("html");
+  const pageColour = () => page.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
+  await expect(html).not.toHaveAttribute("data-theme", /.+/);
+  expect(await pageColour()).toBe("rgb(34, 43, 61)");
+
+  await page.getByRole("button", { name: /^Theme: System/ }).click();
+  await expect(html).toHaveAttribute("data-theme", "light");
+  expect(await pageColour()).toBe("rgb(250, 248, 243)");
+  await page.reload();
+  await expect(html).toHaveAttribute("data-theme", "light");
+  await page.getByRole("button", { name: /^Theme: Light/ }).click();
+  await expect(html).toHaveAttribute("data-theme", "dark");
+  expect(await pageColour()).toBe("rgb(34, 43, 61)");
+  await page.getByRole("button", { name: /^Theme: Dark/ }).click();
+  await expect(html).not.toHaveAttribute("data-theme", /.+/);
+
+  // load() resolves with the matching faces once their files arrive; empty means the font is missing.
+  expect(await page.evaluate(async () => Promise.all(['16px "Geist Variable"', '16px "Geist Mono Variable"']
+    .map(async font => (await document.fonts.load(font)).length)))).toEqual([expect.any(Number), expect.any(Number)]);
+  expect(await page.evaluate(() => ['16px "Geist Variable"', '16px "Geist Mono Variable"']
+    .map(font => document.fonts.check(font)))).toEqual([true, true]);
+  for (const name of ["Save vehicle", "Export garage"]) {
+    const shape = await page.locator("#garage").getByRole("button", { name }).evaluate(element => {
+      const style = getComputedStyle(element);
+      return { radius: parseFloat(style.borderTopLeftRadius), height: element.getBoundingClientRect().height, font: style.fontFamily };
+    });
+    expect(shape.radius, name).toBeGreaterThanOrEqual(shape.height / 2);
+    expect(shape.font, name).toContain("Geist");
+  }
+});
+
 test("Pit Stop collections open on Instagram in a new tab and keep the app in place", async ({ page }) => {
   await openApp(page, true, "#pit-stop");
   const cards = page.locator("#pit-stop .pit-stop-card");

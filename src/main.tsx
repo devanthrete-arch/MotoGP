@@ -3,7 +3,11 @@ import { ClerkProvider } from "@clerk/react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import { ErrorBoundary } from "./ErrorBoundary";
+import { applyThemePreference, readThemePreference } from "./theme";
 import "./styles.css";
+
+// Before first paint, so an explicit light or dark choice does not flash the other theme.
+applyThemePreference(readThemePreference());
 
 const clerkPublishableKey = (import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ||
   import.meta.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) as string | undefined;
