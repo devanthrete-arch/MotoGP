@@ -48,10 +48,16 @@
   --color-primary-text: #2f3b55;
   --color-primary-soft: rgba(74, 88, 114, 0.1);
 
+  /* slate feature band: a dark panel with light text in both themes */
+  --gradient-band: linear-gradient(135deg, #4a5872, #222b3d);
+  --color-on-band: #ffffff;
+
   /* accent: the fill is too light for small text on ivory, so text has its own value */
   --color-accent: #b86e00;
   --color-accent-text: #8a5300;
   --color-accent-soft: rgba(184, 110, 0, 0.14);
+  /* opaque ground for amber text (chips, pressed filters), so its contrast does not depend on what is behind */
+  --color-accent-surface: #f6ead7;
 
   /* status */
   --color-success: #166a3e;
@@ -107,9 +113,12 @@
     --color-on-primary: #222b3d;
     --color-primary-text: #c8d6f0;
     --color-primary-soft: rgba(255, 255, 255, 0.1);
+    --gradient-band: linear-gradient(135deg, #55668a, #323d54);
+    --color-on-band: #ffffff;
     --color-accent: #f2a93b;
     --color-accent-text: #f2a93b;
     --color-accent-soft: rgba(242, 169, 59, 0.16);
+    --color-accent-surface: #3a2f1f;
     --color-success: #5fd08f;
     --color-danger: #ffa8a0;
     color-scheme: dark;
@@ -143,9 +152,12 @@
   --color-on-primary: #222b3d;
   --color-primary-text: #c8d6f0;
   --color-primary-soft: rgba(255, 255, 255, 0.1);
+  --gradient-band: linear-gradient(135deg, #55668a, #323d54);
+  --color-on-band: #ffffff;
   --color-accent: #f2a93b;
   --color-accent-text: #f2a93b;
   --color-accent-soft: rgba(242, 169, 59, 0.16);
+  --color-accent-surface: #3a2f1f;
   --color-success: #5fd08f;
   --color-danger: #ffa8a0;
   color-scheme: dark;
@@ -153,7 +165,10 @@
 
 /* Where transparency is unwanted or unsupported, glass becomes a plain surface. */
 @media (prefers-reduced-transparency: reduce) {
-  :root {
+  /* All three selectors, so this ties with the dark blocks on specificity and wins by coming later. */
+  :root,
+  :root[data-theme="dark"],
+  :root:not([data-theme="light"]) {
     --glass-fill: var(--color-surface);
     --glass-fill-bar: var(--color-surface);
     --glass-blur: 0px;

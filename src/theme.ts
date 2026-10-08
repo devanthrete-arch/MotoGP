@@ -46,6 +46,34 @@ export function saveThemePreference(preference: ThemePreference, storage: ThemeS
   }
 }
 
+// One preference for the whole page. Components read it with useSyncExternalStore, so two theme
+// switches never disagree, and a change in another tab arrives through the storage event.
+const listeners = new Set<() => void>();
+let current: ThemePreference | null = null;
+
+export const themeStore = {
+  get: (): ThemePreference => (current ??= readThemePreference()),
+  set(preference: ThemePreference): void {
+    current = preference;
+    saveThemePreference(preference);
+    applyThemePreference(preference);
+    listeners.forEach((listener) => listener());
+  },
+  subscribe(listener: () => void): () => void {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== null && event.key !== storageKey) return;
+      current = readThemePreference();
+      listener();
+    };
+    listeners.add(listener);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      listeners.delete(listener);
+      window.removeEventListener("storage", onStorage);
+    };
+  },
+};
+
 export function applyThemePreference(preference: ThemePreference, doc: ThemeDocument = document): void {
   const root = doc.documentElement;
   if (preference === "system") root.removeAttribute("data-theme");

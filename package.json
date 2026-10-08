@@ -27,6 +27,7 @@
     "vite": "^6.0.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@electric-sql/pglite": "^0.5.8",
     "@playwright/test": "^1.63.0",
     "@types/node": "^26.1.1",

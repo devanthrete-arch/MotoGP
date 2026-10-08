@@ -9,10 +9,9 @@ import {
 import { comparisonFields, legacyVariantSourceFor, verifiedComparisonFor } from "./comparisonCatalog";
 import type { PrivateWorkspace } from "./cloudWorkspace";
 import { createClerkSupabaseClient, readCloudConfig, sessionTokenGetter, type ClerkTokenGetter } from "./supabase";
-import { ArrowRight, Bookmark, Car, ChevronDown, House, LogOut, Menu, MessageCircle, Monitor, Moon, PenLine, Play, Scale, Sun, UserRound, X } from "lucide-react";
-import {
-  applyThemePreference, nextThemePreference, readThemePreference, saveThemePreference, themeLabels,
-} from "./theme";
+import { ArrowRight, Bookmark, Car, ChevronDown, House, LogOut, Menu, MessageCircle, PenLine, Play, Scale, UserRound, X } from "lucide-react";
+import { ThemeToggle } from "./ui/ThemeToggle";
+import { toastDuration } from "./ui/Toast";
 import { buildTopPitStopReels, filterPitStopClipsByCategory, pitStopClips, pitStopCategories, type PitStopClip } from "./pitstop";
 export { buildTopPitStopReels, filterPitStopClipsByCategory } from "./pitstop";
 import {
@@ -567,17 +566,13 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
   const setActionMessage = (text: string) => setToast(text ? { id: Date.now(), text } : null);
   useEffect(() => {
     if (!toast) return;
-    // Longer messages stay up longer, within 4-10 seconds.
-    const timer = window.setTimeout(() => setToast(null), Math.min(10000, 4000 + toast.text.length * 60));
+    const timer = window.setTimeout(() => setToast(null), toastDuration(toast.text));
     return () => window.clearTimeout(timer);
   }, [toast]);
   // null until the server has answered the ownership call, which only exists once the feed
   // hardening migration is applied. Until then no delete action is offered.
   const [myPostIds, setMyPostIds] = useState<ReadonlySet<string> | null>(null);
   const [navMenuOpen, setNavMenuOpen] = useState(false);
-  const [themePreference, setThemePreference] = useState(readThemePreference);
-  useEffect(() => { applyThemePreference(themePreference); }, [themePreference]);
-  const ThemeIcon = { system: Monitor, light: Sun, dark: Moon }[themePreference];
   const [helpfulIds, setHelpfulIds] = useState<string[]>(() => readStoredJson("otofolks.helpful.v1", []));
   const [confirmedIds, setConfirmedIds] = useState<string[]>(() => readStoredJson("otofolks.confirmed.v1", []));
   const [activeView, setActiveView] = useState<AppView>(viewFromHash);
@@ -1124,15 +1119,7 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
               <UserRound size={20} aria-hidden="true" />{auth.isSignedIn ? "Account" : "Sign in"}
             </a>
           </div>
-          <button className="theme-toggle" type="button" title="Switch theme"
-            aria-label={`Theme: ${themeLabels[themePreference]}. Switch to ${themeLabels[nextThemePreference(themePreference)]}`}
-            onClick={() => {
-              const next = nextThemePreference(themePreference);
-              setThemePreference(next);
-              saveThemePreference(next);
-            }}>
-            <ThemeIcon size={20} aria-hidden="true" />
-          </button>
+          <ThemeToggle tone="header" className="theme-toggle" />
         </nav>
       </header>
 
