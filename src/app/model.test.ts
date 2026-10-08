@@ -9,6 +9,7 @@ describe("viewFromPath", () => {
   it("matches the way the router does: any letter case, trailing slashes, percent-encoding", () => {
     expect(viewFromPath("/Garage")).toBe("garage");
     expect(viewFromPath("/garage/")).toBe("garage");
+    expect(viewFromPath("/guides/service-records")).toBe("guides");
     expect(viewFromPath("/COMMUNITY/Write/")).toBe("write");
     expect(viewFromPath("/%61ccount")).toBe("account");
     expect(viewFromPath("/%67arage")).toBe("garage");
@@ -35,7 +36,7 @@ describe("memberViews", () => {
     // members only (the database enforces the same), so feed and write must stay here.
     expect([...memberViews].sort()).toEqual(["feed", "garage", "write"]);
     const open = Object.keys(viewPaths).filter((view) => !memberViews.has(view as keyof typeof viewPaths)).sort();
-    expect(open).toEqual(["account", "compare", "owner-onboarding", "pit-stop", "top"]);
+    expect(open).toEqual(["account", "compare", "guides", "owner-onboarding", "pit-stop", "top"]);
   });
 });
 

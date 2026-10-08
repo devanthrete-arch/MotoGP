@@ -18,7 +18,7 @@ export const seedPostIds = new Set(seedPosts.map(post => post.id));
 
 export const postSource = (id: string) => isSharedPost(id) ? "Shared" : seedPostIds.has(id) ? "Example" : "On this device";
 
-export type AppView = "top" | "feed" | "pit-stop" | "compare" | "account" | "garage" | "write" | "owner-onboarding";
+export type AppView = "top" | "feed" | "pit-stop" | "compare" | "account" | "garage" | "write" | "owner-onboarding" | "guides";
 
 // Where each view lives. Links, redirects and the route table all read this one map.
 export const viewPaths: Record<AppView, string> = {
@@ -30,6 +30,7 @@ export const viewPaths: Record<AppView, string> = {
   compare: "/compare",
   account: "/account",
   "owner-onboarding": "/owner/onboarding",
+  guides: "/guides",
 };
 
 // Views that need an account. Every other view is open to visitors. The route guard, the
@@ -47,11 +48,15 @@ export const viewTitles: Record<AppView, string> = {
   compare: "Compare · Otofolks",
   account: "Account · Otofolks",
   "owner-onboarding": "Add your vehicle · Otofolks",
+  guides: "Care guides · Otofolks",
 };
 
 // Asks the router's own matcher, so the navigation cannot mark one view while another is shown:
 // letter case, a trailing slash and percent-encoding are all treated as the route table treats them.
-const viewRoutes = (Object.keys(viewPaths) as AppView[]).map((view) => ({ id: view, path: viewPaths[view] }));
+const viewRoutes = (Object.keys(viewPaths) as AppView[]).map((view) => ({
+  id: view,
+  path: view === "guides" ? `${viewPaths.guides}/:slug?` : viewPaths[view],
+}));
 export const viewFromPath = (pathname: string): AppView =>
   (matchRoutes(viewRoutes, { pathname })?.[0]?.route.id as AppView | undefined) ?? "top";
 

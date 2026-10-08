@@ -65,7 +65,7 @@ export async function expectNoOverflow(page: Page) {
 
 // The parts of the app that are separate files, fetched apart from the first load: the views a
 // visitor may open, and what only a signed-in member ever needs.
-export const openViews = ["CompareView", "PitStopView"];
+export const openViews = ["CompareView", "GuidesView", "PitStopView"];
 export const memberOnlyViews = ["CloudWorkspacePanel", "FeedView", "GarageView", "HomeView", "WriteView"];
 export const fetchedViews = [...openViews, ...memberOnlyViews].sort();
 
