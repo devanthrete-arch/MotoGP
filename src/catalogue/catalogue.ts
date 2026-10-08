@@ -5,7 +5,7 @@ export type CatalogueVariant = {
   id: string;
   name: string;
   source: { label: string; url: string };
-  sourceCheckedOn: string;
+  sourceCheckedOn?: string;
 };
 
 export type CatalogueModel = {
@@ -17,7 +17,6 @@ export type CatalogueModel = {
   generationStatus: "manual";
 };
 
-const sourceCheckedOn = "2026-10-09";
 const modelAliases: Record<string, readonly string[]> = {
   "Toyota|Innova Hycross": ["Innova HyCross", "Innova Hycross"],
   "Toyota|Hyryder": ["Urban Cruiser Hyryder", "Urban Cruiser HyRyder"],
@@ -49,7 +48,6 @@ for (const entry of verifiedCatalogueEntries) {
       id: `${id}:${slug(entry.variant)}`,
       name: entry.variant,
       source: entry.source,
-      sourceCheckedOn,
     }],
   });
 }

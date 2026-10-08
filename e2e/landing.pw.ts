@@ -145,7 +145,7 @@ test("the car finder stays public and leads to Compare; owner stories ask for si
   await page.getByLabel("State or territory").selectOption("Delhi");
   await page.getByLabel("Petrol price (₹ per litre)").fill("96");
   await page.getByRole("button", { name: "Show my matches" }).click();
-  await expect(page.getByRole("heading", { name: "We’re still checking the details" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Recommendations aren’t ready yet" })).toBeVisible();
   await page.getByRole("link", { name: "Compare cars" }).click();
   await expect(page).toHaveURL(/\/compare$/);
   await expect(page.getByRole("heading", { name: "Which car feels right?" })).toBeFocused();

@@ -92,10 +92,17 @@ export function FindCarView() {
               </li>;
             })}
           </ol>
-        </> : <>
+        </> : !result.notEnoughVerifiedData.length && Object.values(result.excluded).every(items => !items.length) ? <>
+          <h2 id="find-car-result-title">Recommendations aren’t ready yet</h2>
+          <p>We don’t yet have complete, verified car records with prices and ownership costs for your state, so we haven’t ranked any.</p>
+          <p className="find-car__honesty"><Info size={17} aria-hidden="true" /> We haven’t used example prices or guessed a winner.</p>
+        </> : result.notEnoughVerifiedData.length ? <>
           <h2 id="find-car-result-title">We’re still checking the details</h2>
           <p>No car meets our evidence standard for your answers yet. We need current, variant-specific on-road prices in {answers.state}, owner running costs, service reach near you and a traceable safety source before ranking any match.</p>
           <p className="find-car__honesty"><Info size={17} aria-hidden="true" /> We haven’t used example prices or guessed a winner.</p>
+        </> : <>
+          <h2 id="find-car-result-title">No verified cars fit those answers</h2>
+          <p>Try a different budget, fuel preference or area. We won’t show a car that doesn’t meet the details you gave us.</p>
         </>}
         <div className="find-car__actions">
           <Link className="ui-button ui-button--secondary" to={viewPaths.compare}>Compare cars</Link>

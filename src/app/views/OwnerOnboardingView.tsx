@@ -99,9 +99,11 @@ export function OwnerOnboardingView() {
           <SelectField label="Variant" options={variants.map(item => item.name)} placeholder="Choose a variant" value={draft.variant}
             onChange={event => patch({ variant: event.target.value })} />
           {selectedVariant && <a className="owner-onboarding__source" href={selectedVariant.source.url} target="_blank" rel="noreferrer">
-            Official specs: {selectedVariant.source.label} · checked {new Date(`${selectedVariant.sourceCheckedOn}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+            Manufacturer source: {selectedVariant.source.label}{selectedVariant.sourceCheckedOn
+              ? ` · checked ${new Date(`${selectedVariant.sourceCheckedOn}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
+              : " · check date not recorded"}
           </a>}
-          <p className="owner-onboarding__note">Only source-backed variants are listed. Generation names are not fully catalogued yet; add one from your vehicle documents or leave it blank.</p>
+          <p className="owner-onboarding__note">Variants link to manufacturer sources. Check dates and generation coverage are still being verified; add the generation from your vehicle documents or leave it blank.</p>
           <Button type="button" variant="ghost" onClick={() => patch({ manual: true, brand: "", model: "", variant: "" })}>My vehicle is not listed</Button>
         </> : <>
           {draft.kind === "two-wheeler" && <p className="owner-onboarding__note">Two-wheeler catalogue is coming later. Add the make and model as shown on your documents.</p>}

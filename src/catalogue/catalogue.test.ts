@@ -22,7 +22,10 @@ describe("manufacturer-backed vehicle catalogue", () => {
       for (const variant of model.variants) {
         expect(variantIds.has(variant.id)).toBe(false);
         variantIds.add(variant.id);
-        expect(variant.sourceCheckedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+        if (variant.sourceCheckedOn) {
+          expect(variant.sourceCheckedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+          expect(Date.parse(`${variant.sourceCheckedOn}T00:00:00Z`)).toBeLessThanOrEqual(Date.now());
+        }
         const source = new URL(variant.source.url);
         expect(source.protocol).toBe("https:");
         expect(officialHosts.some(host => source.hostname === host || source.hostname.endsWith(`.${host}`))).toBe(true);

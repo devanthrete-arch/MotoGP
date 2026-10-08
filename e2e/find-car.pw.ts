@@ -18,8 +18,8 @@ for (const width of [390, 1440]) {
         .map(field => ({ name: field.labels?.[0]?.textContent, value: field.value, message: field.validationMessage })));
     expect(invalidFields).toEqual([]);
     await page.getByRole("button", { name: "Show my matches" }).click();
-    await expect(page.getByRole("heading", { name: "We’re still checking the details" })).toBeVisible();
-    await expect(page.getByText("We haven’t used example prices or guessed a winner.")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Recommendations aren’t ready yet" })).toBeVisible();
+    await expect(page.getByText("We don’t yet have complete, verified car records with prices and ownership costs for your state, so we haven’t ranked any.")).toBeVisible();
     await expect(page.getByRole("link", { name: "Compare cars" })).toHaveAttribute("href", "/compare");
     await expectNoOverflow(page);
   });

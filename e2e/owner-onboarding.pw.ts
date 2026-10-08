@@ -9,8 +9,8 @@ test("owner setup offers catalogue and manual two-wheeler paths without leaving 
   await page.getByLabel("Make").selectOption({ label: "Tata" });
   await expect(page.getByLabel("Model")).toHaveValue("Nexon");
   await expect(page.getByLabel("Variant")).toHaveValue("Smart Petrol MT");
-  await expect(page.getByRole("link", { name: /Official specs: Tata Motors/ })).toHaveAttribute("href", /cars\.tatamotors\.com/);
-  await expect(page.locator(".owner-onboarding__note")).toContainText("Generation names are not fully catalogued yet");
+  await expect(page.getByRole("link", { name: /Manufacturer source: Tata Motors/ })).toHaveAttribute("href", /cars\.tatamotors\.com/);
+  await expect(page.locator(".owner-onboarding__note")).toContainText("generation coverage are still being verified");
   await page.getByRole("button", { name: "My vehicle is not listed" }).click();
   await page.getByLabel("Make").fill("Honda");
   await page.getByLabel("Model").fill("City");
