@@ -18,6 +18,7 @@
     "@fastify/cors": "^11.3.0",
     "@fontsource-variable/geist": "^5.3.0",
     "@fontsource-variable/geist-mono": "^5.3.0",
+    "@react-three/fiber": "^9.8.1",
     "@supabase/postgrest-js": "^2.111.0",
     "@vitejs/plugin-react": "^4.3.4",
     "fastify": "^5.10.0",
@@ -25,6 +26,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router": "^7.18.4",
+    "three": "^0.186.1",
     "typescript": "^5.7.2",
     "vite": "^6.0.7"
   },
@@ -35,6 +37,7 @@
     "@types/node": "^26.1.1",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
+    "@types/three": "^0.186.0",
     "tsx": "^4.23.1",
     "vitest": "^4.1.10"
   }
