@@ -27,7 +27,7 @@
         },
         {
           "key": "Content-Security-Policy-Report-Only",
-          "value": "default-src 'self'; script-src 'self' https://*.clerk.accounts.dev https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://img.clerk.com; connect-src 'self' https://*.clerk.accounts.dev https://*.supabase.co https://clerk-telemetry.com; frame-src https://challenges.cloudflare.com https://www.instagram.com; worker-src 'self' blob:; manifest-src 'self'"
+          "value": "default-src 'self'; script-src 'self' https://*.clerk.accounts.dev https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://img.clerk.com; connect-src 'self' https://*.clerk.accounts.dev https://*.supabase.co https://clerk-telemetry.com; frame-src https://challenges.cloudflare.com https://www.instagram.com; worker-src 'self' blob:; manifest-src 'self'"
         }
       ],
       "source": "/(.*)"

@@ -1,0 +1,194 @@
+/* Otofolks design tokens — "Precision".
+   Ivory gradient base, blue-slate secondary, indicator-amber accent, glass surfaces.
+   Light is the default. The dark values are written twice on purpose: once for the system
+   setting, once for an explicit choice; src/styles/tokens.test.ts fails if the two drift. */
+:root {
+  /* palette stops */
+  --ivory-0: #ffffff;
+  --ivory-1: #faf8f3;
+  --ivory-2: #eeebe2;
+  --slate-0: #3d4962;
+  --slate-1: #2a3449;
+  --slate-2: #1b2231;
+
+  /* page */
+  --color-bg: #faf8f3;
+  --gradient-page:
+    radial-gradient(60vmax 60vmax at 108% -12%, rgba(74, 88, 114, 0.16), transparent 62%),
+    radial-gradient(52vmax 52vmax at -14% 112%, rgba(184, 110, 0, 0.08), transparent 62%),
+    linear-gradient(160deg, var(--ivory-0) 0%, var(--ivory-1) 45%, var(--ivory-2) 100%);
+
+  /* surfaces */
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-surface-sunken: #f3f0e8;
+  --color-header: #222b3d;
+  --glass-fill: linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.52));
+  --glass-fill-bar: rgba(255, 255, 255, 0.74);
+  --glass-border: rgba(255, 255, 255, 0.9);
+  --glass-outline: rgba(74, 88, 114, 0.16);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.95);
+  --glass-shadow: 0 12px 30px rgba(34, 43, 61, 0.1);
+  --glass-blur: 16px;
+
+  /* text */
+  --color-text: #222b3d;
+  --color-text-secondary: #3b4660;
+  --color-text-muted: #4a5872;
+  --color-text-subtle: #7a869c;
+
+  /* lines */
+  --color-border: #ddd8cb;
+  --color-border-strong: #a9a595;
+
+  /* actions */
+  --color-primary: #222b3d;
+  --gradient-primary: linear-gradient(135deg, #4a5872, #222b3d);
+  --color-on-primary: #ffffff;
+  --color-primary-text: #2f3b55;
+  --color-primary-soft: rgba(74, 88, 114, 0.1);
+
+  /* accent: the fill is too light for small text on ivory, so text has its own value */
+  --color-accent: #b86e00;
+  --color-accent-text: #8a5300;
+  --color-accent-soft: rgba(184, 110, 0, 0.14);
+
+  /* status */
+  --color-success: #166a3e;
+  --color-danger: #b42318;
+
+  /* type */
+  --font-sans: "Geist Variable", "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "Geist Mono Variable", "Geist Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+
+  /* shape and motion */
+  --radius-pill: 999px;
+  --radius-field: 12px;
+  --radius-card: 16px;
+  --radius-sheet: 22px;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+
+  color: var(--color-text);
+  background: var(--color-bg);
+  font-family: var(--font-sans);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg: #222b3d;
+    --gradient-page:
+      radial-gradient(60vmax 60vmax at 108% -12%, rgba(141, 160, 196, 0.18), transparent 62%),
+      radial-gradient(52vmax 52vmax at -14% 112%, rgba(242, 169, 59, 0.07), transparent 62%),
+      linear-gradient(160deg, var(--slate-0) 0%, var(--slate-1) 45%, var(--slate-2) 100%);
+    --color-surface: #2a3449;
+    --color-surface-raised: #323d54;
+    --color-surface-sunken: #1b2231;
+    --color-header: #161c28;
+    --glass-fill: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05));
+    --glass-fill-bar: rgba(27, 34, 49, 0.78);
+    --glass-border: rgba(255, 255, 255, 0.16);
+    --glass-outline: rgba(0, 0, 0, 0.28);
+    --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    --glass-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+    --color-text: #f3f5f9;
+    --color-text-secondary: #d5dbe6;
+    --color-text-muted: #b8c1d1;
+    --color-text-subtle: #8d98ad;
+    --color-border: #44506a;
+    --color-border-strong: #6d7a95;
+    --color-primary: #f3f5f9;
+    --gradient-primary: linear-gradient(135deg, #ffffff, #e4e1d8);
+    --color-on-primary: #222b3d;
+    --color-primary-text: #c8d6f0;
+    --color-primary-soft: rgba(255, 255, 255, 0.1);
+    --color-accent: #f2a93b;
+    --color-accent-text: #f2a93b;
+    --color-accent-soft: rgba(242, 169, 59, 0.16);
+    --color-success: #5fd08f;
+    --color-danger: #ffa8a0;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-bg: #222b3d;
+  --gradient-page:
+    radial-gradient(60vmax 60vmax at 108% -12%, rgba(141, 160, 196, 0.18), transparent 62%),
+    radial-gradient(52vmax 52vmax at -14% 112%, rgba(242, 169, 59, 0.07), transparent 62%),
+    linear-gradient(160deg, var(--slate-0) 0%, var(--slate-1) 45%, var(--slate-2) 100%);
+  --color-surface: #2a3449;
+  --color-surface-raised: #323d54;
+  --color-surface-sunken: #1b2231;
+  --color-header: #161c28;
+  --glass-fill: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05));
+  --glass-fill-bar: rgba(27, 34, 49, 0.78);
+  --glass-border: rgba(255, 255, 255, 0.16);
+  --glass-outline: rgba(0, 0, 0, 0.28);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  --glass-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+  --color-text: #f3f5f9;
+  --color-text-secondary: #d5dbe6;
+  --color-text-muted: #b8c1d1;
+  --color-text-subtle: #8d98ad;
+  --color-border: #44506a;
+  --color-border-strong: #6d7a95;
+  --color-primary: #f3f5f9;
+  --gradient-primary: linear-gradient(135deg, #ffffff, #e4e1d8);
+  --color-on-primary: #222b3d;
+  --color-primary-text: #c8d6f0;
+  --color-primary-soft: rgba(255, 255, 255, 0.1);
+  --color-accent: #f2a93b;
+  --color-accent-text: #f2a93b;
+  --color-accent-soft: rgba(242, 169, 59, 0.16);
+  --color-success: #5fd08f;
+  --color-danger: #ffa8a0;
+  color-scheme: dark;
+}
+
+/* Where transparency is unwanted or unsupported, glass becomes a plain surface. */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --glass-fill: var(--color-surface);
+    --glass-fill-bar: var(--color-surface);
+    --glass-blur: 0px;
+  }
+}
+
+/* Names the pre-redesign stylesheet reads. They follow the tokens above in both themes, so the
+   old rules re-skin without edits. Remove each alias when its last legacy rule is retired. */
+:root {
+  --background: var(--color-bg);
+  --surface: var(--color-surface);
+  --surface-container-lowest: var(--color-surface);
+  --surface-container-low: var(--color-surface);
+  --surface-container: var(--color-surface-sunken);
+  --surface-container-high: var(--color-surface-raised);
+  --on-surface: var(--color-text);
+  --on-surface-variant: var(--color-text-secondary);
+  --muted: var(--color-text-muted);
+  --subtle: var(--color-text-subtle);
+  --outline: var(--color-border-strong);
+  --outline-variant: var(--color-border);
+  --hair: var(--color-border);
+  --brand: var(--color-header);
+  --accent: var(--color-accent-text);
+  --accent-soft: var(--color-accent-soft);
+  --primary: var(--color-header);
+  --primary-hover: var(--color-header);
+  --primary-fg: var(--color-primary-text);
+  --primary-soft: var(--color-primary-soft);
+  --ok: var(--color-success);
+  --warn: var(--color-accent-text);
+  --error: var(--color-danger);
+  --star: var(--color-accent);
+  --text: var(--color-text);
+  --font-display: var(--font-sans);
+  --radius: var(--radius-card);
+  --radius-lg: var(--radius-card);
+}

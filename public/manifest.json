@@ -5,8 +5,8 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#023970",
-  "theme_color": "#023970",
+  "background_color": "#faf8f3",
+  "theme_color": "#222b3d",
   "orientation": "portrait-primary",
   "categories": ["autos", "lifestyle", "productivity"],
   "icons": [
