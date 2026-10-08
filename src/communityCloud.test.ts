@@ -44,8 +44,10 @@ describe("community client", () => {
     vi.stubGlobal("fetch", fetchMock);
     const client = createClerkSupabaseClient(config, async () => "clerk-token");
     expect((await publishCommunityPost(client, draft)).id).toBe("cloud:post-id");
-    await expect(publishCommunityComment(client, "cloud:post-id", "Owner", "Reply")).resolves.toBeUndefined();
+    await expect(publishCommunityComment(client, "cloud:post-id", "Reply")).resolves.toBeUndefined();
     expect(new Headers(fetchMock.mock.calls[1][1]?.headers).get("authorization")).toBe("Bearer clerk-token");
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).not.toHaveProperty("author");
+    expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body))).toEqual({ post_id: "post-id", body: "Reply" });
   });
 
   it("sends only content columns when publishing, whatever the draft object carries", async () => {
@@ -58,7 +60,7 @@ describe("community client", () => {
     await publishCommunityPost(createClerkSupabaseClient(config, async () => "clerk-token"), tampered);
     const sent = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
     expect(Object.keys(sent).sort()).toEqual(
-      ["author", "body", "brand", "city", "label", "model", "odometerKm", "title", "topic", "variant"]);
+      ["body", "brand", "city", "label", "model", "odometerKm", "title", "topic", "variant"]);
   });
 
   it("lists the caller's own posts with the shared-post prefix", async () => {

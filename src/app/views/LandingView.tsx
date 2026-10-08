@@ -2,7 +2,7 @@
 //
 // It reads nothing from the state hook except the registration number being typed: for a visitor
 // the hook holds only example data, which must not be shown as theirs.
-import { ArrowRight, BookOpen, Box, Camera } from "lucide-react";
+import { ArrowRight, Bike, BookOpen, Box, Camera, CarFront } from "lucide-react";
 import { Suspense, lazy, type CSSProperties, type FormEvent, useRef, useState } from "react";
 import { Link, useHref, useLinkClickHandler, useNavigate } from "react-router";
 import { Button, LinkButton, type LinkButtonProps } from "../../ui/Button";
@@ -40,6 +40,7 @@ export function LandingView() {
   // An error waits until the visitor has left the field or tried to continue.
   const [checked, setChecked] = useState(false);
   const [showViewer, setShowViewer] = useState(false);
+  const [vehicleShape, setVehicleShape] = useState<"crossover" | "motorcycle">("crossover");
   const [paint, setPaint] = useState(vehiclePaints[0].value);
   const registration = parseRegistration(plateDraft);
 
@@ -68,7 +69,7 @@ export function LandingView() {
         <div className="landing-stage" data-ready={registration.ok ? "" : undefined}>
           <div className="landing-stage__visual">
             {showViewer ? <Suspense fallback={<img className="landing-stage__poster" src={posterPath} alt="Generic compact crossover concept" />}>
-              <InteractiveVehicle paint={paint} />
+              <InteractiveVehicle paint={paint} shape={vehicleShape} />
             </Suspense> : <img className="landing-stage__poster" src={posterPath} alt="Generic compact crossover concept, shown for illustration" width="1439" height="810" fetchPriority="high" />}
           </div>
           <div className="landing-stage__controls">
@@ -77,6 +78,14 @@ export function LandingView() {
               {showViewer ? "Back to photo" : "View in 3D"}
             </Button>
             {showViewer && <>
+              <div className="landing-stage__shapes" role="group" aria-label="Illustrative vehicle type">
+                <Button size="sm" variant={vehicleShape === "crossover" ? "primary" : "secondary"}
+                  aria-pressed={vehicleShape === "crossover"} onClick={() => setVehicleShape("crossover")}
+                  icon={<CarFront size={15} aria-hidden="true" />}>Car</Button>
+                <Button size="sm" variant={vehicleShape === "motorcycle" ? "primary" : "secondary"}
+                  aria-pressed={vehicleShape === "motorcycle"} onClick={() => setVehicleShape("motorcycle")}
+                  icon={<Bike size={15} aria-hidden="true" />}>Two-wheeler</Button>
+              </div>
               <div className="landing-stage__swatches" role="group" aria-label="Vehicle colour">
                 {vehiclePaints.map(color => <button key={color.value} className="landing-stage__swatch" type="button"
                   aria-label={color.name} aria-pressed={paint === color.value} title={color.name}
@@ -103,7 +112,7 @@ export function LandingView() {
         <RouteButton to={viewPaths.guides} icon={<BookOpen size={16} aria-hidden="true" />}>Care guides</RouteButton>
         <RouteButton to={viewPaths["find-car"]}>Find my next car</RouteButton>
         <RouteButton to={viewPaths.feed}>Read owner stories</RouteButton>
-        <p className="landing-note">Guides and Compare are open. Owner stories open after you sign in.</p>
+        <p className="landing-note">Guides, Compare and the car finder are open. Owner stories open after you sign in.</p>
       </div>
 
       <div className="landing-today">

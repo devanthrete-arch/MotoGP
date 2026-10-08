@@ -7,7 +7,7 @@ import * as THREE from "three";
 import { RotateCcw, RotateCw } from "lucide-react";
 import { IconButton } from "../ui/Button";
 
-type Props = { paint: string };
+type Props = { paint: string; shape: "crossover" | "motorcycle" };
 type BoundaryProps = { children: ReactNode; fallback: ReactNode };
 type BoundaryState = { failed: boolean };
 
@@ -101,7 +101,72 @@ function Crossover({ paint, rotation }: { paint: string; rotation: number }) {
   </group>;
 }
 
-function Scene({ paint, rotation, controls }: { paint: string; rotation: number; controls: MutableRefObject<OrbitControlsType | null> }) {
+function BikeWheel({ x, paint }: { x: number; paint: string }) {
+  return <group position={[x, 0.48, 0]}>
+    <mesh rotation={[Math.PI / 2, 0, 0]}>
+      <cylinderGeometry args={[0.39, 0.39, 0.11, 28]} />
+      <meshStandardMaterial color="#222629" roughness={0.84} />
+    </mesh>
+    <mesh>
+      <torusGeometry args={[0.29, 0.025, 7, 24]} />
+      <meshStandardMaterial color="#b7bab5" metalness={0.82} roughness={0.3} />
+    </mesh>
+    <mesh rotation={[Math.PI / 2, 0, 0]}>
+      <cylinderGeometry args={[0.09, 0.09, 0.15, 16]} />
+      <meshStandardMaterial color={paint} metalness={0.62} roughness={0.32} />
+    </mesh>
+  </group>;
+}
+
+function FrameTube({ from, to, radius = 0.045, color = "#858c8b" }: {
+  from: [number, number]; to: [number, number]; radius?: number; color?: string;
+}) {
+  const dx = to[0] - from[0];
+  const dy = to[1] - from[1];
+  return <mesh position={[(from[0] + to[0]) / 2, (from[1] + to[1]) / 2, 0]}
+    rotation={[0, 0, Math.atan2(-dx, dy)]}>
+    <cylinderGeometry args={[radius, radius, Math.hypot(dx, dy), 8]} />
+    <meshStandardMaterial color={color} metalness={0.72} roughness={0.3} />
+  </mesh>;
+}
+
+function Motorcycle({ paint, rotation }: { paint: string; rotation: number }) {
+  return <group rotation={[0, rotation, 0]}>
+    <BikeWheel x={-0.94} paint={paint} />
+    <BikeWheel x={0.94} paint={paint} />
+    <FrameTube from={[-0.94, 0.48]} to={[-0.28, 0.9]} />
+    <FrameTube from={[-0.28, 0.9]} to={[0.34, 0.82]} />
+    <FrameTube from={[0.34, 0.82]} to={[0.94, 0.48]} />
+    <FrameTube from={[-0.28, 0.9]} to={[0.5, 1.02]} />
+    <FrameTube from={[0.5, 1.02]} to={[0.94, 0.48]} radius={0.032} />
+    <mesh position={[0.02, 0.75, 0]}>
+      <boxGeometry args={[0.5, 0.42, 0.35]} />
+      <meshStandardMaterial color="#353c3e" metalness={0.42} roughness={0.44} />
+    </mesh>
+    <mesh position={[-0.38, 1.02, 0]} rotation={[0, 0, Math.PI / 2]}>
+      <capsuleGeometry args={[0.19, 0.38, 4, 10]} />
+      <meshPhysicalMaterial color={paint} metalness={0.55} roughness={0.32} clearcoat={0.8} />
+    </mesh>
+    <mesh position={[-0.6, 1.11, 0]} rotation={[0, 0, -0.08]}>
+      <boxGeometry args={[0.48, 0.12, 0.34]} />
+      <meshStandardMaterial color="#242a2c" roughness={0.72} />
+    </mesh>
+    <FrameTube from={[0.55, 1.14]} to={[0.92, 0.53]} radius={0.025} color="#b7bab5" />
+    <FrameTube from={[0.46, 1.14]} to={[0.85, 0.51]} radius={0.025} color="#b7bab5" />
+    <FrameTube from={[0.43, 1.18]} to={[0.72, 1.24]} radius={0.026} color="#b7bab5" />
+    <mesh position={[0.42, 1.08, 0]}>
+      <sphereGeometry args={[0.14, 16, 12]} />
+      <meshStandardMaterial color="#f1edcf" emissive="#b9b38e" emissiveIntensity={0.18} />
+    </mesh>
+    <mesh position={[-0.88, 1.14, 0]}>
+      <boxGeometry args={[0.08, 0.12, 0.22]} />
+      <meshStandardMaterial color="#8f3231" emissive="#511817" emissiveIntensity={0.12} />
+    </mesh>
+    <FrameTube from={[-0.22, 0.67]} to={[-0.74, 0.58]} radius={0.06} color="#858c8b" />
+  </group>;
+}
+
+function Scene({ paint, rotation, shape, controls }: { paint: string; rotation: number; shape: Props["shape"]; controls: MutableRefObject<OrbitControlsType | null> }) {
   const { camera, gl, invalidate } = useThree();
   useEffect(() => {
     const orbit = new OrbitControls(camera, gl.domElement);
@@ -130,22 +195,27 @@ function Scene({ paint, rotation, controls }: { paint: string; rotation: number;
       <circleGeometry args={[2.25, 48]} />
       <meshBasicMaterial color="#40494c" transparent opacity={0.15} depthWrite={false} />
     </mesh>
-    <Crossover paint={paint} rotation={rotation} />
+    {shape === "motorcycle" ? <Motorcycle paint={paint} rotation={rotation} /> : <Crossover paint={paint} rotation={rotation} />}
   </>;
 }
 
-export default function VehicleViewer({ paint }: Props) {
+export default function VehicleViewer({ paint, shape }: Props) {
   const [rotation, setRotation] = useState(0);
   const controls = useRef<OrbitControlsType | null>(null);
-  const poster = <img className="landing-stage__poster" src="/vehicles/compact-crossover-poster.webp"
-    alt="Generic compact crossover concept, shown for illustration" width="1439" height="810" />;
+  const poster = shape === "motorcycle"
+    ? <div className="vehicle-viewer__fallback-bike" role="img" aria-label="Generic motorcycle illustration, shown for illustration">
+      <span /><span /><i />
+    </div>
+    : <img className="landing-stage__poster" src="/vehicles/compact-crossover-poster.webp"
+      alt="Generic compact crossover concept, shown for illustration" width="1439" height="810" />;
+  const label = shape === "motorcycle" ? "motorcycle" : "compact crossover";
 
-  return <div className="vehicle-viewer" data-rotation={rotation.toFixed(3)}>
+  return <div className="vehicle-viewer" data-shape={shape} data-rotation={rotation.toFixed(3)}>
     <ViewerBoundary fallback={poster}>
-      <Canvas className="vehicle-viewer__canvas" role="img" aria-label="Interactive 3D generic compact crossover concept"
+      <Canvas key={shape} className="vehicle-viewer__canvas" role="img" aria-label={`Interactive 3D generic ${label} concept`}
         dpr={[1, 1.5]} frameloop="demand" camera={{ position: [4.6, 2.35, 5.9], fov: 35 }}
         gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}>
-        <Scene paint={paint} rotation={rotation} controls={controls} />
+        <Scene paint={paint} rotation={rotation} shape={shape} controls={controls} />
       </Canvas>
     </ViewerBoundary>
     <div className="vehicle-viewer__actions" aria-label="Vehicle view controls">
@@ -153,6 +223,6 @@ export default function VehicleViewer({ paint }: Props) {
       <IconButton label="Rotate vehicle right" onClick={() => setRotation(value => value + Math.PI / 8)}><RotateCw size={16} aria-hidden="true" /></IconButton>
       <IconButton label="Reset vehicle view" onClick={() => { setRotation(0); controls.current?.reset(); }}><RotateCcw size={16} aria-hidden="true" /></IconButton>
     </div>
-    <p className="vehicle-viewer__caption">Illustrative crossover shape · not a specific make or model</p>
+    <p className="vehicle-viewer__caption">Illustrative {shape} shape · not a specific make or model</p>
   </div>;
 }
