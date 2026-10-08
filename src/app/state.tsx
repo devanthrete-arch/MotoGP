@@ -390,13 +390,10 @@ export function useOtofolksState({ auth, clerkEnabled = false, accountPanel }: A
     if (!auth.isSignedIn) { auth.requireSignIn(viewPaths.feed); return; }
     if (!auth.cloudClient || !isOnline) { setCommunityStatus("Connect to publish a comment."); return; }
     const id = selectedPost.id;
-    const author = (profile.displayName.trim() || "Anonymous garage member").slice(0, 80);
     const body = commentDraft.trim();
     setCommunityBusy(true);
     try {
-      await publishCommunityComment(auth.cloudClient, id, author, body);
-      setSharedPosts(current => current.map(post => post.id === id
-        ? { ...post, comments: [`${author}: ${body}`, ...post.comments] } : post));
+      await publishCommunityComment(auth.cloudClient, id, body);
       setCommentDraft("");
       setCommunityStatus("");
       try {
