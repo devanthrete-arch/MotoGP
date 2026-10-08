@@ -12,6 +12,20 @@ Assessment started: 2026-10-04; updated: 2026-10-06. Target project reference: `
 4. Configure only the public `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in the local and Vercel environments. Never put a secret or service-role key in a `VITE_` variable. The `src/supabase.ts` client obtains a fresh, session-bound Clerk token for each request.
 5. The local app verified Piyush's authenticated read and save; a fresh tab read the saved timestamp. A restore click displayed the expected replacement confirmation, but the browser automation did not confirm the restore itself. After deployment, repeat save/restore with two separate Clerk test accounts and verify cross-account denial and sign-out isolation. The Account screen saves only when the user presses **Save to account**. Shared community publishing and moderation are still separate work.
 
+## Community feed hardening (not yet applied)
+
+`supabase/migrations/202610080001_community_feed_hardening.sql` must be applied after `202610070001_clerk_community_feed.sql`. It is covered by the disposable PostgreSQL tests in `src/communitySchema.test.ts`; it has not been run against the production project. Take a recoverable backup first.
+
+- Members can insert content columns only, so `createdAt`, `status`, `id` and `author_subject` always come from the server.
+- Existing rows are repaired first: anything dated in the future is reset to the time of the migration, and space-padded titles, authors, brands, bodies and comments are trimmed. This changes stored data, which is why the backup comes first.
+- Length limits then apply to the stored value, not the trimmed one.
+- Authors can edit and delete their own published posts. A post a moderator has hidden can be neither edited nor deleted by its author, so the moderation record survives; remove hidden content from the SQL editor on request. Deleting individual comments is not available yet.
+- Reports are stored in `community_reports`. A member can hold one open report per post, can report again after it is resolved, and cannot read reports.
+- Moderators are rows in `community_moderators`, keyed by Clerk subject. No client role can read or write that table; add a moderator from the SQL editor with `insert into public.community_moderators (subject) values ('user_...');`.
+- Moderators call `list_community_reports()` for open reports, oldest first (`list_community_reports(false)` for the 200 most recent of any status), `moderate_community_post(post, 'hidden' | 'published')` and `resolve_community_report(report, 'dismissed' | 'actioned')`. The app has no moderator screen yet.
+
+The web client works before and after this migration: until it is applied, the "Delete my note" action is not offered and sending a report shows that the shared community is not set up.
+
 ## Repository evidence
 
 - Current branch: `codex/otofolks-supabase-integration`; inspected HEAD `fa8a2ce771d0a69875d84bae741a759894b8d284`.

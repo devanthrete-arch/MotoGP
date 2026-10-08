@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { loadCommunityPosts, publishCommunityComment, publishCommunityPost } from "./communityCloud";
+import {
+  deleteCommunityPost, loadCommunityPosts, loadMyCommunityPostIds, publishCommunityComment, publishCommunityPost,
+  reportCommunityPost,
+} from "./communityCloud";
 import { createClerkSupabaseClient } from "./supabase";
 
 const config = { url: "https://example.supabase.co", publishableKey: "sb_publishable_fixture" };
@@ -43,5 +46,60 @@ describe("community client", () => {
     expect((await publishCommunityPost(client, draft)).id).toBe("cloud:post-id");
     await expect(publishCommunityComment(client, "cloud:post-id", "Owner", "Reply")).resolves.toBeUndefined();
     expect(new Headers(fetchMock.mock.calls[1][1]?.headers).get("authorization")).toBe("Bearer clerk-token");
+  });
+
+  it("sends only content columns when publishing, whatever the draft object carries", async () => {
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(
+      JSON.stringify({ id: "post-id", ...draft, createdAt: "2026-10-07T00:00:00Z" }),
+      { status: 201, headers: { "content-type": "application/json" } },
+    ));
+    vi.stubGlobal("fetch", fetchMock);
+    const tampered = { ...draft, createdAt: "2099-01-01T00:00:00Z", status: "hidden", id: "chosen", author_subject: "user_other" };
+    await publishCommunityPost(createClerkSupabaseClient(config, async () => "clerk-token"), tampered);
+    const sent = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(Object.keys(sent).sort()).toEqual(
+      ["author", "body", "brand", "city", "label", "model", "odometerKm", "title", "topic", "variant"]);
+  });
+
+  it("lists the caller's own posts with the shared-post prefix", async () => {
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(
+      JSON.stringify(["post-a", "post-b"]), { status: 200, headers: { "content-type": "application/json" } },
+    ));
+    vi.stubGlobal("fetch", fetchMock);
+    const client = createClerkSupabaseClient(config, async () => "clerk-token");
+    expect(await loadMyCommunityPostIds(client, async () => "clerk-token")).toEqual(["cloud:post-a", "cloud:post-b"]);
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/rpc/my_community_post_ids");
+  });
+
+  it("reports a delete that removed nothing as not the author's note", async () => {
+    const respond = (rows: unknown[]) => vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(
+      JSON.stringify(rows), { status: 200, headers: { "content-type": "application/json" } },
+    ));
+    const client = createClerkSupabaseClient(config, async () => "clerk-token");
+    const deleted = respond([{ id: "post-id" }]);
+    vi.stubGlobal("fetch", deleted);
+    await expect(deleteCommunityPost(client, "cloud:post-id")).resolves.toBeUndefined();
+    expect(deleted.mock.calls[0][1]?.method).toBe("DELETE");
+    expect(String(deleted.mock.calls[0][0])).toContain("id=eq.post-id");
+    vi.stubGlobal("fetch", respond([]));
+    await expect(deleteCommunityPost(client, "cloud:post-id")).rejects.toThrow("Only the author");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(
+      JSON.stringify({ code: "42501", message: "permission denied for table community_posts" }),
+      { status: 403, headers: { "content-type": "application/json" } },
+    )));
+    await expect(deleteCommunityPost(client, "cloud:post-id")).rejects.toThrow("not available yet");
+  });
+
+  it("sends a trimmed report and names a repeat report plainly", async () => {
+    const client = createClerkSupabaseClient(config, async () => "clerk-token");
+    const created = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => new Response(null, { status: 201 }));
+    vi.stubGlobal("fetch", created);
+    await expect(reportCommunityPost(client, "cloud:post-id", "  Abusive  ")).resolves.toBeUndefined();
+    expect(JSON.parse(String(created.mock.calls[0][1]?.body))).toEqual({ post_id: "post-id", reason: "Abusive" });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(
+      JSON.stringify({ code: "23505", message: "duplicate key value" }),
+      { status: 409, headers: { "content-type": "application/json" } },
+    )));
+    await expect(reportCommunityPost(client, "cloud:post-id", "Again")).rejects.toThrow("already reported");
   });
 });
