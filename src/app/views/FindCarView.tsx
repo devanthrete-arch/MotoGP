@@ -70,9 +70,33 @@ export function FindCarView() {
         <Button type="submit" variant="primary" trailingIcon={<ArrowRight size={17} aria-hidden="true" />}>Show my matches</Button>
       </form>
       {result && <section className="find-car__result" aria-live="polite" aria-labelledby="find-car-result-title">
-        <h2 id="find-car-result-title">We’re still checking the details</h2>
-        <p>No car meets our evidence standard for your answers yet. We need current, variant-specific on-road prices in {answers.state}, owner running costs, service reach near you and a traceable safety source before ranking any match.</p>
-        <p className="find-car__honesty"><Info size={17} aria-hidden="true" /> We haven’t used example prices or guessed a winner.</p>
+        {result.recommendations.length ? <>
+          <h2 id="find-car-result-title">Your best-fit cars</h2>
+          <ol className="find-car__matches">
+            {result.recommendations.map(({ candidate, score, monthlyEnergyRupees, monthlyServiceRupees, reasons }, index) => {
+              const sources = [candidate.source, candidate.prices?.[answers.state], candidate.consumption,
+                candidate.serviceSchedule, candidate.serviceCoverage, candidate.firstCarFit, candidate.safetyRatingOutOfFive]
+                .flatMap(fact => fact ? [fact.source] : []);
+              return <li className="find-car__match" key={candidate.id}>
+                <article aria-label={`Rank ${index + 1}: ${candidate.brand} ${candidate.model} ${candidate.variant}`}>
+                  <header><span>#{index + 1}</span><h3>{candidate.brand} {candidate.model}</h3><b>{score}% fit</b></header>
+                  <p>{candidate.variant} · {candidate.fuel}</p>
+                  <p className="find-car__cost">About ₹{Math.round(monthlyEnergyRupees + monthlyServiceRupees).toLocaleString("en-IN")}/month for energy and scheduled service</p>
+                  <ul>{reasons.map(reason => <li key={reason}>{reason}</li>)}</ul>
+                  <details><summary>See official sources</summary>
+                    <ul>{sources.map(source => <li key={`${source.url}:${source.label}`}>
+                      <a href={source.url} target="_blank" rel="noreferrer">{source.label}</a> · checked {source.checkedOn}
+                    </li>)}</ul>
+                  </details>
+                </article>
+              </li>;
+            })}
+          </ol>
+        </> : <>
+          <h2 id="find-car-result-title">We’re still checking the details</h2>
+          <p>No car meets our evidence standard for your answers yet. We need current, variant-specific on-road prices in {answers.state}, owner running costs, service reach near you and a traceable safety source before ranking any match.</p>
+          <p className="find-car__honesty"><Info size={17} aria-hidden="true" /> We haven’t used example prices or guessed a winner.</p>
+        </>}
         <div className="find-car__actions">
           <Link className="ui-button ui-button--secondary" to={viewPaths.compare}>Compare cars</Link>
           <Link className="ui-button ui-button--ghost" to={viewPaths.guides}>Read car-buying guides</Link>
