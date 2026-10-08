@@ -53,9 +53,9 @@ export async function loadMyCommunityPostIds(client: CloudClient, getToken: Cler
 }
 
 export async function publishCommunityPost(client: CloudClient, draft: DraftPost): Promise<OwnerPost> {
-  // Only content columns are sent; the server sets id, author subject, createdAt and status.
+  // The database derives the visible author from the authenticated Clerk subject.
   const { data, error } = await client.from("community_posts").insert({
-    title: draft.title.trim(), author: draft.author, brand: draft.brand, model: draft.model,
+    title: draft.title.trim(), brand: draft.brand, model: draft.model,
     variant: draft.variant, city: draft.city, odometerKm: draft.odometerKm, label: draft.label,
     topic: draft.topic, body: draft.body.trim(),
   }).select(postColumns).single();
@@ -63,9 +63,9 @@ export async function publishCommunityPost(client: CloudClient, draft: DraftPost
   return asPost(data as PostRow);
 }
 
-export async function publishCommunityComment(client: CloudClient, postId: string, author: string, body: string): Promise<void> {
+export async function publishCommunityComment(client: CloudClient, postId: string, body: string): Promise<void> {
   const { error } = await client.from("community_comments")
-    .insert({ post_id: cloudId(postId), author, body: body.trim() });
+    .insert({ post_id: cloudId(postId), body: body.trim() });
   if (error) throw communityError(error.code);
 }
 

@@ -1,5 +1,20 @@
 import { expect, test } from "@playwright/test";
+import { PNG } from "pngjs";
 import { expectNoOverflow, openApp, pageErrors } from "./app";
+
+async function expectRenderedPixels(canvas: import("@playwright/test").Locator) {
+  await expect.poll(async () => {
+    const image = PNG.sync.read(await canvas.screenshot());
+    const corner = [...image.data.slice(0, 4)];
+    let contrasting = 0;
+    for (let offset = 0; offset < image.data.length; offset += 4) {
+      const difference = Math.abs(image.data[offset] - corner[0]) + Math.abs(image.data[offset + 1] - corner[1])
+        + Math.abs(image.data[offset + 2] - corner[2]);
+      if (image.data[offset + 3] > 0 && difference > 36) contrasting += 1;
+    }
+    return contrasting;
+  }).toBeGreaterThan(250);
+}
 
 for (const viewport of [
   { name: "desktop", width: 1440, height: 900 },
@@ -35,9 +50,16 @@ for (const viewport of [
     await page.getByRole("button", { name: "Rotate vehicle right" }).click();
     await expect(page.locator(".vehicle-viewer")).not.toHaveAttribute("data-rotation", "0.000");
     await expectNoOverflow(page);
-
+    await expectRenderedPixels(renderedCanvas);
     await renderedCanvas.screenshot({ path: testInfo.outputPath(`vehicle-canvas-${viewport.name}.png`) });
     await page.screenshot({ path: testInfo.outputPath(`vehicle-stage-${viewport.name}.png`), fullPage: true });
+
+    await page.getByRole("group", { name: "Illustrative vehicle type" }).getByRole("button", { name: "Two-wheeler" }).click();
+    const bikeCanvas = page.getByRole("img", { name: "Interactive 3D generic motorcycle concept" }).locator("canvas");
+    await expect(bikeCanvas).toBeVisible();
+    await expect(page.getByText("Illustrative motorcycle shape · not a specific make or model")).toBeVisible();
+    await expectRenderedPixels(bikeCanvas);
+    await bikeCanvas.screenshot({ path: testInfo.outputPath(`motorcycle-canvas-${viewport.name}.png`) });
     expect(pageErrors(page)).toEqual([]);
   });
 }

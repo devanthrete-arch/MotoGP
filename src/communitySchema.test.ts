@@ -4,6 +4,7 @@ import { expect, it } from "vitest";
 
 const feedMigration = "202610070001_clerk_community_feed.sql";
 const hardeningMigration = "202610080001_community_feed_hardening.sql";
+const authorPseudonymMigration = "202610090001_community_author_pseudonyms.sql";
 
 const applyMigration = async (db: PGlite, name: string) =>
   db.exec(await readFile(new URL(`../supabase/migrations/${name}`, import.meta.url), "utf8"));
@@ -34,6 +35,10 @@ const signInAs = (db: PGlite, subject: string) =>
 const insertPost = (db: PGlite, title = "Test note") => db.query(`
   insert into public.community_posts (title, author, brand, model, variant, city, "odometerKm", label, topic, body)
   values ($1, 'Owner', 'Tata', 'Nexon', '', 'Pune', 100, 'Owner note', 'Service', 'Useful detail')
+`, [title]);
+const insertPostWithoutAuthor = (db: PGlite, title = "Test note") => db.query(`
+  insert into public.community_posts (title, brand, model, variant, city, "odometerKm", label, topic, body)
+  values ($1, 'Tata', 'Nexon', '', 'Pune', 100, 'Owner note', 'Service', 'Useful detail')
 `, [title]);
 
 it("restricts shared posts to signed-in Clerk users and hides subjects", async () => {
@@ -256,6 +261,64 @@ it("sends reports to moderators, who alone can read them and hide a post", async
     expect((await db.query("select report_status from public.list_community_reports()")).rows).toEqual([]);
     expect((await db.query("select report_status from public.list_community_reports(false) order by report_status")).rows)
       .toEqual([{ report_status: "actioned" }, { report_status: "dismissed" }]);
+  } finally {
+    await db.close();
+  }
+}, 30_000);
+
+it("derives visible authors from Clerk subjects and overrides client-supplied names", async () => {
+  const db = await createFeedDatabase([feedMigration, hardeningMigration]);
+  try {
+    await db.exec("set role authenticated");
+    await signInAs(db, "user_test_a");
+    await insertPost(db, "Legacy post");
+    const [legacyPost] = (await db.query<{ id: string }>("select id from public.community_posts")).rows;
+    await db.query(`insert into public.community_comments (post_id, author, body) values ($1, 'Legacy name', 'Reply')`, [legacyPost.id]);
+
+    await db.exec("reset role");
+    await applyMigration(db, authorPseudonymMigration);
+    const [repairedPost] = (await db.query<{ id: string; author: string }>(
+      "select id, author from public.community_posts")).rows;
+    const [repairedComment] = (await db.query<{ author: string }>(
+      "select author from public.community_comments")).rows;
+    expect(repairedPost.author).toMatch(/^Member-[a-f0-9]{20}$/);
+    expect(repairedComment.author).toBe(repairedPost.author);
+
+    await db.exec("set role authenticated");
+    await signInAs(db, "user_test_a");
+    await db.query(`
+      insert into public.community_posts (title, author, brand, model, variant, city, "odometerKm", label, topic, body)
+      values ('Impersonation', 'Piyush Sahoo', 'Tata', 'Nexon', '', 'Pune', 100, 'Owner note', 'Service', 'Text')
+    `);
+    const [impostorPost] = (await db.query<{ author: string }>(
+      "select author from public.community_posts where title = 'Impersonation'")).rows;
+    expect(impostorPost.author).toBe(repairedPost.author);
+    await insertPostWithoutAuthor(db, "Post by A");
+    const [postA] = (await db.query<{ id: string; author: string }>(
+      "select id, author from public.community_posts where title = 'Post by A'")).rows;
+    expect(postA.author).toMatch(/^Member-[a-f0-9]{20}$/);
+    expect(postA.author).toBe(repairedPost.author);
+
+    await db.query(`insert into public.community_comments (post_id, body) values ($1, 'Reply')`, [postA.id]);
+    const [commentA] = (await db.query<{ author: string }>(
+      "select author from public.community_comments where body = 'Reply'")).rows;
+    expect(commentA.author).toBe(postA.author);
+
+    await signInAs(db, "user_test_b");
+    const [expectedAuthorB] = (await db.query<{ author: string }>("select public.community_author_pseudonym() as author")).rows;
+    expect(expectedAuthorB.author).not.toBe(postA.author);
+    await db.query(`
+      insert into public.community_comments (post_id, author, body) values ($1, 'Piyush Sahoo', 'Forged')
+    `, [postA.id]);
+    const [forgedComment] = (await db.query<{ author: string }>(
+      "select author from public.community_comments where body = 'Forged'")).rows;
+    expect(forgedComment.author).toBe(expectedAuthorB.author);
+    await insertPostWithoutAuthor(db, "Post by B");
+    const [postB] = (await db.query<{ author: string }>(
+      "select author from public.community_posts where title = 'Post by B'")).rows;
+    expect(postB.author).toMatch(/^Member-[a-f0-9]{20}$/);
+    expect(postB.author).not.toBe(postA.author);
+    expect(postB.author).toBe(expectedAuthorB.author);
   } finally {
     await db.close();
   }
