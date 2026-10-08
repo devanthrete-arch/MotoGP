@@ -11,8 +11,8 @@ import { gzipSync } from "node:zlib";
 // First load is about 136 kB: React and React DOM, Clerk, the router (about 19 kB), the database
 // client (about 25 kB, a candidate for loading on demand) and the shared state for every view.
 // PR5 adds a 2.4 kB gzip owner-onboarding chunk loaded on demand; route metadata adds <0.2 kB upfront.
-// PR6 adds accessible vehicle editing and deletion inside the already-lazy Garage view.
-export const budgets = { initialJs: 137_000, totalJs: 155_000, css: 13_000 };
+// PR6 adds the Garage editor; PR7 adds source and alias metadata in the lazy owner-onboarding view.
+export const budgets = { initialJs: 137_000, totalJs: 156_000, css: 13_000 };
 
 /** Asset file names index.html loads up front: its scripts, module preloads and stylesheets. */
 export function initialAssets(indexHtml) {
