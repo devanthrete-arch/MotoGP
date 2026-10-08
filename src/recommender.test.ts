@@ -40,6 +40,18 @@ describe("recommender ranking", () => {
     expect(rankCars([complete()], { ...preferences, fuelPricePerLitre: undefined }, "2026-10-09").recommendations).toEqual([]);
   });
 
+  it("uses the shopper's monthly service comfort range in the fit score", () => {
+    const lowBudget = rankCars([complete()], { ...preferences, monthlyServiceBudgetRupees: 500 }, "2026-10-09").recommendations[0];
+    const highBudget = rankCars([complete()], { ...preferences, monthlyServiceBudgetRupees: 2_000 }, "2026-10-09").recommendations[0];
+    expect(lowBudget.score).toBeLessThan(highBudget.score);
+    expect(lowBudget.reasons).toContain("Scheduled service is above your ₹500/month comfort range");
+    expect(highBudget.reasons).toContain("Scheduled service fits your ₹2,000/month comfort range");
+  });
+
+  it("does not rank cars for an invalid monthly service budget", () => {
+    expect(rankCars([complete()], { ...preferences, monthlyServiceBudgetRupees: 0 }, "2026-10-09").recommendations).toEqual([]);
+  });
+
   it("uses the user's CNG or electricity rate and the matching efficiency unit", () => {
     const cng = rankCars([complete({ fuel: "CNG", consumption: fact(20), consumptionUnit: "km-per-kg" })], {
       ...preferences, fuel: "CNG", fuelPricePerKg: 70,

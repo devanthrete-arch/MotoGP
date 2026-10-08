@@ -21,7 +21,7 @@ export function FindCarView() {
   const [result, setResult] = useState<ReturnType<typeof rankCars> | null>(null);
   const [answers, setAnswers] = useState<RecommenderPreferences>({
     state: "", localityTier: "urban", budgetRupees: 1_000_000, monthlyKm: 800,
-    fuel: "Petrol", firstCar: true,
+    fuel: "Petrol", firstCar: true, monthlyServiceBudgetRupees: undefined,
   });
 
   const update = <K extends keyof RecommenderPreferences>(key: K, value: RecommenderPreferences[K]) => {
@@ -49,6 +49,16 @@ export function FindCarView() {
             onChange={event => update("state", event.target.value)} options={priceStates} />
           <TextField label="Driving each month (km)" type="number" min="1" step="any" required
             value={answers.monthlyKm} onChange={event => update("monthlyKm", Number(event.target.value))} />
+          <SelectField label="Comfortable monthly service cost" required
+            hint="Scheduled servicing only. Repairs and fuel are separate."
+            value={answers.monthlyServiceBudgetRupees === undefined ? "any" : String(answers.monthlyServiceBudgetRupees)}
+            onChange={event => update("monthlyServiceBudgetRupees", event.target.value === "any" ? undefined : Number(event.target.value))}
+            placeholder="Choose a monthly amount" options={[
+              { value: "1000", label: "₹1,000 or less" },
+              { value: "2000", label: "₹2,000 or less" },
+              { value: "4000", label: "₹4,000 or less" },
+              { value: "any", label: "No preference" },
+            ]} />
           <SelectField label="Where you drive most" value={answers.localityTier}
             onChange={event => update("localityTier", event.target.value as LocalityTier)} options={localityOptions} />
           <SelectField label="Fuel preference" value={fuel} onChange={event => {

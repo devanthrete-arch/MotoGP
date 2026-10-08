@@ -27,6 +27,7 @@ export type RecommenderPreferences = {
   localityTier: LocalityTier;
   budgetRupees: number;
   monthlyKm: number;
+  monthlyServiceBudgetRupees?: number;
   fuel: FuelType | "Any";
   firstCar: boolean;
   fuelPricePerLitre?: number;
@@ -126,7 +127,9 @@ export function rankCars(
 ): RankingResult {
   const result: RankingResult = { recommendations: [], notEnoughVerifiedData: [], excluded: { fuel: [], budget: [], locality: [] } };
   if (!preferences.state.trim() || !Number.isFinite(preferences.budgetRupees) || preferences.budgetRupees <= 0
-    || !Number.isFinite(preferences.monthlyKm) || preferences.monthlyKm <= 0) return result;
+    || !Number.isFinite(preferences.monthlyKm) || preferences.monthlyKm <= 0
+    || (preferences.monthlyServiceBudgetRupees !== undefined
+      && (!Number.isFinite(preferences.monthlyServiceBudgetRupees) || preferences.monthlyServiceBudgetRupees <= 0))) return result;
 
   for (const candidate of candidates) {
     if (missingVerifiedFacts(candidate, preferences, today)) {
@@ -153,12 +156,15 @@ export function rankCars(
     const annualServiceRupees = candidate.serviceSchedule!.value.reduce((total, visit) =>
       total + Math.floor(annualKm / visit.intervalKm) * visit.visitCostRupees, 0);
     const monthlyServiceRupees = annualServiceRupees / 12;
+    const serviceCostFit = preferences.monthlyServiceBudgetRupees === undefined
+      ? 1 / (1 + monthlyServiceRupees / 2_000)
+      : Math.min(1, preferences.monthlyServiceBudgetRupees / Math.max(1, monthlyServiceRupees));
     const firstCarFit = candidate.firstCarFit!.value;
     const safety = candidate.safetyRatingOutOfFive!.value / 5;
     const score = Math.round(100 * (
       0.25 * ((preferences.budgetRupees - price) / preferences.budgetRupees)
       + 0.25 / (1 + monthlyEnergyRupees / 10_000)
-      + 0.2 / (1 + monthlyServiceRupees / 2_000)
+      + 0.2 * serviceCostFit
       + 0.1 * coverage
       + 0.1 * (preferences.firstCar ? firstCarFit : 0.5)
       + 0.1 * safety
@@ -167,6 +173,11 @@ export function rankCars(
       `Within your budget by ₹${Math.round(preferences.budgetRupees - price).toLocaleString("en-IN")}`,
       `About ₹${Math.round(monthlyEnergyRupees).toLocaleString("en-IN")}/month for energy at your rate`,
       `About ₹${Math.round(monthlyServiceRupees).toLocaleString("en-IN")}/month for scheduled service`,
+      ...(preferences.monthlyServiceBudgetRupees === undefined ? [] : [
+        monthlyServiceRupees <= preferences.monthlyServiceBudgetRupees
+          ? `Scheduled service fits your ₹${preferences.monthlyServiceBudgetRupees.toLocaleString("en-IN")}/month comfort range`
+          : `Scheduled service is above your ₹${preferences.monthlyServiceBudgetRupees.toLocaleString("en-IN")}/month comfort range`,
+      ]),
       `Service support is recorded for your ${preferences.localityTier} area`,
       ...(preferences.firstCar ? [`${Math.round(firstCarFit * 100)}% first-car fit`] : []),
       `${candidate.safetyRatingOutOfFive!.value}/5 safety rating from its cited source`,

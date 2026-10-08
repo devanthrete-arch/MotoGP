@@ -11,6 +11,7 @@ for (const width of [390, 1440]) {
     await expectNoOverflow(page);
 
     await page.getByLabel("State or territory").selectOption("Delhi");
+    await page.getByLabel("Comfortable monthly service cost").selectOption("2000");
     await page.getByLabel("Petrol price (₹ per litre)").fill("96");
     const invalidFields = await page.locator(".find-car__form").evaluate(form =>
       [...(form as HTMLFormElement).elements].filter((field): field is HTMLInputElement | HTMLSelectElement =>
@@ -31,4 +32,18 @@ test("fuel rate label and unit follow the selected fuel", async ({ page }) => {
   await expect(page.getByLabel("CNG price (₹ per kg)")).toBeVisible();
   await page.getByLabel("Fuel preference").selectOption("Electric");
   await expect(page.getByLabel("Electricity price (₹ per unit)")).toBeVisible();
+});
+
+test("car finder collects a monthly service-cost preference", async ({ page }) => {
+  await openApp(page, false, "/find-car");
+  const serviceBudget = page.getByLabel("Comfortable monthly service cost");
+  await expect(serviceBudget).toBeVisible();
+  await expect(serviceBudget.locator("option")).toHaveText([
+    "Choose a monthly amount",
+    "₹1,000 or less",
+    "₹2,000 or less",
+    "₹4,000 or less",
+    "No preference",
+  ]);
+  await serviceBudget.selectOption("2000");
 });
