@@ -36,7 +36,7 @@ describe("memberViews", () => {
     // members only (the database enforces the same), so feed and write must stay here.
     expect([...memberViews].sort()).toEqual(["feed", "garage", "write"]);
     const open = Object.keys(viewPaths).filter((view) => !memberViews.has(view as keyof typeof viewPaths)).sort();
-    expect(open).toEqual(["account", "compare", "guides", "owner-onboarding", "pit-stop", "top"]);
+    expect(open).toEqual(["account", "compare", "find-car", "guides", "owner-onboarding", "pit-stop", "top"]);
   });
 });
 

@@ -101,7 +101,7 @@ export function LandingView() {
 
       <div className="landing-paths">
         <RouteButton to={viewPaths.guides} icon={<BookOpen size={16} aria-hidden="true" />}>Care guides</RouteButton>
-        <RouteButton to={viewPaths.compare}>Find my next car</RouteButton>
+        <RouteButton to={viewPaths["find-car"]}>Find my next car</RouteButton>
         <RouteButton to={viewPaths.feed}>Read owner stories</RouteButton>
         <p className="landing-note">Guides and Compare are open. Owner stories open after you sign in.</p>
       </div>

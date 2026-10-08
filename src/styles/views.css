@@ -169,6 +169,40 @@
   .guide-next > p { flex-basis: 100%; margin: 0; color: var(--color-text); font-weight: 600; }
   .guide-static { margin: 0; background: var(--color-bg); font-family: var(--font-sans); }
 
+  /* ---- public car finder ---- */
+  .find-car { inline-size: min(100%, 900px); margin-inline: auto; padding: clamp(24px, 5vw, 56px) clamp(16px, 4vw, 36px) 64px; color: var(--color-text); }
+  .find-car__head { display: grid; gap: 10px; margin-block-end: 28px; }
+  .find-car__head :is(h1, p) { margin: 0; }
+  .find-car__head .eyebrow { display: flex; align-items: center; gap: 7px; color: var(--color-accent-text); }
+  .find-car__head h1 { font: 600 32px/1.15 var(--font-sans); }
+  .find-car__head > p:last-child { max-inline-size: 60ch; color: var(--color-text-secondary); line-height: 1.55; }
+  .find-car__form { display: grid; justify-items: start; gap: 20px; }
+  .find-car__fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; inline-size: 100%; }
+  .find-car__result { margin-block-start: 30px; padding-block: 22px; border-block: 1px solid var(--color-border); }
+  .find-car__result :is(h2, p) { margin: 0 0 10px; }
+  .find-car__result h2 { font: 600 20px/1.3 var(--font-sans); }
+  .find-car__result > p { max-inline-size: 68ch; color: var(--color-text-secondary); line-height: 1.55; }
+  .find-car__matches { display: grid; gap: 12px; margin: 16px 0 0; padding: 0; list-style: none; }
+  .find-car__match > article { padding: 16px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--glass-fill); }
+  .find-car__match header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; }
+  .find-car__match header :is(h3, span, b), .find-car__match > article > p { margin: 0; }
+  .find-car__match header h3 { flex: 1; font: 600 18px/1.3 var(--font-sans); }
+  .find-car__match header > span, .find-car__match header > b { color: var(--color-accent-text); font: 600 13px/1.4 var(--font-mono); }
+  .find-car__match > article > p { margin-block-start: 8px; color: var(--color-text-secondary); font-size: 14px; }
+  .find-car__match .find-car__cost { color: var(--color-text); font-weight: 600; }
+  .find-car__match ul { padding-inline-start: 20px; color: var(--color-text-secondary); font-size: 14px; line-height: 1.5; }
+  .find-car__match details { margin-block-start: 12px; color: var(--color-text-secondary); font-size: 13px; }
+  .find-car__match summary { color: var(--color-accent-text); cursor: pointer; font-weight: 600; }
+  .find-car__match a { color: var(--color-accent-text); overflow-wrap: anywhere; }
+  .find-car__honesty { display: flex; align-items: flex-start; gap: 8px; }
+  .find-car__honesty svg { flex: 0 0 auto; color: var(--color-accent-text); }
+  .find-car__actions { display: flex; flex-wrap: wrap; gap: 9px; margin-block-start: 18px; }
+  @media (max-width: 560px) {
+    .find-car__head h1 { font-size: 27px; }
+    .find-car__fields { grid-template-columns: minmax(0, 1fr); }
+    .find-car__form > .ui-button { inline-size: 100%; }
+  }
+
   @media (max-width: 560px) {
     .guide-head h1, .guide-article-head h1 { font-size: 27px; }
     .guide-list-item { grid-template-columns: minmax(0, 1fr); gap: 14px; }

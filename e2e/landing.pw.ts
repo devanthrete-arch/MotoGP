@@ -128,7 +128,7 @@ test("the landing page and the sign-in prompt pass accessibility checks in both 
   }
 });
 
-test("the two other ways in move within the app: Compare opens, owner stories ask for sign-in", async ({ page }) => {
+test("the car finder stays public and leads to Compare; owner stories ask for sign-in", async ({ page }) => {
   await openApp(page, false);
   await page.evaluate(() => { (window as unknown as { stillHere: boolean }).stillHere = true; });
   const stillHere = () => page.evaluate(() => (window as unknown as { stillHere?: boolean }).stillHere === true);
@@ -138,14 +138,21 @@ test("the two other ways in move within the app: Compare opens, owner stories as
     expect(shape.radius, name).toBeGreaterThanOrEqual(shape.height / 2);
   }
 
-  await expect(page.getByRole("link", { name: "Find my next car" })).toHaveAttribute("href", "/compare");
+  await expect(page.getByRole("link", { name: "Find my next car" })).toHaveAttribute("href", "/find-car");
   await page.getByRole("link", { name: "Find my next car" }).click();
+  await expect(page).toHaveURL(/\/find-car$/);
+  await expect(page.getByRole("heading", { name: "Find a car that fits your life" })).toBeFocused();
+  await page.getByLabel("State or territory").selectOption("Delhi");
+  await page.getByLabel("Petrol price (₹ per litre)").fill("96");
+  await page.getByRole("button", { name: "Show my matches" }).click();
+  await expect(page.getByRole("heading", { name: "We’re still checking the details" })).toBeVisible();
+  await page.getByRole("link", { name: "Compare cars" }).click();
   await expect(page).toHaveURL(/\/compare$/);
   await expect(page.getByRole("heading", { name: "Which car feels right?" })).toBeFocused();
-  // A visitor's shortlist is not kept the way a member's is, and Compare says so.
   await expect(page.locator(".data-notice")).toHaveText("This shortlist lasts only as long as this tab. Sign in to keep it.");
   expect(await stillHere()).toBe(true);
 
+  await page.goBack();
   await page.goBack();
   await expect(page.getByRole("link", { name: "Read owner stories" })).toHaveAttribute("href", "/community");
   await page.getByRole("link", { name: "Read owner stories" }).click();

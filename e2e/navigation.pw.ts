@@ -163,8 +163,9 @@ test("with Save-Data on, a visitor's view is fetched only when it is opened", as
   await afterIdle(page);
   expect(fetched()).toEqual([]);
   await page.getByRole("link", { name: "Find my next car" }).click();
-  await expect(page.locator("#compare")).toBeVisible();
-  expect(fetched()).toEqual(["CompareView"]);
+  await expect(page).toHaveURL(/\/find-car$/);
+  await expect(page.getByRole("heading", { name: "Find a car that fits your life" })).toBeVisible();
+  expect(fetched()).toEqual(["FindCarView"]);
 });
 
 test("with Save-Data on, a member's view is fetched only when it is opened", async ({ page }) => {
@@ -665,7 +666,7 @@ test("comparison remains usable after adding cars and changing views", async ({ 
   await expect(page.getByText("Lean towards", { exact: false })).toHaveCount(0);
   await expectNoOverflow(page);
   await page.getByRole("navigation", { name: "Primary", exact: true }).getByRole("link", { name: "Home", exact: true }).click();
-  await page.getByRole("link", { name: "Find your next car" }).click();
+  await page.getByRole("navigation", { name: "Primary", exact: true }).getByRole("link", { name: "Compare" }).click();
   await expect(page.getByRole("table", { name: "Basic Information comparison" })).toBeVisible();
   // The categories opened before leaving are still open.
   await expect(page.getByRole("table", { name: "Dimensions & Capacity comparison" })).toBeVisible();
