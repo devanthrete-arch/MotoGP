@@ -65,7 +65,7 @@ export function ConnectionStrip() {
 /** Says where what is on screen is stored. Nothing is said above a sign-in prompt or a placeholder. */
 export function DataNotice() {
   const { auth, activeView, audience, visitorPages } = useOtofolks();
-  const memberNotice = activeView === "top" || activeView === "account" || activeView === "pit-stop" ? null
+  const memberNotice = activeView === "top" || activeView === "account" || activeView === "pit-stop" || activeView === "guides" ? null
     : activeView === "feed" || activeView === "write"
       ? "Shared notes are visible to signed-in members. Local examples stay on this device."
       : auth.cloudClient ? "Changes stay on this device until you save them in Account."
@@ -80,6 +80,7 @@ export function AppFooter() {
   return (
     <footer className="app-footer">
       <span>Otofolks</span>
+      <Link to={viewPaths.guides}>Care guides</Link>
     </footer>
   );
 }

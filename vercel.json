@@ -47,7 +47,7 @@
   "rewrites": [
     {
       "destination": "/index.html",
-      "source": "/((?!assets/|vite.svg|favicon.ico|manifest.json|icon.svg).*)"
+      "source": "/((?!assets/|guides(?:/|$)|vite.svg|favicon.ico|manifest.json|icon.svg).*)"
     }
   ]
 }

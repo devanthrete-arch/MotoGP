@@ -2,7 +2,7 @@
 //
 // It reads nothing from the state hook except the registration number being typed: for a visitor
 // the hook holds only example data, which must not be shown as theirs.
-import { ArrowRight, Box, Camera } from "lucide-react";
+import { ArrowRight, BookOpen, Box, Camera } from "lucide-react";
 import { Suspense, lazy, type CSSProperties, type FormEvent, useRef, useState } from "react";
 import { Link, useHref, useLinkClickHandler, useNavigate } from "react-router";
 import { Button, LinkButton, type LinkButtonProps } from "../../ui/Button";
@@ -100,9 +100,10 @@ export function LandingView() {
       </form>
 
       <div className="landing-paths">
+        <RouteButton to={viewPaths.guides} icon={<BookOpen size={16} aria-hidden="true" />}>Care guides</RouteButton>
         <RouteButton to={viewPaths.compare}>Find my next car</RouteButton>
         <RouteButton to={viewPaths.feed}>Read owner stories</RouteButton>
-        <p className="landing-note">Compare is open to everyone. Owner stories open after you sign in.</p>
+        <p className="landing-note">Guides and Compare are open. Owner stories open after you sign in.</p>
       </div>
 
       <div className="landing-today">

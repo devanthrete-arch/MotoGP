@@ -1,0 +1,28 @@
+[
+  {
+    "slug": "service-records",
+    "title": "Make the next service easier to plan",
+    "description": "A few small habits make service history easier to follow and costs less surprising.",
+    "topic": "Maintenance",
+    "publishedOn": "2026-10-09",
+    "minutes": 3,
+    "image": "/guides/owner-service-record.webp",
+    "imageAlt": "A car owner checking a service booklet and phone in a parked car"
+  },
+  {
+    "slug": "dealer-quote",
+    "title": "Read a car quote beyond its headline price",
+    "description": "Separate the car price from registration, insurance and optional extras before comparing offers.",
+    "topic": "Buying",
+    "publishedOn": "2026-10-09",
+    "minutes": 4
+  },
+  {
+    "slug": "used-car-paperwork",
+    "title": "Paperwork to check before a used-car handover",
+    "description": "Keep the ownership transfer, registration certificate and insurance steps in view.",
+    "topic": "Buying",
+    "publishedOn": "2026-10-09",
+    "minutes": 4
+  }
+]
