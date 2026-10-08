@@ -53,6 +53,15 @@ export type GarageVehicle = {
   city: string;
   odometerKm: number;
   purchaseMonth: string;
+  kind?: "car" | "two-wheeler";
+  catalogueId?: string;
+  generationId?: string;
+  generation?: string;
+  registration?: string;
+  colour?: string;
+  fuel?: string;
+  manufactureYear?: number;
+  source?: "catalogue" | "manual" | "lookup";
 };
 
 export type TimelineEntryKind = "Service" | "Repair" | "Tyres" | "Insurance" | "Fuel" | "Trip" | "Note";

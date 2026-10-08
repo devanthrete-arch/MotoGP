@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { memberViews, pathForLegacyHash, viewFromPath, viewPaths, viewTitles } from "./model";
+import { catalogueVehicleId, memberViews, pathForLegacyHash, viewFromPath, viewPaths, viewTitles } from "./model";
 
 describe("viewFromPath", () => {
   it("finds the view for every path in the table", () => {
@@ -25,13 +25,17 @@ describe("viewFromPath", () => {
   });
 });
 
+it("builds stable catalogue identifiers for picker selections", () => {
+  expect(catalogueVehicleId("Maruti Suzuki", "Grand Vitara")).toBe("car-maruti-suzuki-grand-vitara");
+});
+
 describe("memberViews", () => {
   it("keeps the garage and the community for members and leaves the rest open", () => {
     // Changing this list changes who can see what. Community notes are shared with signed-in
     // members only (the database enforces the same), so feed and write must stay here.
     expect([...memberViews].sort()).toEqual(["feed", "garage", "write"]);
     const open = Object.keys(viewPaths).filter((view) => !memberViews.has(view as keyof typeof viewPaths)).sort();
-    expect(open).toEqual(["account", "compare", "pit-stop", "top"]);
+    expect(open).toEqual(["account", "compare", "owner-onboarding", "pit-stop", "top"]);
   });
 });
 

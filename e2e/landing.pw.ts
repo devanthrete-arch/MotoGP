@@ -28,7 +28,7 @@ for (const width of [320, 390, 768, 1440, 1920]) {
       await expect(landing.getByRole("heading", { level: 1 })).toHaveText("Every car has a number. Start with yours.");
       await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
       await expect(landing.getByRole("textbox", { name: "Your registration number" })).toBeVisible();
-      await expect(landing.getByRole("button", { name: "Continue to my garage" })).toBeVisible();
+      await expect(landing.getByRole("button", { name: "Add my vehicle" })).toBeVisible();
       await expect(landing.getByRole("link", { name: "Find my next car" })).toBeVisible();
       await expect(landing.getByRole("link", { name: "Read owner stories" })).toBeVisible();
       // The stage is built from the page's own elements: no picture of a car, and no 3D yet.
@@ -81,7 +81,8 @@ test("the landing page and the sign-in prompt pass accessibility checks in both 
     await page.evaluate(() => document.fonts.ready);
     expect(await violations(page, ".landing"), colorScheme).toEqual([]);
     // With an error showing, and with a complete number (the lit stage).
-    await page.getByRole("button", { name: "Continue to my garage" }).click();
+    await page.getByRole("textbox", { name: "Your registration number" }).fill("MH12");
+    await page.getByRole("button", { name: "Add my vehicle" }).click();
     expect(await violations(page, ".landing"), `${colorScheme} error`).toEqual([]);
 
     // axe will not judge text that sits under a large painted pseudo-element, which is exactly
@@ -118,9 +119,9 @@ test("the landing page and the sign-in prompt pass accessibility checks in both 
     expect(contrast(tones.label, brightest), `${colorScheme} label on the lit turntable`).toBeGreaterThanOrEqual(4.5);
 
     expect(await violations(page, ".landing"), `${colorScheme} complete`).toEqual([]);
-    await page.getByRole("button", { name: "Continue to my garage" }).click();
-    await expect(page.locator(".auth-gate")).toBeVisible();
-    expect(await violations(page, ".auth-gate"), `${colorScheme} prompt`).toEqual([]);
+    await page.getByRole("button", { name: "Add my vehicle" }).click();
+    await expect(page.locator(".owner-onboarding")).toBeVisible();
+    expect(await violations(page, ".owner-onboarding"), `${colorScheme} owner setup`).toEqual([]);
     await page.evaluate(() => sessionStorage.clear());
   }
 });
@@ -188,14 +189,18 @@ test("a number typed on the landing page reaches the add-vehicle form and never 
   });
   await openApp(page, false);
   const field = page.getByRole("textbox", { name: "Your registration number" });
-  const go = page.getByRole("button", { name: "Continue to my garage" });
+  const go = page.getByRole("button", { name: "Add my vehicle" });
   const stage = page.locator(".landing-stage");
   const problem = page.locator(".landing .ui-field__error");
 
-  // Nothing typed, then a number that is not finished: the visitor stays, is told why, and nothing is remembered.
+  // Without a number the owner path starts with catalogue selection.
   await expect(problem).toHaveCount(0);
   await go.click();
-  await expect(problem).toHaveText("Enter the registration number from the plate.");
+  await expect(page).toHaveURL("http://localhost:8081/owner/onboarding");
+  await page.goto("/");
+  // A number that is not finished still gets a clear validation message.
+  await field.fill("MH12");
+  await go.click();
   await expect(field).toBeFocused();
   await expect(field).toHaveAttribute("aria-invalid", "true");
   await field.pressSequentially("mh12");
@@ -216,14 +221,11 @@ test("a number typed on the landing page reaches the add-vehicle form and never 
   await expect(stage).toHaveAttribute("data-ready", "");
   await expect(page.locator(".landing .ui-field__hint")).toHaveText("That looks like a complete number.");
   await field.press("Enter");
-  await expect(page).toHaveURL("http://localhost:8081/garage");
+  await expect(page).toHaveURL("http://localhost:8081/owner/onboarding");
   expect(await stored(page, "sessionStorage", pendingPlate)).toBe("MH12AB1234");
-  // The prompt says what is waiting, and signing up from it comes back here.
-  const prompt = page.locator(".auth-gate");
-  await expect(prompt).toContainText("Your number MH 12 AB 1234 is waiting in this tab.");
-  await prompt.getByRole("button", { name: "Create account", exact: true }).click();
-  expect(await signInRequests(page)).toEqual(["/garage sign-up"]);
-  // Going back shows the number still in the field.
+  // The number remains in the manual add step and does not leave the site.
+  const onboarding = page.locator(".owner-onboarding");
+  await expect(onboarding.getByRole("textbox", { name: "Registration number (optional)" })).toHaveValue("MH 12 AB 1234");
   await page.goBack();
   await expect(field).toHaveValue("MH 12 AB 1234");
   // What the prompt promises is what the tab holds, whichever way the visitor got there. Here the
@@ -232,20 +234,20 @@ test("a number typed on the landing page reaches the add-vehicle form and never 
   expect(await stored(page, "sessionStorage", pendingPlate)).toBeNull();
   await field.pressSequentially("mh12ab1235");
   await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "My garage" }).click();
-  await expect(prompt).toContainText("Your number MH 12 AB 1235 is waiting in this tab.");
+  await expect(page.locator(".auth-gate")).toBeVisible();
   expect(await stored(page, "sessionStorage", pendingPlate)).toBe("MH12AB1235");
   // A number that is not whole is neither promised nor kept.
   await page.goBack();
   await field.fill("MH 12 AB 123");
   await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "My garage" }).click();
-  await expect(prompt).toBeVisible();
-  await expect(prompt).not.toContainText("is waiting in this tab");
+  await expect(page.locator(".auth-gate")).toBeVisible();
   expect(await stored(page, "sessionStorage", pendingPlate)).toBeNull();
   await page.goBack();
   await field.fill("MH 12 AB 1234");
   await expect(field).toHaveValue("MH 12 AB 1234");
   await field.press("Enter");
-  await expect(prompt).toContainText("Your number MH 12 AB 1234 is waiting in this tab.");
+  await expect(page).toHaveURL("http://localhost:8081/owner/onboarding");
+  await expect(onboarding.getByRole("textbox", { name: "Registration number (optional)" })).toHaveValue("MH 12 AB 1234");
 
   // It belongs to this tab: another tab of the same browser does not have it.
   const otherTab = await page.context().newPage();

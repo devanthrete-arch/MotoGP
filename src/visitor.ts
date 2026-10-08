@@ -17,6 +17,7 @@ const visitorShortlistKey = "otofolks.visitor-shortlist.v1";
 const tabOwnerKey = "otofolks.tab-member.v1";
 const signingInKey = "otofolks.signing-in.v1";
 const memberHintKey = "otofolks.member-hint.v1";
+const ownerDraftKey = "otofolks.owner-onboarding.v1";
 
 const tabStorage = (): KeyValueStorage | null => {
   try { return globalThis.sessionStorage ?? null; } catch { return null; }
@@ -45,6 +46,36 @@ export const recallPlate = (storage = tabStorage()): string | null => {
 };
 
 export const forgetPlate = (storage = tabStorage()): void => write(storage, pendingPlateKey, null);
+
+export type OwnerOnboardingDraft = {
+  kind: "car" | "two-wheeler";
+  brand: string;
+  model: string;
+  generation: string;
+  variant: string;
+  colour: string;
+  fuel: string;
+  manufactureYear: string;
+  registration: string;
+  manual: boolean;
+  step: "vehicle" | "profile";
+};
+
+export const loadOwnerOnboardingDraft = (storage = tabStorage()): OwnerOnboardingDraft | null => {
+  try {
+    const value: unknown = JSON.parse(read(storage, ownerDraftKey) ?? "null");
+    if (!value || typeof value !== "object") return null;
+    const draft = value as Record<string, unknown>;
+    if ((draft.kind !== "car" && draft.kind !== "two-wheeler") || typeof draft.manual !== "boolean"
+      || (draft.step !== "vehicle" && draft.step !== "profile")
+      || ["brand", "model", "generation", "variant", "colour", "fuel", "manufactureYear", "registration"]
+        .some(key => typeof draft[key] !== "string")) return null;
+    return draft as OwnerOnboardingDraft;
+  } catch { return null; }
+};
+
+export const saveOwnerOnboardingDraft = (draft: OwnerOnboardingDraft | null, storage = tabStorage()): void =>
+  write(storage, ownerDraftKey, draft ? JSON.stringify(draft) : null);
 
 // The same limits the account copy enforces (src/cloudWorkspace.ts), so nothing carried into an
 // account can later make "Save to account" fail.
@@ -113,6 +144,7 @@ export function adoptVisitorShortlist(storage = tabStorage()): ShortlistItem[] {
 /** Everything a tab holds for a visitor. */
 export function forgetVisitorData(storage = tabStorage()): void {
   forgetPlate(storage);
+  saveOwnerOnboardingDraft(null, storage);
   saveVisitorShortlist([], storage);
 }
 

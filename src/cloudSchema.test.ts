@@ -23,6 +23,7 @@ it("enforces private workspace isolation, CAS, grants and validation in PostgreS
         grant execute on functions to anon, authenticated, service_role;
     `);
     await db.exec(await readFile(new URL("../supabase/migrations/202610050001_clerk_private_workspace.sql", import.meta.url), "utf8"));
+    await db.exec(await readFile(new URL("../supabase/migrations/202610080002_vehicle_model_v2.sql", import.meta.url), "utf8"));
     await db.exec(await readFile(new URL("../supabase/tests/private_workspace.sql", import.meta.url), "utf8"));
 
     expect((await db.query("select * from public.otofolks_private_workspaces")).rows).toEqual([]);

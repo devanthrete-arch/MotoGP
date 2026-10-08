@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-const payload = { version: 1, profile: { displayName: "Cloud owner", city: "Delhi", garageRole: "Owner" },
+const payload = { version: 2, profile: { displayName: "Cloud owner", city: "Delhi", garageRole: "Owner" },
   garage: [], timeline: [], shortlist: [], follows: { models: [], topics: [] }, saved: ["advice"] };
 const row = { user_id: "user_A", payload, revision: 2, updated_at: "2026-10-05T10:00:00Z" };
 
@@ -67,7 +67,7 @@ test("explicit first save creates revision zero request and reports success only
 });
 
 test("malformed remote data cannot be restored or overwritten", async ({ page }) => {
-  await page.route("https://workspace-fixture.supabase.co/**", route => route.fulfill({ json: [{ ...row, payload: { version: 1 } }] }));
+  await page.route("https://workspace-fixture.supabase.co/**", route => route.fulfill({ json: [{ ...row, payload: { version: 2 } }] }));
   await openPanel(page);
   await expect(page.getByRole("status")).toContainText("Nothing was replaced");
   await expect(page.getByRole("button", { name: "Save to account", exact: true })).toBeDisabled();

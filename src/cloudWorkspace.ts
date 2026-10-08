@@ -2,7 +2,7 @@ import type { CloudClient } from "./supabase";
 import type { FollowState, GarageVehicle, Profile, ShortlistItem, TimelineEntry } from "./domain";
 
 export type PrivateWorkspace = {
-  version: 1;
+  version: 2;
   profile: Profile;
   garage: GarageVehicle[];
   timeline: TimelineEntry[];
@@ -31,15 +31,30 @@ const unique = <T extends { id: string }>(rows: T[]): T[] => new Set(rows.map(ro
 // Decode the entire snapshot before it can replace any local state.
 export function parsePrivateWorkspace(value: unknown): PrivateWorkspace {
   const data = record(value);
-  if (data.version !== 1 || Object.keys(data).sort().join() !== "follows,garage,profile,saved,shortlist,timeline,version") invalid();
+  if ((data.version !== 1 && data.version !== 2) || Object.keys(data).sort().join() !== "follows,garage,profile,saved,shortlist,timeline,version") invalid();
   const profile = record(data.profile);
   const follows = record(data.follows);
   const garage = unique(list(data.garage, value => {
     const row = record(value);
     const purchaseMonth = text(row.purchaseMonth, 7);
     if (purchaseMonth && !/^(?!0000)\d{4}-(0[1-9]|1[0-2])$/.test(purchaseMonth)) invalid();
-    return { id: id(row.id), nickname: text(row.nickname), brand: text(row.brand), model: text(row.model),
+    const result: GarageVehicle = { id: id(row.id), nickname: text(row.nickname), brand: text(row.brand), model: text(row.model),
       variant: text(row.variant), city: text(row.city), odometerKm: number(row.odometerKm), purchaseMonth };
+    if (data.version === 2) {
+      if (row.kind !== undefined) result.kind = choice(row.kind, ["car", "two-wheeler"] as const);
+      if (row.catalogueId !== undefined) result.catalogueId = text(row.catalogueId, 250);
+      if (row.generationId !== undefined) result.generationId = text(row.generationId, 250);
+      if (row.generation !== undefined) result.generation = text(row.generation, 80);
+      if (row.colour !== undefined) result.colour = text(row.colour, 60);
+      if (row.fuel !== undefined) result.fuel = text(row.fuel, 40);
+      if (row.manufactureYear !== undefined) {
+        if (!Number.isInteger(row.manufactureYear) || Number(row.manufactureYear) < 1900 || Number(row.manufactureYear) > new Date().getFullYear() + 1) invalid();
+        result.manufactureYear = row.manufactureYear as number;
+      }
+      if (row.source !== undefined) result.source = choice(row.source, ["catalogue", "manual", "lookup"] as const);
+    }
+    // Registration deliberately is not copied into an account snapshot.
+    return result;
   }));
   const vehicleIds = new Set(garage.map(row => row.id));
   const timeline = unique(list(data.timeline, value => {
@@ -56,7 +71,7 @@ export function parsePrivateWorkspace(value: unknown): PrivateWorkspace {
       ...(row.state === undefined ? {} : { state: text(row.state) }),
       ...(row.priceSource === undefined ? {} : { priceSource: text(row.priceSource) }) };
   }));
-  const result: PrivateWorkspace = { version: 1,
+  const result: PrivateWorkspace = { version: 2,
     profile: { displayName: text(profile.displayName), city: text(profile.city), garageRole: choice(profile.garageRole, ["Owner", "Buyer", "Enthusiast", "Mechanic"]) },
     garage, timeline, shortlist,
     follows: { models: list(follows.models, value => text(value)), topics: list(follows.topics, value => text(value)) },
