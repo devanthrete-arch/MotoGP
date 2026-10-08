@@ -2,7 +2,10 @@ import { FormEvent, MouseEvent, useEffect, useMemo, useState } from "react";
 import { SignInButton, SignUpButton, UserButton, useClerk, useUser, useSession } from "@clerk/react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { CloudWorkspacePanel } from "./CloudWorkspacePanel";
-import { isSharedPost, loadCommunityComments, loadCommunityPosts, publishCommunityComment, publishCommunityPost } from "./communityCloud";
+import {
+  deleteCommunityPost, isSharedPost, loadCommunityComments, loadCommunityPosts, loadMyCommunityPostIds,
+  publishCommunityComment, publishCommunityPost, reportCommunityPost,
+} from "./communityCloud";
 import { comparisonFields, legacyVariantSourceFor, verifiedComparisonFor } from "./comparisonCatalog";
 import type { PrivateWorkspace } from "./cloudWorkspace";
 import { createClerkSupabaseClient, readCloudConfig, sessionTokenGetter, type ClerkTokenGetter } from "./supabase";
@@ -557,7 +560,17 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
   const [dealerQuote, setDealerQuote] = useState(0);
   const [commentDraft, setCommentDraft] = useState("");
   const [reportDraft, setReportDraft] = useState("");
-  const [actionMessage, setActionMessage] = useState("");
+  const [toast, setToast] = useState<{ id: number; text: string } | null>(null);
+  const setActionMessage = (text: string) => setToast(text ? { id: Date.now(), text } : null);
+  useEffect(() => {
+    if (!toast) return;
+    // Longer messages stay up longer, within 4-10 seconds.
+    const timer = window.setTimeout(() => setToast(null), Math.min(10000, 4000 + toast.text.length * 60));
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+  // null until the server has answered the ownership call, which only exists once the feed
+  // hardening migration is applied. Until then no delete action is offered.
+  const [myPostIds, setMyPostIds] = useState<ReadonlySet<string> | null>(null);
   const [navMenuOpen, setNavMenuOpen] = useState(false);
   const [helpfulIds, setHelpfulIds] = useState<string[]>(() => readStoredJson("otofolks.helpful.v1", []));
   const [confirmedIds, setConfirmedIds] = useState<string[]>(() => readStoredJson("otofolks.confirmed.v1", []));
@@ -599,6 +612,17 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
       if (active) { setSharedPosts(next); setCommunityStatus(""); }
     }).catch(error => {
       if (active) setCommunityStatus(error instanceof Error ? error.message : "Shared notes could not load.");
+    });
+    return () => { active = false; };
+  }, [auth.cloudClient, auth.cloudToken, auth.isSignedIn, communityRefresh, isOnline]);
+
+  useEffect(() => {
+    if (!auth.isSignedIn || !auth.cloudClient || !auth.cloudToken || !isOnline) { setMyPostIds(null); return; }
+    let active = true;
+    loadMyCommunityPostIds(auth.cloudClient, auth.cloudToken).then(ids => {
+      if (active) setMyPostIds(new Set(ids));
+    }).catch(() => {
+      if (active) setMyPostIds(null);
     });
     return () => { active = false; };
   }, [auth.cloudClient, auth.cloudToken, auth.isSignedIn, communityRefresh, isOnline]);
@@ -838,9 +862,23 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
     } finally { setCommunityBusy(false); }
   };
 
-  const reportSelectedPost = (event: FormEvent<HTMLFormElement>) => {
+  const reportSelectedPost = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!selectedPost || !reportDraft.trim()) return;
+    if (isSharedPost(selectedPost.id)) {
+      if (!auth.cloudClient || !isOnline) { setActionMessage("Connect to send this report."); return; }
+      const sent = reportDraft;
+      setCommunityBusy(true);
+      try {
+        await reportCommunityPost(auth.cloudClient, selectedPost.id, sent.trim().slice(0, 2000));
+        // Leave the box alone if the member has moved on to another note or kept typing.
+        setReportDraft(current => current === sent ? "" : current);
+        setActionMessage("Report sent to moderators.");
+      } catch (error) {
+        setActionMessage(error instanceof Error ? error.message : "Report could not be sent. Please retry.");
+      } finally { setCommunityBusy(false); }
+      return;
+    }
     const report = createReport({
       postId: selectedPost.id,
       postTitle: selectedPost.title,
@@ -850,6 +888,30 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
     persistReports([report, ...reports]);
     setReportDraft("");
     setActionMessage("Report draft saved on this device. It has not been sent to moderators.");
+  };
+
+  const deleteSelectedSharedPost = async () => {
+    if (!selectedPost || !myPostIds?.has(selectedPost.id)) return;
+    if (!auth.cloudClient || !isOnline) { setActionMessage("Connect to delete this note."); return; }
+    if (!window.confirm("Delete this note and its discussion for everyone? This cannot be undone.")) return;
+    const id = selectedPost.id;
+    setCommunityBusy(true);
+    try {
+      await deleteCommunityPost(auth.cloudClient, id);
+      setSharedPosts(current => current.filter(post => post.id !== id));
+      setMyPostIds(current => current && new Set([...current].filter(postId => postId !== id)));
+      if (saved.has(id)) {
+        const nextSaved = new Set(saved);
+        nextSaved.delete(id);
+        setSaved(nextSaved);
+        saveSaved(nextSaved);
+      }
+      setCommunityStatus("");
+      setActionMessage("Note deleted.");
+      requestAnimationFrame(() => document.getElementById("note-detail")?.focus());
+    } catch (error) {
+      setActionMessage(error instanceof Error ? error.message : "Note could not be deleted. Please retry.");
+    } finally { setCommunityBusy(false); }
   };
 
   const setReportStatus = (reportId: string, status: ReportRecord["status"]) => {
@@ -971,6 +1033,7 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
         odometerKm: Number.isFinite(draft.odometerKm) ? draft.odometerKm : 0,
       });
       setSharedPosts(current => [post, ...current]);
+      setMyPostIds(current => current && new Set([...current, post.id]));
       setSelectedPost(post);
       setDraft(initialDraft);
       setQuery("");
@@ -1123,11 +1186,11 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
         /> : null}
       </section>
 
-      {actionMessage ? (
-        <div className="action-message" role="status">
-          {actionMessage}
-        </div>
-      ) : null}
+      {/* The live region stays mounted so each message is a change inside it, which is what
+          screen readers announce reliably; only the visible toast remounts. */}
+      <div className="action-message-region" role="status">
+        {toast ? <div className="action-message" key={toast.id}>{toast.text}</div> : null}
+      </div>
 
       <section hidden={isOnline} className={`connection-strip ${connectionStatus.tone}`} aria-label="Connection status">
         <strong>{connectionStatus.label}</strong>
@@ -1524,6 +1587,11 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
                   <button type="button" onClick={addSelectedToShortlist}>
                     Add model to compare
                   </button>
+                  {myPostIds?.has(selectedPost.id) ? (
+                    <button disabled={communityBusy || !isOnline} type="button" onClick={deleteSelectedSharedPost}>
+                      Delete my note
+                    </button>
+                  ) : null}
                 </div>
                 <div className="related-pitstop-strip" aria-label="Related Pit Stop clips">
                   <strong>Watch alongside this review</strong>
@@ -1560,12 +1628,13 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
                   <textarea
                     required
                     rows={3}
+                    maxLength={2000}
                     value={reportDraft}
                     onChange={(event) => setReportDraft(event.target.value)}
                     placeholder="Tell us what is wrong with this note."
                   />
-                  <button className="save-button" type="submit">
-                    Save report draft
+                  <button className="save-button" disabled={communityBusy} type="submit">
+                    {isSharedPost(selectedPost.id) ? "Send report" : "Save report draft"}
                   </button>
                 </form>
                 </details>
@@ -1601,12 +1670,14 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
         </div>
         <div className="pit-stop-grid">
           {filteredPitStopClips.map((clip) => (
+            // Permalinks play in the in-app player; collections cannot be framed, so they open on Instagram.
             <a
               className="pit-stop-card"
               href={clip.embedUrl}
               key={clip.id}
-              type="button"
-              onClick={() => setActiveReel(clip)}
+              {...(isEmbeddableReel(clip.embedUrl)
+                ? { onClick: (event: MouseEvent<HTMLAnchorElement>) => { event.preventDefault(); setActiveReel(clip); } }
+                : { target: "_blank", rel: "noopener noreferrer" })}
             >
               <div className="pit-stop-thumb" aria-hidden="true">
                 <span className="play-badge"><Play size={20} /></span>
@@ -1617,7 +1688,7 @@ export function OtofolksApp({ auth, clerkEnabled = false }: AppProps & { auth: A
               <h3>{clip.title}</h3>
               <p>{clip.summary}</p>
               {clip.brand && clip.model ? <small>Related: {clip.brand} {clip.model}</small> : null}
-              <em>Explore on Instagram (opens a new tab)</em>
+              <em>{isEmbeddableReel(clip.embedUrl) ? "Play clip" : "Explore on Instagram (opens a new tab)"}</em>
             </a>
           ))}
         </div>

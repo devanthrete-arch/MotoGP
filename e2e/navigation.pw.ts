@@ -151,12 +151,95 @@ test("shared note and reply publish through the Clerk-bound cloud client", async
   await composer.locator("textarea").fill("The oil change cost 4200 rupees and resolved the noise.");
   await composer.getByRole("button", { name: "Publish owner note" }).click();
   await expect(page.locator("#note-detail")).toContainText("My service visit");
+  // This stub has no ownership function, as before the hardening migration: no delete is offered.
+  await expect(page.getByRole("button", { name: "Delete my note" })).toHaveCount(0);
   await page.locator("#note-detail .inline-form").first().locator("textarea").fill("Keep the invoice.");
   await page.getByRole("button", { name: "Add comment", exact: true }).click();
   await expect(page.locator("#note-detail")).toContainText("Keep the invoice.");
   await page.reload();
   await page.locator("#feed .post-open").filter({ hasText: "My service visit" }).click();
   await expect(page.locator("#note-detail")).toContainText("Keep the invoice.");
+});
+
+test("toast clears itself and never covers the mobile tab bar", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openApp(page, true, "#garage");
+  const garage = page.locator("#garage");
+  await garage.getByPlaceholder("Model", { exact: true }).fill("Nexon");
+  await garage.getByRole("button", { name: "Save vehicle" }).click();
+  const toast = page.locator(".action-message");
+  await expect(toast).toHaveText("Vehicle saved on this device.");
+  const tabs = page.getByRole("navigation", { name: "Primary", exact: true });
+  const toastBox = await toast.boundingBox();
+  const tabsBox = await tabs.boundingBox();
+  expect(toastBox!.y + toastBox!.height).toBeLessThanOrEqual(tabsBox!.y);
+  await tabs.locator("a[href='#compare']").click();
+  await expect(tabs.locator("a[href='#compare']")).toHaveAttribute("aria-current", "page");
+  await expect(toast).toHaveCount(0, { timeout: 8000 });
+});
+
+test("Pit Stop collections open on Instagram in a new tab and keep the app in place", async ({ page }) => {
+  await openApp(page, true, "#pit-stop");
+  const cards = page.locator("#pit-stop .pit-stop-card");
+  await expect(cards.first()).toBeVisible();
+  for (const card of await cards.all()) {
+    await expect(card).toHaveAttribute("target", "_blank");
+    await expect(card).toHaveAttribute("rel", /noopener/);
+    await expect(card).toHaveAttribute("href", /^https:\/\/www\.instagram\.com\//);
+  }
+});
+
+test("a member can report a shared note and delete their own", async ({ page }) => {
+  const posts: Record<string, unknown>[] = [];
+  const reports: Record<string, unknown>[] = [];
+  await page.route("https://example.supabase.co/rest/v1/**", async route => {
+    const request = route.request();
+    const table = new URL(request.url()).pathname.split("/").pop();
+    const headers = { "access-control-allow-origin": "*", "access-control-allow-headers": "apikey, authorization, content-type, prefer", "access-control-allow-methods": "GET, POST, DELETE, OPTIONS", "content-type": "application/json" };
+    if (request.method() === "OPTIONS") return route.fulfill({ status: 200, headers });
+    if (table === "my_community_post_ids") return route.fulfill({ status: 200, headers, body: JSON.stringify(posts.map(post => post.id)) });
+    if (table === "community_reports") {
+      reports.push(request.postDataJSON());
+      return route.fulfill({ status: 201, headers });
+    }
+    if (table === "community_posts") {
+      if (request.method() === "POST") {
+        const sent = request.postDataJSON();
+        expect(Object.keys(sent)).not.toContain("createdAt");
+        const row = { ...sent, id: "post-test-id", createdAt: "2026-10-07T00:00:00Z", status: "published" };
+        posts.unshift(row);
+        return route.fulfill({ status: 201, headers, body: JSON.stringify(row) });
+      }
+      if (request.method() === "DELETE") {
+        const removed = posts.splice(0, posts.length).map(post => ({ id: post.id }));
+        return route.fulfill({ status: 200, headers, body: JSON.stringify(removed) });
+      }
+      return route.fulfill({ status: 200, headers, body: JSON.stringify(posts) });
+    }
+    return route.fulfill({ status: 200, headers, body: "[]" });
+  });
+  await openApp(page, true, "#feed", true);
+  await page.getByRole("link", { name: "Write an owner note" }).click();
+  const composer = page.locator("#write");
+  await composer.getByPlaceholder("Title", { exact: true }).fill("Brake pad cost");
+  await composer.getByPlaceholder("Model", { exact: true }).fill("Nexon");
+  await composer.locator("textarea").fill("Front pads were replaced for 3200 rupees at 41,000 km.");
+  await composer.getByRole("button", { name: "Publish owner note" }).click();
+  const detail = page.locator("#note-detail");
+  await expect(detail).toContainText("Brake pad cost");
+
+  await detail.getByText("Report this note").click();
+  await detail.getByPlaceholder("Tell us what is wrong with this note.").fill("  Wrong price quoted  ");
+  await detail.getByRole("button", { name: "Send report", exact: true }).click();
+  await expect(page.locator(".action-message")).toHaveText("Report sent to moderators.");
+  expect(reports).toEqual([{ post_id: "post-test-id", reason: "Wrong price quoted" }]);
+
+  await page.reload();
+  await page.locator("#feed .post-open").filter({ hasText: "Brake pad cost" }).click();
+  page.once("dialog", dialog => dialog.accept());
+  await detail.getByRole("button", { name: "Delete my note", exact: true }).click();
+  await expect(page.locator(".action-message")).toHaveText("Note deleted.");
+  await expect(page.locator("#feed")).not.toContainText("Brake pad cost");
 });
 
 test("real Clerk sign-in opens directly from navigation", async ({ page }) => {
