@@ -30,6 +30,7 @@ for (const width of [320, 390, 768, 1440, 1920]) {
       await expect(landing.getByRole("textbox", { name: "Your registration number" })).toBeVisible();
       await expect(landing.getByRole("button", { name: "Add my vehicle" })).toBeVisible();
       await expect(landing.getByRole("link", { name: "Find my next car" })).toBeVisible();
+      await expect(landing.getByRole("link", { name: "Care guides" })).toBeVisible();
       await expect(landing.getByRole("link", { name: "Read owner stories" })).toBeVisible();
       // The poster is immediate; the interactive model is only loaded after the visitor asks for it.
       await expect(landing.locator(".landing-stage__poster")).toBeVisible();
