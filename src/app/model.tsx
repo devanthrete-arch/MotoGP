@@ -343,6 +343,8 @@ export const initialVehicleDraft: DraftVehicle = {
   city: "",
   odometerKm: 0,
   purchaseMonth: "",
+  kind: "car",
+  source: "manual",
 };
 
 export const catalogueVehicleId = (brand: string, model: string) =>

@@ -116,4 +116,12 @@
   .garage-plate .ui-plate__input { font-size: clamp(16px, 5.3vw, 20px); }
   .auth-gate-plate,
   .vehicle-plate { font-family: var(--font-mono); font-weight: 500; letter-spacing: 0.06em; white-space: nowrap; }
+  .garage-form { display: grid; align-content: start; gap: 14px; }
+  .garage-form > h3 { margin: 0; }
+  .garage-form__row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .vehicle-card__actions { display: flex; justify-content: flex-end; gap: 6px; margin-block-start: 12px; }
+  .vehicle-card > p { overflow-wrap: anywhere; }
+  @media (max-width: 520px) {
+    .garage-form__row { grid-template-columns: minmax(0, 1fr); }
+  }
 }
