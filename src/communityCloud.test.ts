@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { CloudClient } from "./supabase";
 import {
   deleteCommunityPost, loadCommunityPosts, loadMyCommunityPostIds, publishCommunityComment, publishCommunityPost,
   reportCommunityPost,
@@ -17,7 +17,7 @@ describe("community client", () => {
   it("does not fetch shared posts without a Clerk token", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
-    await expect(loadCommunityPosts({} as SupabaseClient, async () => null)).rejects.toThrow("Sign in");
+    await expect(loadCommunityPosts({} as CloudClient, async () => null)).rejects.toThrow("Sign in");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

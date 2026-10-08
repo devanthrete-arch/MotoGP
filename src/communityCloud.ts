@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { CloudClient } from "./supabase";
 import type { DraftPost, OwnerPost } from "./domain";
 import type { ClerkTokenGetter } from "./supabase";
 
@@ -26,7 +26,7 @@ async function requireToken(getToken: ClerkTokenGetter): Promise<void> {
   if (!await getToken()) throw new Error("Sign in to read the shared community.");
 }
 
-export async function loadCommunityPosts(client: SupabaseClient, getToken: ClerkTokenGetter): Promise<OwnerPost[]> {
+export async function loadCommunityPosts(client: CloudClient, getToken: ClerkTokenGetter): Promise<OwnerPost[]> {
   await requireToken(getToken);
   const { data, error } = await client.from("community_posts")
     .select(postColumns).eq("status", "published").order("createdAt", { ascending: false })
@@ -35,7 +35,7 @@ export async function loadCommunityPosts(client: SupabaseClient, getToken: Clerk
   return (data as PostRow[]).map(asPost);
 }
 
-export async function loadCommunityComments(client: SupabaseClient, getToken: ClerkTokenGetter, postId: string): Promise<string[]> {
+export async function loadCommunityComments(client: CloudClient, getToken: ClerkTokenGetter, postId: string): Promise<string[]> {
   await requireToken(getToken);
   const { data, error } = await client.from("community_comments")
     .select("author,body").eq("post_id", cloudId(postId)).order("created_at", { ascending: false })
@@ -45,14 +45,14 @@ export async function loadCommunityComments(client: SupabaseClient, getToken: Cl
 }
 
 // Ids of the caller's own published posts. The author column is not readable, so the server answers.
-export async function loadMyCommunityPostIds(client: SupabaseClient, getToken: ClerkTokenGetter): Promise<string[]> {
+export async function loadMyCommunityPostIds(client: CloudClient, getToken: ClerkTokenGetter): Promise<string[]> {
   await requireToken(getToken);
   const { data, error } = await client.rpc("my_community_post_ids").abortSignal(AbortSignal.timeout(15000));
   if (error) throw communityError(error.code);
   return (data as string[]).map(id => `cloud:${id}`);
 }
 
-export async function publishCommunityPost(client: SupabaseClient, draft: DraftPost): Promise<OwnerPost> {
+export async function publishCommunityPost(client: CloudClient, draft: DraftPost): Promise<OwnerPost> {
   // Only content columns are sent; the server sets id, author subject, createdAt and status.
   const { data, error } = await client.from("community_posts").insert({
     title: draft.title.trim(), author: draft.author, brand: draft.brand, model: draft.model,
@@ -63,13 +63,13 @@ export async function publishCommunityPost(client: SupabaseClient, draft: DraftP
   return asPost(data as PostRow);
 }
 
-export async function publishCommunityComment(client: SupabaseClient, postId: string, author: string, body: string): Promise<void> {
+export async function publishCommunityComment(client: CloudClient, postId: string, author: string, body: string): Promise<void> {
   const { error } = await client.from("community_comments")
     .insert({ post_id: cloudId(postId), author, body: body.trim() });
   if (error) throw communityError(error.code);
 }
 
-export async function deleteCommunityPost(client: SupabaseClient, postId: string): Promise<void> {
+export async function deleteCommunityPost(client: CloudClient, postId: string): Promise<void> {
   const { data, error } = await client.from("community_posts").delete().eq("id", cloudId(postId)).select("id");
   // 42501: the database does not grant deletes yet (feed hardening migration not applied).
   if (error?.code === "42501") throw new Error("Deleting notes is not available yet.");
@@ -77,7 +77,7 @@ export async function deleteCommunityPost(client: SupabaseClient, postId: string
   if (!data?.length) throw new Error("Only the author can delete this note.");
 }
 
-export async function reportCommunityPost(client: SupabaseClient, postId: string, reason: string): Promise<void> {
+export async function reportCommunityPost(client: CloudClient, postId: string, reason: string): Promise<void> {
   const { error } = await client.from("community_reports").insert({ post_id: cloudId(postId), reason: reason.trim() });
   if (error?.code === "23505") throw new Error("You have already reported this note.");
   if (error) throw communityError(error.code);

@@ -81,6 +81,8 @@ jobs:
           set -euo pipefail
           test -f dist/index.html
           test -d dist/assets
+      - name: Check bundle budget
+        run: node scripts/check-bundle-size.mjs
 
   ci-gate:
     name: CI gate

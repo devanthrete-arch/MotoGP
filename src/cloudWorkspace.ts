@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { CloudClient } from "./supabase";
 import type { FollowState, GarageVehicle, Profile, ShortlistItem, TimelineEntry } from "./domain";
 
 export type PrivateWorkspace = {
@@ -79,13 +79,13 @@ function cloudError(code?: string): Error {
   return new Error("Could not access your account copy. Check your connection and sign-in, then retry. Your device copy is unchanged.");
 }
 
-export async function loadCloudWorkspace(client: SupabaseClient, owner: string): Promise<CloudWorkspace | null> {
+export async function loadCloudWorkspace(client: CloudClient, owner: string): Promise<CloudWorkspace | null> {
   const { data, error } = await client.from("otofolks_private_workspaces").select("user_id,payload,revision,updated_at").eq("user_id", owner).abortSignal(AbortSignal.timeout(15000)).maybeSingle().retry(false);
   if (error) throw cloudError(error.code);
   return data === null ? null : decodeRow(data, owner);
 }
 
-export async function saveCloudWorkspace(client: SupabaseClient, owner: string, payload: PrivateWorkspace, revision: number): Promise<CloudWorkspace> {
+export async function saveCloudWorkspace(client: CloudClient, owner: string, payload: PrivateWorkspace, revision: number): Promise<CloudWorkspace> {
   if (!Number.isSafeInteger(revision) || revision < 0) invalid();
   const { data, error } = await client.rpc("save_otofolks_private_workspace", {
     p_payload: parsePrivateWorkspace(payload), p_expected_revision: revision,
