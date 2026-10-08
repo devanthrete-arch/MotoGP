@@ -261,7 +261,7 @@ test("a number typed on the landing page reaches the add-vehicle form and never 
   const plate = garage.getByRole("textbox", { name: "Registration number (optional)" });
   await expect(plate).toHaveValue("MH 12 AB 1234");
   await page.screenshot({ path: "test-results/garage-carried-number.png" });
-  await garage.getByPlaceholder("Model", { exact: true }).fill("Nexon");
+  await garage.locator("form").nth(0).getByPlaceholder("Model", { exact: true }).fill("Nexon");
   await garage.getByRole("button", { name: "Save vehicle" }).click();
   const cards = garage.locator(".timeline-board .vehicle-card");
   await expect(cards).toHaveCount(1);
@@ -273,7 +273,7 @@ test("a number typed on the landing page reaches the add-vehicle form and never 
 
   // The number is kept beside the garage, under this account, and is not part of a vehicle.
   const garageRows = JSON.parse((await stored(page, "localStorage", accountKey("garage")))!) as Record<string, unknown>[];
-  expect(Object.keys(garageRows[0]).sort()).toEqual(["brand", "city", "id", "model", "nickname", "odometerKm", "purchaseMonth", "variant"]);
+  expect(Object.keys(garageRows[0]).sort()).toEqual(["brand", "city", "id", "kind", "model", "nickname", "odometerKm", "purchaseMonth", "source", "variant"]);
   expect(JSON.parse((await stored(page, "localStorage", accountKey("vehicle-plates")))!)).toEqual({ [garageRows[0].id as string]: "MH12AB1234" });
   expect(await stored(page, "localStorage", "autoflex.web.vehicle-plates.v1")).toBeNull();
   await page.reload();
@@ -284,7 +284,7 @@ test("a number typed on the landing page reaches the add-vehicle form and never 
   // vehicle, does not make the next number an error from its first character...
   const plateProblem = garage.locator(".ui-field__error");
   await plate.focus();
-  await garage.getByPlaceholder("Model", { exact: true }).fill("Punch");
+  await garage.locator("form").nth(0).getByPlaceholder("Model", { exact: true }).fill("Punch");
   await plate.pressSequentially("MH 12");
   await expect(plateProblem).toHaveCount(0);
   // ...but one that is started must be finished or cleared: saving says so and goes to the field.
@@ -338,7 +338,7 @@ test("saving to the account uploads the vehicle without its registration number"
   await openApp(page, true, "/garage", true);
   const garage = page.locator("#garage");
   await garage.getByRole("textbox", { name: "Registration number (optional)" }).fill("dl 3c ab 1234");
-  await garage.getByPlaceholder("Model", { exact: true }).fill("Creta");
+  await garage.locator("form").nth(0).getByPlaceholder("Model", { exact: true }).fill("Creta");
   await garage.getByRole("button", { name: "Save vehicle" }).click();
   await expect(garage.locator(".timeline-board .vehicle-card").first()).toContainText("DL 3 CAB 1234");
 
@@ -350,14 +350,14 @@ test("saving to the account uploads the vehicle without its registration number"
   expect(uploads).toHaveLength(1);
   expect(uploads[0]).not.toMatch(/DL\W*3\W*C\W*AB\W*1234/i);
   const [vehicle] = JSON.parse(uploads[0]).p_payload.garage as Record<string, unknown>[];
-  expect(Object.keys(vehicle).sort()).toEqual(["brand", "city", "id", "model", "nickname", "odometerKm", "purchaseMonth", "variant"]);
+  expect(Object.keys(vehicle).sort()).toEqual(["brand", "city", "id", "kind", "model", "nickname", "odometerKm", "purchaseMonth", "source", "variant"]);
   expect(vehicle.model).toBe("Creta");
 
   // A second vehicle is added with a number, then the garage is restored from the account copy,
   // which has only the first. The first keeps its number; the removed vehicle's number goes with it.
   await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "My garage" }).click();
   await garage.getByRole("textbox", { name: "Registration number (optional)" }).fill("KA 01 AB 1234");
-  await garage.getByPlaceholder("Model", { exact: true }).fill("Seltos");
+  await garage.locator("form").nth(0).getByPlaceholder("Model", { exact: true }).fill("Seltos");
   await garage.getByRole("button", { name: "Save vehicle" }).click();
   await expect(garage.locator(".timeline-board .vehicle-card")).toHaveCount(2);
   expect(Object.values(JSON.parse((await stored(page, "localStorage", accountKey("vehicle-plates")))!)).sort()).toEqual(["DL3CAB1234", "KA01AB1234"]);

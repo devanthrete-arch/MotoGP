@@ -1,10 +1,15 @@
 // Garage: vehicles, maintenance timeline, reminders and running costs.
 import { useRef, useState } from "react";
-import { timelineKinds, type TimelineEntryKind } from "../../domain";
+import type { FormEvent } from "react";
+import { Download, Pencil, Trash2 } from "lucide-react";
+import { timelineKinds, type DraftVehicle, type GarageVehicle, type TimelineEntryKind } from "../../domain";
 import { formatMoney } from "../../insights";
 import { PlateInput } from "../../ui/PlateInput";
+import { Button, IconButton } from "../../ui/Button";
+import { Dialog } from "../../ui/Dialog";
+import { SelectField, TextAreaField, TextField } from "../../ui/Field";
 import { parseRegistration, registrationProblemText } from "../../ui/plate";
-import { brands } from "../model";
+import { brands, initialVehicleDraft } from "../model";
 import { useOtofolks } from "../state";
 
 // A stored number in the form it has on the plate.
@@ -16,7 +21,7 @@ const plateText = (normalized: string) => {
 export function GarageView() {
   const {
     garage, timeline, vehicleDraft, setVehicleDraft, timelineDraft, setTimelineDraft,
-    garageInsights, garageCostLedger, garageReminders, exportGarage, addVehicle, addTimelineNote,
+    garageInsights, garageCostLedger, garageReminders, exportGarage, addVehicle, addTimelineNote, updateVehicle, removeVehicle,
     vehiclePlates, plateDraft, setPlateDraft,
   } = useOtofolks();
   // The number is optional. A problem with it is shown once the member has left the field with
@@ -25,6 +30,69 @@ export function GarageView() {
   const plateField = useRef<HTMLInputElement>(null);
   const registration = parseRegistration(plateDraft);
   const plateProblem = plateChecked && plateDraft.trim() && !registration.ok ? registrationProblemText[registration.problem] : undefined;
+  const [editing, setEditing] = useState<GarageVehicle | null>(null);
+  const [editDraft, setEditDraft] = useState<DraftVehicle>(initialVehicleDraft);
+  const [editRegistration, setEditRegistration] = useState("");
+  const [editError, setEditError] = useState("");
+  const [deleting, setDeleting] = useState<GarageVehicle | null>(null);
+  const beginEdit = (vehicle: GarageVehicle) => {
+    const { id: _id, ...draft } = vehicle;
+    setEditing(vehicle);
+    setEditDraft(draft);
+    setEditRegistration(vehicle.registration ?? vehiclePlates[vehicle.id] ?? "");
+    setEditError("");
+  };
+  const saveEdit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editing) return;
+    const plate = parseRegistration(editRegistration);
+    if (editRegistration.trim() && !plate.ok) { setEditError(registrationProblemText[plate.problem]); return; }
+    const nextPlates = { ...vehiclePlates };
+    if (plate.ok) nextPlates[editing.id] = plate.normalized;
+    else delete nextPlates[editing.id];
+    updateVehicle({
+      ...editing, ...editDraft,
+      nickname: editDraft.nickname.trim() || `${editDraft.brand} ${editDraft.model}`,
+      city: editDraft.city.trim(), odometerKm: Number(editDraft.odometerKm) || 0,
+      registration: plate.ok ? plate.normalized : undefined,
+    }, nextPlates);
+    setEditing(null);
+  };
+
+  const vehicleFields = (draft: DraftVehicle, change: (value: DraftVehicle) => void) => <>
+    <TextField label="Nickname" maxLength={80} value={draft.nickname}
+      onChange={event => change({ ...draft, nickname: event.target.value })} placeholder="Nickname" />
+    <div className="garage-form__row">
+      <SelectField label="Vehicle type" options={[{ value: "car", label: "Car" }, { value: "two-wheeler", label: "Two-wheeler" }]}
+        value={draft.kind ?? "car"} onChange={event => change({ ...draft, kind: event.target.value as GarageVehicle["kind"] })} />
+      <SelectField label="Make" options={brands} value={draft.brand}
+        onChange={event => change({ ...draft, brand: event.target.value, source: "manual" })} />
+    </div>
+    <div className="garage-form__row">
+      <TextField label="Model" required maxLength={100} value={draft.model}
+        onChange={event => change({ ...draft, model: event.target.value, source: "manual" })} placeholder="Model" />
+      <TextField label="Variant" maxLength={100} value={draft.variant}
+        onChange={event => change({ ...draft, variant: event.target.value })} placeholder="e.g. XZ+" />
+    </div>
+    <div className="garage-form__row">
+      <TextField label="City" maxLength={80} value={draft.city}
+        onChange={event => change({ ...draft, city: event.target.value })} placeholder="e.g. Pune" />
+      <TextField label="Current odometer (km)" min="0" type="number" value={draft.odometerKm || ""}
+        onChange={event => change({ ...draft, odometerKm: Number(event.target.value) })} />
+    </div>
+    <div className="garage-form__row">
+      <TextField label="Colour" maxLength={60} value={draft.colour ?? ""}
+        onChange={event => change({ ...draft, colour: event.target.value })} placeholder="Optional" />
+      <TextField label="Fuel" maxLength={40} value={draft.fuel ?? ""}
+        onChange={event => change({ ...draft, fuel: event.target.value })} placeholder="Optional" />
+    </div>
+    <div className="garage-form__row">
+      <TextField label="Manufacture year" inputMode="numeric" maxLength={4} value={draft.manufactureYear ?? ""}
+        onChange={event => change({ ...draft, manufactureYear: event.target.value ? Number(event.target.value.replace(/\D/g, "").slice(0, 4)) : undefined })} />
+      <TextField label="Purchase month" type="month" value={draft.purchaseMonth}
+        onChange={event => change({ ...draft, purchaseMonth: event.target.value })} />
+    </div>
+  </>;
   return (
     <section className="panel" id="garage">
       <div className="section-head">
@@ -32,15 +100,12 @@ export function GarageView() {
           <p className="eyebrow">Garage timeline</p>
           <h2>Your vehicles and maintenance</h2>
         </div>
-        <button className="save-button" type="button" onClick={exportGarage}>
-          Export garage
-        </button>
+        <Button type="button" variant="secondary" icon={<Download size={16} aria-hidden="true" />} onClick={exportGarage}>Export garage</Button>
       </div>
       <div className="garage-grid">
-        <form className="composer" onSubmit={(event) => {
+        <form className="composer garage-form" onSubmit={(event) => {
           const saved = addVehicle(event);
           setPlateChecked(!saved);
-          // Not saved because of the number: go to it, wherever on the page the button was pressed.
           if (!saved) plateField.current?.focus();
         }}>
           <h3>Add vehicle</h3>
@@ -48,118 +113,34 @@ export function GarageView() {
             onChange={(value) => setPlateDraft(value)} error={plateProblem}
             onBlur={(event) => setPlateChecked(Boolean(event.target.value.trim()))}
             hint="Kept on this device only. It is not saved to your account copy and is not looked up." />
-          <input
-            value={vehicleDraft.nickname}
-            onChange={(event) => setVehicleDraft({ ...vehicleDraft, nickname: event.target.value })}
-            placeholder="Nickname"
-          />
-          <div className="form-row">
-            <select value={vehicleDraft.brand} onChange={(event) => setVehicleDraft({ ...vehicleDraft, brand: event.target.value })}>
-              {brands.map((brand) => (
-                <option key={brand}>{brand}</option>
-              ))}
-            </select>
-            <input
-              required
-              value={vehicleDraft.model}
-              onChange={(event) => setVehicleDraft({ ...vehicleDraft, model: event.target.value })}
-              placeholder="Model"
-            />
-          </div>
-          <div className="form-row">
-            <input
-              value={vehicleDraft.variant}
-              onChange={(event) => setVehicleDraft({ ...vehicleDraft, variant: event.target.value })}
-              placeholder="Variant"
-            />
-            <input
-              value={vehicleDraft.city}
-              onChange={(event) => setVehicleDraft({ ...vehicleDraft, city: event.target.value })}
-              placeholder="City"
-            />
-          </div>
-          <div className="form-row">
-            <input
-              min="0"
-              type="number"
-              value={vehicleDraft.odometerKm || ""}
-              onChange={(event) => setVehicleDraft({ ...vehicleDraft, odometerKm: Number(event.target.value) })}
-              placeholder="Current odometer"
-            />
-            <input
-              type="month"
-              value={vehicleDraft.purchaseMonth}
-              onChange={(event) => setVehicleDraft({ ...vehicleDraft, purchaseMonth: event.target.value })}
-              aria-label="Purchase month"
-            />
-          </div>
-          <button className="primary-action" type="submit">
-            Save vehicle
-          </button>
+          {vehicleFields(vehicleDraft, setVehicleDraft)}
+          <Button type="submit" variant="primary" fullWidth>Save vehicle</Button>
         </form>
 
-        <form className="composer" onSubmit={addTimelineNote}>
+        <form className="composer garage-form" onSubmit={addTimelineNote}>
           <h3>Add timeline note</h3>
           {!garage.length ? <p>Add a vehicle first to record its maintenance.</p> : null}
-          <select
-            aria-label="Vehicle"
-            required
-            value={timelineDraft.vehicleId}
-            onChange={(event) => setTimelineDraft({ ...timelineDraft, vehicleId: event.target.value })}
-          >
-            {garage.map((vehicle) => (
-              <option key={vehicle.id} value={vehicle.id}>
-                {vehicle.nickname || vehicle.model}
-              </option>
-            ))}
-          </select>
-          <div className="form-row">
-            <select
-              value={timelineDraft.kind}
-              onChange={(event) => setTimelineDraft({ ...timelineDraft, kind: event.target.value as TimelineEntryKind })}
-            >
-              {timelineKinds.map((kind) => (
-                <option key={kind}>{kind}</option>
-              ))}
-            </select>
-            <input
-              type="date"
-              value={timelineDraft.happenedOn}
-              onChange={(event) => setTimelineDraft({ ...timelineDraft, happenedOn: event.target.value })}
-              aria-label="Timeline date"
-            />
+          <SelectField label="Vehicle" required options={garage.map(vehicle => ({ value: vehicle.id, label: vehicle.nickname || `${vehicle.brand} ${vehicle.model}` }))}
+            value={timelineDraft.vehicleId} disabled={!garage.length}
+            onChange={event => setTimelineDraft({ ...timelineDraft, vehicleId: event.target.value })} />
+          <div className="garage-form__row">
+            <SelectField label="Entry type" options={timelineKinds}
+              value={timelineDraft.kind} onChange={event => setTimelineDraft({ ...timelineDraft, kind: event.target.value as TimelineEntryKind })} />
+            <TextField label="Date" type="date" value={timelineDraft.happenedOn}
+              onChange={event => setTimelineDraft({ ...timelineDraft, happenedOn: event.target.value })} />
           </div>
-          <input
-            required
-            value={timelineDraft.title}
-            onChange={(event) => setTimelineDraft({ ...timelineDraft, title: event.target.value })}
-            placeholder="What happened?"
-          />
-          <div className="form-row">
-            <input
-              min="0"
-              type="number"
-              value={timelineDraft.amount || ""}
-              onChange={(event) => setTimelineDraft({ ...timelineDraft, amount: Number(event.target.value) })}
-              placeholder="Amount paid"
-            />
-            <input
-              min="0"
-              type="number"
-              value={timelineDraft.odometerKm || ""}
-              onChange={(event) => setTimelineDraft({ ...timelineDraft, odometerKm: Number(event.target.value) })}
-              placeholder="Odometer"
-            />
+          <TextField label="What happened?" required maxLength={160} value={timelineDraft.title}
+            onChange={event => setTimelineDraft({ ...timelineDraft, title: event.target.value })} placeholder="What happened?" />
+          <div className="garage-form__row">
+            <TextField label="Amount paid" min="0" type="number" value={timelineDraft.amount || ""} placeholder="Amount paid"
+              onChange={event => setTimelineDraft({ ...timelineDraft, amount: Number(event.target.value) })} />
+            <TextField label="Odometer (km)" min="0" type="number" value={timelineDraft.odometerKm || ""}
+              onChange={event => setTimelineDraft({ ...timelineDraft, odometerKm: Number(event.target.value) })} />
           </div>
-          <textarea
-            rows={4}
-            value={timelineDraft.note}
-            onChange={(event) => setTimelineDraft({ ...timelineDraft, note: event.target.value })}
-            placeholder="Bill details, symptoms, shop notes, or what you would do differently."
-          />
-          <button className="primary-action" type="submit" disabled={!garage.length}>
-            Add timeline note
-          </button>
+          <TextAreaField label="Details" rows={4} maxLength={10000} value={timelineDraft.note}
+            onChange={event => setTimelineDraft({ ...timelineDraft, note: event.target.value })}
+            placeholder="Bill details, symptoms, shop notes, or what you would do differently." />
+          <Button type="submit" variant="primary" fullWidth disabled={!garage.length}>Add timeline note</Button>
         </form>
       </div>
 
@@ -188,8 +169,13 @@ export function GarageView() {
               <p><b className="vehicle-plate">{plateText(vehicle.registration ?? vehiclePlates[vehicle.id])}</b> · number kept on this device only</p>
             ) : null}
             <p>
-              {vehicle.model} {vehicle.variant} · {vehicle.city} · {vehicle.odometerKm.toLocaleString("en-IN")} km
+              {vehicle.model} {vehicle.variant} · {vehicle.city || "City not set"} · {vehicle.odometerKm.toLocaleString("en-IN")} km
             </p>
+            <p>{[vehicle.kind === "two-wheeler" ? "Two-wheeler" : "Car", vehicle.manufactureYear, vehicle.colour, vehicle.fuel].filter(Boolean).join(" · ")}</p>
+            <div className="vehicle-card__actions">
+              <IconButton label="Edit vehicle" onClick={() => beginEdit(vehicle)}><Pencil size={17} aria-hidden="true" /></IconButton>
+              <IconButton label="Delete vehicle" variant="ghost" onClick={() => setDeleting(vehicle)}><Trash2 size={17} aria-hidden="true" /></IconButton>
+            </div>
             {timeline
               .filter((entry) => entry.vehicleId === vehicle.id)
               .slice(0, 3)
@@ -245,6 +231,23 @@ export function GarageView() {
           </article>
         ))}
       </div>
+
+      <Dialog open={Boolean(editing)} onClose={() => setEditing(null)} title="Edit vehicle" variant="sheet"
+        actions={<><Button type="button" variant="secondary" onClick={() => setEditing(null)}>Cancel</Button>
+          <Button type="submit" form="garage-edit-form" variant="primary">Save changes</Button></>}>
+        <form id="garage-edit-form" className="garage-form" onSubmit={saveEdit}>
+          {vehicleFields(editDraft, setEditDraft)}
+          <TextField label="Registration number (optional)" maxLength={14} value={editRegistration}
+            onChange={event => setEditRegistration(event.target.value.toUpperCase())}
+            hint="Saved on this device only; never added to your account copy." error={editError || undefined} />
+        </form>
+      </Dialog>
+
+      <Dialog open={Boolean(deleting)} onClose={() => setDeleting(null)} title="Delete vehicle" variant="dialog"
+        actions={<><Button type="button" variant="secondary" onClick={() => setDeleting(null)}>Keep vehicle</Button>
+          <Button type="button" variant="primary" onClick={() => { if (deleting) removeVehicle(deleting.id); setDeleting(null); }}>Delete vehicle</Button></>}>
+        <p>Maintenance history for this vehicle will also be deleted.</p>
+      </Dialog>
     </section>
   );
 }
