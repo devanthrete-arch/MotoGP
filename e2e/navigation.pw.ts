@@ -1,35 +1,8 @@
-import { expect, test, type Page } from "@playwright/test";
-
-// Exercise the app's auth boundary without depending on a live Clerk account.
-async function openApp(page: Page, signedIn: boolean, path = "/", cloud = false) {
-  page.on("pageerror", error => console.error(error.message));
-  await page.route("**/src/main.tsx*", route => route.fulfill({
-    contentType: "application/javascript",
-    body: `import React from '/node_modules/.vite/deps/react.js';
-      import ReactDOM from '/node_modules/.vite/deps/react-dom_client.js';
-      import { OtofolksApp } from '/src/App.tsx';
-      ${cloud ? "import { createClerkSupabaseClient } from '/src/supabase.ts';" : ""}
-      import '/src/styles.css';
-      ${cloud ? "const token = async () => 'test-clerk-token'; const client = createClerkSupabaseClient({ url: 'https://example.supabase.co', publishableKey: 'sb_publishable_fixture' }, token);" : ""}
-      ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(OtofolksApp, {
-        auth: { userId: 'browser-test-user', isLoaded: true, isSignedIn: ${signedIn},
-          ${cloud ? "cloudClient: client, cloudToken: token," : ""}
-          requireSignIn: () => { window.signInRequested = true; } }
-      }));`,
-  }));
-  await page.goto(path);
-  await expect(page.getByRole("navigation", {
-    name: (page.viewportSize()?.width ?? 1440) <= 860 ? "Primary" : "Primary navigation",
-    exact: true,
-  })).toBeVisible();
-}
+import { expect, test } from "@playwright/test";
+import { afterIdle, expectNoOverflow, fetchedViews, openApp, openViews, recordViewRequests, signInRequests } from "./app";
 
 // Each view has its own path; the section keeps its element id.
 const viewPaths = { garage: "/garage", feed: "/community", "pit-stop": "/pit-stop", compare: "/compare" } as const;
-
-async function expectNoOverflow(page: Page) {
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-}
 
 for (const width of [320, 390, 768, 1440, 1920]) {
   for (const colorScheme of ["light", "dark"] as const) {
@@ -166,31 +139,32 @@ test("links in the old fragment form still land on the right view", async ({ pag
   await expect(page.locator("#compare")).toBeVisible();
 });
 
-// The views that are separate files, fetched apart from the first load.
-const lazyViews = ["CompareView", "FeedView", "GarageView", "PitStopView", "WriteView"];
-function recordViewRequests(page: Page) {
-  const fetched = new Set<string>();
-  page.on("request", request => {
-    const name = lazyViews.find(view => new URL(request.url()).pathname.endsWith(`/src/app/views/${view}.tsx`));
-    if (name) fetched.add(name);
-  });
-  return () => [...fetched].sort();
-}
-// Waits until the page has been idle, which is when views are fetched ahead, and for what that started.
-async function afterIdle(page: Page) {
-  await page.evaluate(() => new Promise<void>(resolve => { window.requestIdleCallback(() => resolve()); }));
-  await page.waitForLoadState("networkidle");
-}
-
-test("a visitor who is not signed in downloads no member view", async ({ page }) => {
+test("a visitor downloads the views open to everyone and none of the members-only ones", async ({ page }) => {
   const fetched = recordViewRequests(page);
   await openApp(page, false);
-  await expect(page.locator(".home-view")).toBeVisible();
+  await expect(page.locator(".landing")).toBeVisible();
+  // Fetched ahead while the landing page is idle: only what a visitor may open.
   await afterIdle(page);
-  await page.goto("/compare");
-  await expect(page.locator(".auth-gate")).toBeVisible();
+  expect(fetched()).toEqual(openViews);
+  // Opening a members-only address shows the prompt and still fetches nothing of the view.
+  for (const path of ["/garage", "/community", "/community/write"]) {
+    await page.goto(path);
+    await expect(page.locator(".auth-gate")).toBeVisible();
+    await afterIdle(page);
+  }
+  expect(fetched()).toEqual(openViews);
+});
+
+test("with Save-Data on, a visitor's view is fetched only when it is opened", async ({ page }) => {
+  await page.addInitScript(() => Object.defineProperty(navigator, "connection", { configurable: true, value: { saveData: true } }));
+  const fetched = recordViewRequests(page);
+  await openApp(page, false);
+  await expect(page.locator(".landing")).toBeVisible();
   await afterIdle(page);
   expect(fetched()).toEqual([]);
+  await page.getByRole("link", { name: "Find my next car" }).click();
+  await expect(page.locator("#compare")).toBeVisible();
+  expect(fetched()).toEqual(["CompareView"]);
 });
 
 test("with Save-Data on, a member's view is fetched only when it is opened", async ({ page }) => {
@@ -199,10 +173,11 @@ test("with Save-Data on, a member's view is fetched only when it is opened", asy
   await openApp(page, true);
   await expect(page.locator(".home-view")).toBeVisible();
   await afterIdle(page);
-  expect(fetched()).toEqual([]);
+  // Only what is on screen: Home, and the account-copy panel that every signed-in page carries.
+  expect(fetched()).toEqual(["CloudWorkspacePanel", "HomeView"]);
   await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "Compare" }).click();
   await expect(page.locator("#compare")).toBeVisible();
-  expect(fetched()).toEqual(["CompareView"]);
+  expect(fetched()).toEqual(["CloudWorkspacePanel", "CompareView", "HomeView"]);
 });
 
 test("a member's views are fetched ahead of time without holding up the page on screen", async ({ page }) => {
@@ -213,7 +188,7 @@ test("a member's views are fetched ahead of time without holding up the page on 
   await openApp(page, true);
   // Home is usable while a view's file is still on its way, and nobody has opened a view yet.
   await expect(page.locator(".home-view")).toBeVisible();
-  await expect.poll(fetched).toEqual(lazyViews);
+  await expect.poll(fetched).toEqual(fetchedViews);
   // Opening the view that has not arrived shows its placeholder at once, then the view.
   await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "My garage" }).click();
   await expect(page.locator(".view-loading")).toBeVisible();
@@ -324,25 +299,140 @@ test("a save to the account that is still running finishes after the member open
   await expect(account.getByRole("button", { name: "Restore from account", exact: true })).toBeEnabled();
 });
 
-test("signed-out actions request login and never reveal feature data", async ({ page }) => {
+test("a visitor can follow any link; members-only pages show a sign-in prompt in place of the view", async ({ page }) => {
   await openApp(page, false);
-  const signInRequested = () => page.evaluate(() => (window as unknown as { signInRequested?: boolean }).signInRequested === true);
-  await page.getByRole("link", { name: "Sign in", exact: true }).click();
-  expect(await signInRequested()).toBe(true);
-  await page.evaluate(() => { (window as unknown as { signInRequested?: boolean }).signInRequested = false; });
-  await page.getByRole("link", { name: "Ask the community" }).click();
-  expect(await signInRequested()).toBe(true);
-  // The visitor stays where they were.
-  await expect(page).toHaveURL(/\/$/);
-  await expect(page.locator(".home-view")).toBeVisible();
+  const navigation = page.getByRole("navigation", { name: "Primary navigation" });
 
-  // Opening a member address directly shows the sign-in prompt in place of the view.
-  for (const [path, id] of [["/garage", "garage"], ["/community", "feed"], ["/community/write", "write"],
-    ["/pit-stop", "pit-stop"], ["/compare", "compare"]] as const) {
+  // The Sign in link opens sign-in on the spot and will bring the visitor back to where they are.
+  await page.getByRole("link", { name: "Sign in", exact: true }).click();
+  expect(await signInRequests(page)).toEqual(["/ sign-in"]);
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator(".landing")).toBeVisible();
+
+  // A link to a members-only page is followed. Nothing is asked until the visitor chooses to.
+  await navigation.getByRole("link", { name: "Community", exact: true }).click();
+  await expect(page).toHaveURL(/\/community$/);
+  const prompt = page.locator(".auth-gate");
+  await expect(prompt.getByRole("heading", { name: "Owner notes are for signed-in members" })).toBeFocused();
+  await expect(page).toHaveTitle("Community · Otofolks");
+  await expect(page.locator("#feed")).toHaveCount(0);
+  expect(await signInRequests(page)).toEqual(["/ sign-in"]);
+  // Signing in from the prompt comes back to this address, whichever way the visitor signs in.
+  await prompt.getByRole("button", { name: "Sign in", exact: true }).click();
+  await prompt.getByRole("button", { name: "Create account", exact: true }).click();
+  expect(await signInRequests(page)).toEqual(["/ sign-in", "/community sign-in", "/community sign-up"]);
+  // From there the Sign in link returns to the prompt's own address too.
+  await page.getByRole("link", { name: "Sign in", exact: true }).click();
+  expect((await signInRequests(page)).at(-1)).toBe("/community sign-in");
+
+  // Each members-only address shows its prompt and not the view, however the address is spelt.
+  for (const [path, id, heading] of [
+    ["/garage", "garage", "Sign in to open My garage"], ["/community", "feed", "Owner notes are for signed-in members"],
+    ["/community/write", "write", "Sign in to write an owner note"], ["/Garage", "garage", "Sign in to open My garage"],
+    ["/garage/", "garage", "Sign in to open My garage"], ["/%67arage", "garage", "Sign in to open My garage"],
+    ["/COMMUNITY/Write/", "write", "Sign in to write an owner note"]] as const) {
     await page.goto(path);
-    await expect(page.locator(".auth-gate")).toBeVisible();
+    await expect(page.locator(".auth-gate").getByRole("heading", { name: heading })).toBeVisible();
     await expect(page.locator(`#${id}`)).toHaveCount(0);
+    await expect(page.locator(".data-notice")).toHaveCount(0);
   }
+
+  // Compare, Pit Stop and Account are open to everyone.
+  for (const [path, id] of [["/compare", "compare"], ["/pit-stop", "pit-stop"], ["/account", "account"]] as const) {
+    await page.goto(path);
+    await expect(page.locator(`#${id}`)).toBeVisible();
+    await expect(page.locator(".auth-gate")).toHaveCount(0);
+  }
+});
+
+test("without sign-in configured the prompt says so and offers nothing to press", async ({ page }) => {
+  await openApp(page, false, "/garage", false, { clerkEnabled: false });
+  const prompt = page.locator(".auth-gate");
+  await expect(prompt.getByRole("heading", { name: "Sign in to open My garage" })).toBeVisible();
+  await expect(prompt.getByRole("status")).toHaveText("Sign-in is temporarily unavailable. Please try again later.");
+  await expect(prompt.getByRole("button", { name: "Sign in", exact: true })).toBeDisabled();
+  await expect(prompt.getByRole("button", { name: "Create account", exact: true })).toBeDisabled();
+  await expect(page.locator("#garage")).toHaveCount(0);
+});
+
+test("while sign-in is still loading nobody is shown, or sent, the other audience's page", async ({ page }) => {
+  // A device that has never signed in: the landing page is there at once, and only the views open
+  // to everyone are fetched ahead. Every real visit starts in this state.
+  let fetched = recordViewRequests(page);
+  await openApp(page, false, "/", false, { isLoaded: false });
+  await expect(page.locator(".landing")).toBeVisible();
+  await afterIdle(page);
+  expect(fetched()).toEqual(openViews);
+  // A members-only address waits for the answer: no view, no prompt to sign in again, and the
+  // view's file is not asked for.
+  await page.goto("/garage");
+  await expect(page.locator(".view-loading")).toBeVisible();
+  await expect(page.locator(".auth-gate")).toHaveCount(0);
+  await afterIdle(page);
+  await expect(page.locator("#garage")).toHaveCount(0);
+  expect(fetched()).toEqual(openViews);
+
+  // A device that was signed in last time waits on the pages that differ by audience. Home, where
+  // a member starts, is asked for at once; nothing else is fetched ahead until the answer is in.
+  await openApp(page, true, "/");
+  await expect(page.locator(".home-view")).toBeVisible();
+  const returning = await page.context().newPage();
+  fetched = recordViewRequests(returning);
+  await openApp(returning, false, "/", false, { isLoaded: false });
+  await expect(returning.locator(".view-loading")).toBeVisible();
+  await afterIdle(returning);
+  expect(fetched()).toEqual(["HomeView"]);
+  for (const path of ["/", "/compare"]) {
+    await returning.goto(path);
+    await expect(returning.locator(".view-loading")).toBeVisible();
+    await expect(returning.locator(".landing")).toHaveCount(0);
+    await expect(returning.locator(".home-view")).toHaveCount(0);
+    await expect(returning.locator("#compare")).toHaveCount(0);
+    await expect(returning.locator(".data-notice")).toHaveCount(0);
+  }
+  // Pit Stop holds nothing of the reader's, so it does not wait.
+  await returning.goto("/pit-stop");
+  await expect(returning.locator("#pit-stop")).toBeVisible();
+  // Once the answer is "not signed in", the device is a visitor's again.
+  await openApp(returning, false, "/");
+  await expect(returning.locator(".landing")).toBeVisible();
+  await openApp(returning, false, "/", false, { isLoaded: false });
+  await expect(returning.locator(".landing")).toBeVisible();
+  await returning.close();
+});
+
+test("pressing Sign in and walking away does not make the device look like a member's", async ({ page }) => {
+  await openApp(page, false);
+  await page.getByRole("link", { name: "Sign in", exact: true }).click();
+  expect(await signInRequests(page)).toEqual(["/ sign-in"]);
+  // In this tab the load that follows a sign-in waits for the answer rather than flash the landing page.
+  await openApp(page, false, "/", false, { isLoaded: false });
+  await expect(page.locator(".view-loading")).toBeVisible();
+  await expect(page.locator(".landing")).toHaveCount(0);
+  // A later visit in another tab is a visitor's: the landing page at once.
+  const later = await page.context().newPage();
+  await openApp(later, false, "/", false, { isLoaded: false });
+  await expect(later.locator(".landing")).toBeVisible();
+  await later.close();
+});
+
+test("if sign-in never answers, the wait ends and the visitor's pages are shown", async ({ page }) => {
+  // Make this a device that was signed in before, the case that waits longest.
+  await openApp(page, true, "/");
+  await expect(page.locator(".home-view")).toBeVisible();
+  await page.clock.install();
+  await openApp(page, false, "/garage", false, { isLoaded: false });
+  await expect(page.locator(".view-loading")).toBeVisible();
+  await page.clock.fastForward(7000);
+  await expect(page.locator(".view-loading")).toBeVisible();
+  await expect(page.locator(".auth-gate")).toHaveCount(0);
+  await page.clock.fastForward(1500);
+  await expect(page.locator(".auth-gate").getByRole("heading", { name: "Sign in to open My garage" })).toBeVisible();
+  await expect(page.locator(".view-loading")).toHaveCount(0);
+
+  // The device is no longer held back on the next visit either.
+  await page.goto("/");
+  await expect(page.locator(".landing")).toBeVisible();
 });
 
 test("vehicle and maintenance records survive reload", async ({ page }) => {

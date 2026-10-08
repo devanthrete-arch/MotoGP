@@ -31,7 +31,8 @@ export function FieldShell({ label, hint, error, hideLabel, ids, children }: Fie
     <div className={cx("ui-field", error && "ui-field--invalid")}>
       <label className={cx("ui-field__label", hideLabel && "ui-visually-hidden")} htmlFor={ids.id}>{label}</label>
       {children}
-      {error ? <p className="ui-field__error" id={ids.errorId}>{error}</p>
+      {/* An alert, so the problem is spoken when it appears while focus is already in the control. */}
+      {error ? <p className="ui-field__error" id={ids.errorId} role="alert">{error}</p>
         : hint ? <p className="ui-field__hint" id={ids.hintId}>{hint}</p> : null}
     </div>
   );

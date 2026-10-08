@@ -2,13 +2,15 @@
    tokens.css  – design tokens for both themes, plus aliases the legacy rules read
    skin.css    – redesign pass over existing markup (layer: skin)
    ui/ui.css   – component primitives from src/ui (layer: ui)
+   views.css   – rebuilt views, which may resize a primitive (layer: views)
    below       – the pre-redesign stylesheet, held in the lowest layer so new CSS always wins */
-@layer legacy, skin, ui;
+@layer legacy, skin, ui, views;
 @import "@fontsource-variable/geist/index.css";
 @import "@fontsource-variable/geist-mono/index.css";
 @import "./styles/tokens.css";
 @import "./styles/skin.css";
 @import "./ui/ui.css";
+@import "./styles/views.css";
 
 @layer legacy {
 * { box-sizing: border-box; }

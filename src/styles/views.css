@@ -1,0 +1,97 @@
+/* Styles for rebuilt views. The "views" layer sits above "ui", so a view can resize a primitive
+   through the class it passes (.landing-plate against .ui-plate) and win over the old element rules.
+   Import this file from src/styles.css only: imported from a component it would be emitted before
+   the layer-order statement and "views" would become the weakest layer. */
+@layer views {
+  /* ---- landing page ---- */
+  .landing {
+    flex: 1; display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; justify-items: center;
+    gap: clamp(20px, 3vw, 32px); padding: clamp(24px, 4vh, 48px) max(16px, 4%) 56px; text-align: center;
+  }
+  .landing :is(h1, h2, h3, p) { margin: 0; }
+  .landing-head { display: grid; justify-items: center; gap: 12px; }
+  .landing-eyebrow { font: 600 12px/1.3 var(--font-sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--color-accent-text); }
+  .landing h1 { font: 600 clamp(24px, 2.4vw + 16px, 36px)/1.1 var(--font-sans); color: var(--color-text); }
+  .landing h1 span { display: block; }
+  .landing-lede { max-inline-size: 36ch; font-size: clamp(15px, 0.5vw + 13px, 17px); line-height: 1.5; color: var(--color-text-secondary); text-wrap: balance; }
+  .landing-note { max-inline-size: 60ch; font-size: 13px; line-height: 1.5; color: var(--color-text-muted); }
+  .landing-form { display: grid; justify-items: center; gap: 12px; inline-size: min(100%, 1080px); }
+
+  /* The stage. --u is the size of the plate's characters; the plate, the turntable behind it and
+     the room the turntable needs all follow from it, so they cannot drift apart at any width.
+     The air above is where the 3D model will stand. */
+  .landing-stage {
+    --u: clamp(20px, 6.2vw, 40px);
+    position: relative; isolation: isolate; inline-size: 100%; padding-block-start: clamp(16px, 16vh - 60px, 160px);
+  }
+  /* The light. It stops above the hint line: only the label may sit in it (contrast in dark). */
+  .landing-stage::before {
+    content: ""; position: absolute; inset: 0 0 48px; z-index: -1; opacity: 0.6;
+    background: radial-gradient(closest-side, var(--stage-light), transparent);
+    transition: opacity var(--duration-base) var(--ease-out);
+  }
+  .landing-stage[data-ready] { --ring: var(--color-accent); }
+  .landing-stage[data-ready]::before { opacity: 1; }
+  .landing-stage > .ui-field { inline-size: min(100%, 540px); margin-inline: auto; padding-block-start: calc(var(--u) * 3.7 - 51px); }
+  .landing-stage .ui-field__label { color: var(--color-text); }
+  /* Room is kept for the hint or error, so the button does not move when the text changes. */
+  .landing-stage :is(.ui-field__hint, .ui-field__error) { min-height: 1.4em; }
+  /* No z-index, transform, filter or opacity here: any of them would make the plate its own
+     stacking context and the turntable would then paint over the plate instead of behind it. */
+  .landing-plate {
+    position: relative; min-height: calc(32px + var(--u) * 1.4); padding-inline: 8px calc(var(--u) * 0.7);
+    gap: calc(var(--u) * 0.4); box-shadow: var(--glass-highlight), var(--glass-shadow);
+  }
+  /* The turntable: the one glass surface on the page. Shadows only, so it drops out in forced colours. */
+  .landing-plate::before {
+    content: ""; position: absolute; z-index: -1; bottom: 44%; left: 50%; transform: translateX(-50%);
+    inline-size: min(132%, 100vw - 40px); block-size: calc(var(--u) * 4.4 - 12px); border-radius: 50%;
+    background: radial-gradient(closest-side, transparent 77%, var(--ring, var(--glass-outline)) 77.5% 80%, transparent 80.5%), var(--glass-fill);
+    box-shadow: inset 0 0 0 1px var(--glass-border), 0 0 0 1px var(--glass-outline), var(--glass-highlight), var(--glass-shadow);
+  }
+  .landing-plate .ui-plate__tag { height: calc(16px + var(--u) * 1.4); padding-inline: calc(var(--u) * 0.7); font-size: calc(8px + var(--u) * 0.2); }
+  .landing-plate .ui-plate__input { font-size: var(--u); text-align: start; caret-color: var(--color-accent); }
+  .landing-go { inline-size: min(100%, 320px); min-height: 52px; font-size: 16px; }
+
+  .landing-paths { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; inline-size: min(100%, 440px); }
+  .landing-paths > .ui-button { flex: 1 1 190px; }
+  .landing-paths > p { flex-basis: 100%; }
+
+  .landing-today { inline-size: min(100%, 1080px); margin-block-start: clamp(16px, 4vw, 48px); text-align: start; }
+  .landing-today h2 { margin-block-end: 16px; font: 600 20px/1.2 var(--font-sans); color: var(--color-text); }
+  .landing-list {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); column-gap: 32px;
+    margin: 0 0 16px; padding: 0; border-bottom: 1px solid var(--color-border); list-style: none;
+  }
+  .landing-item {
+    position: relative; display: grid; grid-template-columns: 52px 1fr; align-content: start; row-gap: 4px; padding-block: 18px;
+    border-top: 1px solid var(--color-border); font-size: 14px; color: var(--color-text-secondary);
+  }
+  /* 28px is what lets the amber fill pass as large text; below 24px it must become --color-accent-text. */
+  .landing-item > b { grid-row: span 3; font: 500 28px/1 var(--font-mono); color: var(--color-accent); }
+  .landing-item h3 { font: 600 17px/1.3 var(--font-sans); color: var(--color-text); }
+  .landing-item a { color: inherit; text-decoration: none; }
+  /* The whole row is the target; the link is still named by the area alone. */
+  .landing-item a::after { content: ""; position: absolute; inset: 0; }
+  .landing-item:hover a { text-decoration: underline; text-underline-offset: 3px; }
+  .landing-item small { font: 500 12px/1.5 var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-text-muted); }
+  @media (max-width: 600px) {
+    .landing-stage :is(.ui-field__hint, .ui-field__error) { min-height: 2.8em; }
+  }
+
+  /* ---- sign-in prompt and the registration number in the garage ---- */
+  /* On the page ground like the landing page, not in a card: its secondary pill is glass already. */
+  .auth-gate { display: grid; place-content: center; justify-items: center; gap: 24px; text-align: center; }
+  .auth-gate > div:first-child { display: grid; gap: 10px; max-inline-size: 46ch; }
+  .auth-gate :is(h2, p) { margin: 0; }
+  .auth-gate h2 { font: 600 clamp(22px, 1.2vw + 18px, 30px)/1.15 var(--font-sans); color: var(--color-text); }
+  .auth-gate p { color: var(--color-text-secondary); }
+  .auth-gate .auth-actions { justify-content: center; margin: 0; }
+  /* The plate in the add-vehicle form sits in a narrow card on small phones: the longest number
+     (14 characters) must still fit at 320px. Not below 16px, or iOS zooms the page on focus. */
+  .garage-plate { padding-inline-end: 12px; gap: 8px; }
+  .garage-plate .ui-plate__tag { padding-inline: 10px; }
+  .garage-plate .ui-plate__input { font-size: clamp(16px, 5.3vw, 20px); }
+  .auth-gate-plate,
+  .vehicle-plate { font-family: var(--font-mono); font-weight: 500; letter-spacing: 0.06em; white-space: nowrap; }
+}

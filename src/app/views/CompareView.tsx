@@ -299,7 +299,7 @@ export function CompareView() {
               );
             })
           ) : (
-            <div className="empty-state">Add a model manually or from an owner note to begin comparison.</div>
+            <div className="empty-state">Add a car to begin comparing.</div>
           )}
           </div>
         </div>

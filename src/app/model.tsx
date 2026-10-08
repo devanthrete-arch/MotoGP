@@ -3,6 +3,7 @@ import { isSharedPost } from "../communityCloud";
 import { comparisonFields, verifiedComparisonFor } from "../comparisonCatalog";
 import type { ClerkTokenGetter, CloudClient } from "../supabase";
 import { Car, House, MessageCircle, Play, Scale } from "lucide-react";
+import type { ComponentType } from "react";
 import { matchRoutes } from "react-router";
 import { pitStopCategories, type PitStopClip } from "../pitstop";
 import {
@@ -29,6 +30,11 @@ export const viewPaths: Record<AppView, string> = {
   compare: "/compare",
   account: "/account",
 };
+
+// Views that need an account. Every other view is open to visitors. The route guard, the
+// ahead-of-time fetching and the landing page's "needs sign-in" tags all read this one set.
+export type MemberView = "garage" | "feed" | "write";
+export const memberViews: ReadonlySet<AppView> = new Set<MemberView>(["garage", "feed", "write"]);
 
 // Browser tab and history titles.
 export const viewTitles: Record<AppView, string> = {
@@ -209,8 +215,13 @@ export const priceSourceFor = (state: string, _status: ShortlistItem["status"]) 
   `Example price only; confirm a dealer quote in ${state || defaultPriceState}`;
 
 export type AppProps = {
+  /** Sign-in is configured. Without it every visitor stays signed out. */
   clerkEnabled?: boolean;
+  /** The sign-in provider's own account panel, shown in Account. Passed in so the app can run without the provider. */
+  accountPanel?: ComponentType<{ savedCount: number }>;
 };
+
+export type SignInMode = "sign-in" | "sign-up";
 
 export type AppAuthState = {
   userId?: string;
@@ -219,7 +230,8 @@ export type AppAuthState = {
   cloudError?: string;
   isLoaded: boolean;
   isSignedIn: boolean;
-  requireSignIn: (destination?: string) => void;
+  /** Opens sign-in (or sign-up); `destination` is the path to come back to afterwards. */
+  requireSignIn: (destination?: string, mode?: SignInMode) => void;
 };
 
 export type ComparisonSection = { title: string; rows: [string, string, string][] };

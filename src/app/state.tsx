@@ -20,20 +20,36 @@ import {
 } from "../insights";
 import {
   createReport, createShortlistItem, createTimelineEntry, createVehicle, loadFollows, loadGarage,
-  loadProfile, loadPosts, loadReports, loadSaved, loadShortlist, loadTimeline, saveFollows, saveGarage,
-  savePosts, saveProfile, saveReports, saveSaved, saveShortlist, saveTimeline, setStorageUser,
-  readStoredJson, writeStoredJson,
+  loadProfile, loadPosts, loadReports, loadSaved, loadShortlist, loadTimeline, loadVehiclePlates, saveFollows,
+  saveGarage, savePosts, saveProfile, saveReports, saveSaved, saveShortlist, saveTimeline, saveVehiclePlates,
+  setStorageUser, readStoredJson, writeStoredJson,
 } from "../storage";
+import { formatRegistrationInput, parseRegistration } from "../ui/plate";
+import {
+  adoptVisitorShortlist, claimTab, forgetPlate, loadVisitorShortlist, readMemberHint, readSigningIn, recallPlate,
+  rememberPlate, saveVisitorShortlist, writeMemberHint, writeSigningIn,
+} from "../visitor";
 import {
   type AppAuthState, type AppProps, type AppView, type ComparisonSection, type FeedMode, type PriceState,
-  buildCompareVerdict, compareMetricSections, comparisonSectionTitles, defaultPriceState,
+  type SignInMode, buildCompareVerdict, compareMetricSections, comparisonSectionTitles, defaultPriceState,
   firstVariantForModel, getInitialOnlineStatus, initialDraft, initialShortlistDraft, initialTimelineDraft,
   initialVehicleDraft, modelDetailsFor, pathForLegacyHash, pitStopCategoryFromHash, priceForModel, priceSourceFor,
   stateForCity, viewFromPath, viewPaths,
 } from "./model";
 
-export function useOtofolksState({ auth, clerkEnabled = false }: AppProps & { auth: AppAuthState }) {
-  setStorageUser(auth.isSignedIn ? auth.userId ?? null : null);
+// A visitor's Compare is built without owner notes: see shortlistComparisons below.
+const noPosts: OwnerPost[] = [];
+// How long to wait for the sign-in provider before treating whoever is here as a visitor.
+const authWaitLimit = 8000;
+
+export function useOtofolksState({ auth, clerkEnabled = false, accountPanel }: AppProps & { auth: AppAuthState }) {
+  // Device data is kept per account. A visitor has none: their shortlist lives in the tab.
+  const accountId = auth.isSignedIn ? auth.userId ?? null : null;
+  setStorageUser(accountId);
+  // The sign-in provider has not answered yet: see "audience" further down.
+  const authPending = clerkEnabled && !auth.isLoaded;
+  // Before anything reads the tab: what it holds must not pass to the next person to use it.
+  const tabCleared = claimTab(accountId, !authPending);
   const [posts, setPosts] = useState<OwnerPost[]>(() => loadPosts());
   const [sharedPosts, setSharedPosts] = useState<OwnerPost[]>([]);
   const [communityStatus, setCommunityStatus] = useState("Loading shared notes...");
@@ -41,10 +57,29 @@ export function useOtofolksState({ auth, clerkEnabled = false }: AppProps & { au
   const [communityRefresh, setCommunityRefresh] = useState(0);
   const [profile, setProfile] = useState<Profile>(() => loadProfile());
   const [reports, setReports] = useState<ReportRecord[]>(() => loadReports());
-  const [shortlist, setShortlist] = useState<ShortlistItem[]>(() => loadShortlist());
+  const [shortlist, setShortlist] = useState<ShortlistItem[]>(() => {
+    // Cars shortlisted in this tab before signing in come along, once.
+    return accountId === null ? loadVisitorShortlist() : adoptVisitorShortlist();
+  });
   const [saved, setSaved] = useState<Set<string>>(() => loadSaved());
   const [follows, setFollows] = useState<FollowState>(() => loadFollows());
   const [garage, setGarage] = useState<GarageVehicle[]>(() => loadGarage());
+  // Registration numbers by vehicle id: on this device only, never part of the account copy.
+  const [vehiclePlates, setVehiclePlates] = useState<Record<string, string>>(() => loadVehiclePlates());
+  // The number being typed for the next vehicle. It starts from the one given on the landing page.
+  // Deliberately not part of vehicleDraft, which becomes the saved (and uploadable) vehicle.
+  const [plateDraft, setPlateDraftText] = useState(() => formatRegistrationInput(recallPlate() ?? ""));
+  const setPlateDraft = (text: string) => {
+    setPlateDraftText(text);
+    // The tab always holds exactly what the field shows when that is a whole number, and nothing
+    // otherwise: what is promised to survive a sign-in (or a reload) is what does.
+    const registration = parseRegistration(text);
+    if (registration.ok) rememberPlate(registration.normalized);
+    else forgetPlate();
+  };
+  // The tab changed hands (a sign-out, or another account) after this state was first read.
+  if (tabCleared && plateDraft) setPlateDraftText("");
+  if (tabCleared && accountId === null && shortlist.length) setShortlist([]);
   const [timeline, setTimeline] = useState<TimelineEntry[]>(() => loadTimeline());
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<FeedMode>("latest");
@@ -204,12 +239,15 @@ export function useOtofolksState({ auth, clerkEnabled = false }: AppProps & { au
   const garageInsights = useMemo(() => buildGarageInsights(garage, timeline, posts), [garage, posts, timeline]);
   const garageCostLedger = useMemo(() => buildGarageCostLedger(garage, timeline), [garage, timeline]);
   const garageReminders = useMemo(() => buildGarageReminders(garage, timeline), [garage, timeline]);
-  const shortlistComparisons = useMemo(() => buildShortlistComparisons(shortlist, posts), [posts, shortlist]);
+  // Compare is open to visitors, and the only notes on hand for a visitor are the bundled examples
+  // or whatever an earlier user of this browser left behind. Neither is quoted to them.
+  const compareNotes = auth.isSignedIn ? posts : noPosts;
+  const shortlistComparisons = useMemo(() => buildShortlistComparisons(shortlist, compareNotes), [compareNotes, shortlist]);
   const comparisonSections = useMemo(() => compareMetricSections(shortlistComparisons), [shortlistComparisons]);
   const displayedComparisonSections: ComparisonSection[] = comparisonSections.length
     ? comparisonSections : comparisonSectionTitles.map((title) => ({ title, rows: [] }));
   const compareVerdict = useMemo(() => buildCompareVerdict(shortlistComparisons), [shortlistComparisons]);
-  const inspectionChecklists = useMemo(() => buildInspectionChecklists(shortlist, posts), [posts, shortlist]);
+  const inspectionChecklists = useMemo(() => buildInspectionChecklists(shortlist, compareNotes), [compareNotes, shortlist]);
   const inspectionChecklistByItemId = useMemo(
     () => new Map(inspectionChecklists.map((checklist) => [checklist.item.id, checklist])),
     [inspectionChecklists],
@@ -261,12 +299,18 @@ export function useOtofolksState({ auth, clerkEnabled = false }: AppProps & { au
 
   const persistShortlist = (nextShortlist: ShortlistItem[]) => {
     setShortlist(nextShortlist);
-    saveShortlist(nextShortlist);
+    if (accountId === null) saveVisitorShortlist(nextShortlist);
+    else saveShortlist(nextShortlist);
   };
 
-  const persistGarage = (nextGarage: GarageVehicle[]) => {
+  const persistGarage = (nextGarage: GarageVehicle[], plates = vehiclePlates) => {
     setGarage(nextGarage);
     saveGarage(nextGarage);
+    // A number is kept only while its vehicle exists (restoring from the account can remove one).
+    const vehicleIds = new Set(nextGarage.map((vehicle) => vehicle.id));
+    const keptPlates = Object.fromEntries(Object.entries(plates).filter(([vehicleId]) => vehicleIds.has(vehicleId)));
+    setVehiclePlates(keptPlates);
+    saveVehiclePlates(keptPlates);
     if (!timelineDraft.vehicleId && nextGarage[0]) {
       setTimelineDraft({ ...timelineDraft, vehicleId: nextGarage[0].id });
     }
@@ -523,14 +567,26 @@ export function useOtofolksState({ auth, clerkEnabled = false }: AppProps & { au
 
   const addVehicle = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const registration = parseRegistration(plateDraft);
+    // The number is optional, but one that was started is finished or cleared first: saving the
+    // vehicle and quietly dropping what was typed would lose it without a word. The form puts the
+    // reader back in the field; the message is for anyone who cannot see it from where they are.
+    if (plateDraft.trim() && !registration.ok) {
+      setActionMessage("Finish the registration number, or clear it, then save again.");
+      return false;
+    }
     const vehicle = createVehicle({
       ...vehicleDraft,
       nickname: vehicleDraft.nickname.trim() || `${vehicleDraft.brand} ${vehicleDraft.model}`,
       odometerKm: Number.isFinite(vehicleDraft.odometerKm) ? vehicleDraft.odometerKm : 0,
     });
-    persistGarage([vehicle, ...garage]);
+    persistGarage([vehicle, ...garage],
+      registration.ok ? { ...vehiclePlates, [vehicle.id]: registration.normalized } : vehiclePlates);
     setVehicleDraft(initialVehicleDraft);
+    // Used: the next vehicle starts with an empty field, in this tab and after a reload.
+    setPlateDraft("");
     setActionMessage("Vehicle saved on this device.");
+    return true;
   };
 
   const addTimelineNote = (event: FormEvent<HTMLFormElement>) => {
@@ -551,10 +607,36 @@ export function useOtofolksState({ auth, clerkEnabled = false }: AppProps & { au
   };
 
   const shouldShowFeatures = auth.isSignedIn;
+  // Until the sign-in provider has answered, a member looks exactly like a visitor. "unknown"
+  // covers that gap so nobody is shown the other audience's page for a moment. It is capped, so
+  // a provider that never loads leaves the public pages usable.
+  const [authWaitOver, setAuthWaitOver] = useState(false);
+  useEffect(() => {
+    if (!authPending) return;
+    const timer = window.setTimeout(() => setAuthWaitOver(true), authWaitLimit);
+    return () => window.clearTimeout(timer);
+  }, [authPending]);
+  const audience: "member" | "visitor" | "unknown" = auth.isSignedIn ? "member"
+    : authPending && !authWaitOver ? "unknown" : "visitor";
+  // Whether this device was signed in last time, read once. It only chooses what "unknown" draws
+  // on pages that visitors may also see: a placeholder for a returning member, the page otherwise.
+  const [returningMember] = useState(() => readMemberHint() || readSigningIn());
+  /** The pages a visitor may see are shown as a visitor sees them. */
+  const visitorPages = audience === "visitor" || (audience === "unknown" && !returningMember);
+  useEffect(() => {
+    // The hint follows what was actually observed. If the provider never answers it is dropped
+    // too, so later visits are not held on a placeholder for the full wait.
+    if (auth.isSignedIn) writeMemberHint(true);
+    else if (!authPending || authWaitOver) writeMemberHint(false);
+    if (!authPending) writeSigningIn(false);
+  }, [auth.isSignedIn, authPending, authWaitOver]);
+
   // `destination` is the path to return to once signed in.
-  const requireSignIn = (destination = viewPaths.top) => {
+  const requireSignIn = (destination = viewPaths.top, mode: SignInMode = "sign-in") => {
     if (shouldShowFeatures) return true;
-    auth.requireSignIn(destination);
+    // The page load that ends a sign-in should wait for the answer, not flash the visitor's page.
+    writeSigningIn(true);
+    auth.requireSignIn(destination, mode);
     if (!auth.isLoaded) {
       setActionMessage("Loading sign-in...");
       return false;
@@ -562,21 +644,24 @@ export function useOtofolksState({ auth, clerkEnabled = false }: AppProps & { au
     setActionMessage(clerkEnabled ? "Sign in to continue." : "Sign-in is temporarily unavailable. Please try again later.");
     return false;
   };
+  // Any visitor may follow any link; a members-only page shows a sign-in prompt in its place.
   const handleFeatureNav = (event: MouseEvent<HTMLAnchorElement>) => {
     setNavMenuOpen(false);
-    // Everything but Home needs an account; a signed-out visitor is asked to sign in instead.
-    const destination = event.currentTarget.pathname;
-    if (destination !== viewPaths.top && !shouldShowFeatures) {
-      event.preventDefault();
-      requireSignIn(destination);
-      return;
-    }
     // The link for the page already open takes the reader back to its top.
-    if (destination === location.pathname) window.scrollTo({ top: 0 });
+    if (event.currentTarget.pathname === location.pathname) window.scrollTo({ top: 0 });
+  };
+  // The account link doubles as "Sign in": for a visitor it opens sign-in on the spot and brings
+  // them back to the page they were on.
+  const handleAccountNav = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (shouldShowFeatures) { handleFeatureNav(event); return; }
+    setNavMenuOpen(false);
+    event.preventDefault();
+    requireSignIn(location.pathname);
   };
 
   return {
-    auth, clerkEnabled, posts, setPosts, sharedPosts, setSharedPosts, communityStatus, setCommunityStatus,
+    auth, clerkEnabled, accountPanel, audience, visitorPages, vehiclePlates, plateDraft, setPlateDraft,
+    handleAccountNav, posts, setPosts, sharedPosts, setSharedPosts, communityStatus, setCommunityStatus,
     communityBusy, setCommunityBusy, communityRefresh, setCommunityRefresh, profile, setProfile, reports,
     setReports, shortlist, setShortlist, saved, setSaved, follows, setFollows, garage, setGarage, timeline,
     setTimeline, query, setQuery, mode, setMode, selectedLabel, setSelectedLabel, selectedFeedState,
