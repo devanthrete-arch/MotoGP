@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { PostgrestClient } from "@supabase/postgrest-js";
 
 export type CloudConfig = { url: string; publishableKey: string };
 export type ClerkTokenGetter = () => Promise<string | null>;
@@ -38,14 +38,22 @@ export function readCloudConfig(env: Record<string, unknown>): CloudConfig | nul
   return { url: parsed.origin, publishableKey };
 }
 
-export function createClerkSupabaseClient(config: CloudConfig, getToken: ClerkTokenGetter) {
-  return createClient(config.url, config.publishableKey, {
-    // Request a current Clerk token for each operation, including after session refresh.
-    accessToken: async () => {
+// The app only reads and writes tables and calls database functions, so it talks to the project's
+// REST endpoint directly. The full Supabase SDK also bundles auth, storage and realtime clients
+// (about two-fifths of the old bundle), none of which are used: Clerk handles sign-in.
+export type CloudClient = PostgrestClient;
+
+export function createClerkSupabaseClient(config: CloudConfig, getToken: ClerkTokenGetter): CloudClient {
+  return new PostgrestClient(`${config.url}/rest/v1`, {
+    headers: { apikey: config.publishableKey },
+    // Request a current Clerk token for each operation, including after session refresh. With no
+    // token the request is never sent, so there is no anonymous fallback after sign-out.
+    fetch: async (input, init) => {
       const token = await getToken();
       if (!token) throw new Error("Sign in before accessing your cloud data.");
-      return token;
+      const headers = new Headers(init?.headers);
+      headers.set("Authorization", `Bearer ${token}`);
+      return fetch(input, { ...init, headers });
     },
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   });
 }

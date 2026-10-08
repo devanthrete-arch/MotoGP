@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { CloudClient } from "./supabase";
 import { CloudDownload, CloudUpload, RefreshCw } from "lucide-react";
 import { loadCloudWorkspace, saveCloudWorkspace, type CloudWorkspace, type PrivateWorkspace } from "./cloudWorkspace";
 
 export function CloudWorkspacePanel({ client, owner, workspace, onRestore, configurationError }: {
-  client: SupabaseClient | null;
+  client: CloudClient | null;
   owner: string;
   workspace: PrivateWorkspace;
   onRestore: (workspace: PrivateWorkspace) => void;

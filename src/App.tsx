@@ -1,6 +1,5 @@
 import { FormEvent, MouseEvent, useEffect, useMemo, useState } from "react";
 import { SignInButton, SignUpButton, UserButton, useClerk, useUser, useSession } from "@clerk/react";
-import type { SupabaseClient } from "@supabase/supabase-js";
 import { CloudWorkspacePanel } from "./CloudWorkspacePanel";
 import {
   deleteCommunityPost, isSharedPost, loadCommunityComments, loadCommunityPosts, loadMyCommunityPostIds,
@@ -8,7 +7,7 @@ import {
 } from "./communityCloud";
 import { comparisonFields, legacyVariantSourceFor, verifiedComparisonFor } from "./comparisonCatalog";
 import type { PrivateWorkspace } from "./cloudWorkspace";
-import { createClerkSupabaseClient, readCloudConfig, sessionTokenGetter, type ClerkTokenGetter } from "./supabase";
+import { createClerkSupabaseClient, readCloudConfig, sessionTokenGetter, type ClerkTokenGetter, type CloudClient } from "./supabase";
 import { ArrowRight, Bookmark, Car, ChevronDown, House, LogOut, Menu, MessageCircle, PenLine, Play, Scale, UserRound, X } from "lucide-react";
 import { ThemeToggle } from "./ui/ThemeToggle";
 import { toastDuration } from "./ui/Toast";
@@ -242,7 +241,7 @@ type AppProps = {
 
 type AppAuthState = {
   userId?: string;
-  cloudClient?: SupabaseClient | null;
+  cloudClient?: CloudClient | null;
   cloudToken?: ClerkTokenGetter | null;
   cloudError?: string;
   isLoaded: boolean;
