@@ -1,14 +1,30 @@
 // Garage: vehicles, maintenance timeline, reminders and running costs.
+import { useRef, useState } from "react";
 import { timelineKinds, type TimelineEntryKind } from "../../domain";
 import { formatMoney } from "../../insights";
+import { PlateInput } from "../../ui/PlateInput";
+import { parseRegistration, registrationProblemText } from "../../ui/plate";
 import { brands } from "../model";
 import { useOtofolks } from "../state";
+
+// A stored number in the form it has on the plate.
+const plateText = (normalized: string) => {
+  const parsed = parseRegistration(normalized);
+  return parsed.ok ? parsed.display : normalized;
+};
 
 export function GarageView() {
   const {
     garage, timeline, vehicleDraft, setVehicleDraft, timelineDraft, setTimelineDraft,
     garageInsights, garageCostLedger, garageReminders, exportGarage, addVehicle, addTimelineNote,
+    vehiclePlates, plateDraft, setPlateDraft,
   } = useOtofolks();
+  // The number is optional. A problem with it is shown once the member has left the field with
+  // something in it, or tried to save; not while they are still typing it for the first time.
+  const [plateChecked, setPlateChecked] = useState(false);
+  const plateField = useRef<HTMLInputElement>(null);
+  const registration = parseRegistration(plateDraft);
+  const plateProblem = plateChecked && plateDraft.trim() && !registration.ok ? registrationProblemText[registration.problem] : undefined;
   return (
     <section className="panel" id="garage">
       <div className="section-head">
@@ -21,8 +37,17 @@ export function GarageView() {
         </button>
       </div>
       <div className="garage-grid">
-        <form className="composer" onSubmit={addVehicle}>
+        <form className="composer" onSubmit={(event) => {
+          const saved = addVehicle(event);
+          setPlateChecked(!saved);
+          // Not saved because of the number: go to it, wherever on the page the button was pressed.
+          if (!saved) plateField.current?.focus();
+        }}>
           <h3>Add vehicle</h3>
+          <PlateInput ref={plateField} className="garage-plate" label="Registration number (optional)" value={plateDraft}
+            onChange={(value) => setPlateDraft(value)} error={plateProblem}
+            onBlur={(event) => setPlateChecked(Boolean(event.target.value.trim()))}
+            hint="Kept on this device only. It is not saved to your account copy and is not looked up." />
           <input
             value={vehicleDraft.nickname}
             onChange={(event) => setVehicleDraft({ ...vehicleDraft, nickname: event.target.value })}
@@ -159,6 +184,9 @@ export function GarageView() {
           <article className="vehicle-card" key={vehicle.id}>
             <span className="pill">{vehicle.brand}</span>
             <h3>{vehicle.nickname}</h3>
+            {vehiclePlates[vehicle.id] ? (
+              <p><b className="vehicle-plate">{plateText(vehiclePlates[vehicle.id])}</b> · number kept on this device only</p>
+            ) : null}
             <p>
               {vehicle.model} {vehicle.variant} · {vehicle.city} · {vehicle.odometerKm.toLocaleString("en-IN")} km
             </p>

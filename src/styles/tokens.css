@@ -30,6 +30,8 @@
   --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.95);
   --glass-shadow: 0 12px 30px rgba(34, 43, 61, 0.1);
   --glass-blur: 16px;
+  /* the pool of light on the landing stage; only label text may sit in it */
+  --stage-light: rgba(255, 255, 255, 0.9);
 
   /* text */
   --color-text: #222b3d;
@@ -102,6 +104,7 @@
     --glass-outline: rgba(0, 0, 0, 0.28);
     --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.14);
     --glass-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+    --stage-light: rgba(255, 255, 255, 0.08);
     --color-text: #f3f5f9;
     --color-text-secondary: #d5dbe6;
     --color-text-muted: #b8c1d1;
@@ -141,6 +144,7 @@
   --glass-outline: rgba(0, 0, 0, 0.28);
   --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.14);
   --glass-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+  --stage-light: rgba(255, 255, 255, 0.08);
   --color-text: #f3f5f9;
   --color-text-secondary: #d5dbe6;
   --color-text-muted: #b8c1d1;

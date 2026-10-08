@@ -2,8 +2,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useClerk, useUser, useSession } from "@clerk/react";
 import { createClerkSupabaseClient, readCloudConfig, sessionTokenGetter } from "../supabase";
-import type { AppProps } from "./model";
-import { clerkReturnUrl } from "./auth";
+import type { AppProps, SignInMode } from "./model";
+import { ClerkAccountPanel, clerkReturnUrl } from "./auth";
+import { redirectsFor } from "./signInReturn";
 import { OtofolksApp } from "./OtofolksApp";
 
 export const ClerkConnectedApp = () => {
@@ -19,11 +20,14 @@ export const ClerkConnectedApp = () => {
       return { client: null, error: "Account saving is temporarily unavailable. Your data stays on this device." };
     }
   }, [clerk, session]);
-  const [pendingSignIn, setPendingSignIn] = useState<string | null>(null);
+  const [pendingSignIn, setPendingSignIn] = useState<{ destination: string; mode: SignInMode } | null>(null);
   useEffect(() => {
     if (!isLoaded || !pendingSignIn) return;
     setPendingSignIn(null);
-    if (!isSignedIn) void clerk.openSignIn({ forceRedirectUrl: clerkReturnUrl(pendingSignIn) });
+    if (isSignedIn) return;
+    const redirects = redirectsFor(pendingSignIn.mode, clerkReturnUrl(pendingSignIn.destination));
+    if (pendingSignIn.mode === "sign-up") void clerk.openSignUp(redirects);
+    else void clerk.openSignIn(redirects);
   }, [clerk, isLoaded, isSignedIn, pendingSignIn]);
 
   return (
@@ -36,11 +40,12 @@ export const ClerkConnectedApp = () => {
         cloudError: cloud.error,
         isLoaded,
         isSignedIn: Boolean(isSignedIn),
-        requireSignIn: (destination = "/") => {
-          setPendingSignIn(destination);
+        requireSignIn: (destination = "/", mode = "sign-in") => {
+          setPendingSignIn({ destination, mode });
         },
       }}
       clerkEnabled
+      accountPanel={ClerkAccountPanel}
     />
   );
 };

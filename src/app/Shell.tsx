@@ -8,7 +8,7 @@ import { useOtofolks } from "./state";
 
 /** Brand, desktop navigation and the theme switch. */
 export function AppHeader() {
-  const { auth, navMenuOpen, setNavMenuOpen, activeView, handleFeatureNav } = useOtofolks();
+  const { auth, navMenuOpen, setNavMenuOpen, activeView, handleFeatureNav, handleAccountNav } = useOtofolks();
   return (
     <header className="app-header">
       <nav className="nav" aria-label="Primary navigation">
@@ -27,7 +27,7 @@ export function AppHeader() {
               <Icon size={20} aria-hidden="true" />{label}
             </Link>
           ))}
-          <Link to={viewPaths.account} onClick={handleFeatureNav} aria-current={activeView === "account" ? "page" : undefined}>
+          <Link to={viewPaths.account} onClick={handleAccountNav} aria-current={activeView === "account" ? "page" : undefined}>
             <UserRound size={20} aria-hidden="true" />{auth.isSignedIn ? "Account" : "Sign in"}
           </Link>
         </div>
@@ -62,19 +62,18 @@ export function ConnectionStrip() {
   );
 }
 
-/** Says where what is on screen is stored. */
+/** Says where what is on screen is stored. Nothing is said above a sign-in prompt or a placeholder. */
 export function DataNotice() {
-  const { auth, activeView } = useOtofolks();
-  return (
-    <>
-      {activeView !== "top" && activeView !== "account" && activeView !== "pit-stop" ? (
-        <p className="data-notice" role="note">{activeView === "feed" || activeView === "write"
-          ? "Shared notes are visible to signed-in members. Local examples stay on this device."
-          : auth.cloudClient ? "Changes stay on this device until you save them in Account."
-            : "Saved on this device for your account."}</p>
-      ) : null}
-    </>
-  );
+  const { auth, activeView, audience, visitorPages } = useOtofolks();
+  const memberNotice = activeView === "top" || activeView === "account" || activeView === "pit-stop" ? null
+    : activeView === "feed" || activeView === "write"
+      ? "Shared notes are visible to signed-in members. Local examples stay on this device."
+      : auth.cloudClient ? "Changes stay on this device until you save them in Account."
+        : "Saved on this device for your account.";
+  // A visitor keeps data in one place only: the shortlist they build in Compare.
+  const visitorNotice = activeView === "compare" ? "This shortlist lasts only as long as this tab. Sign in to keep it." : null;
+  const notice = audience === "member" ? memberNotice : visitorPages ? visitorNotice : null;
+  return notice ? <p className="data-notice" role="note">{notice}</p> : null;
 }
 
 export function AppFooter() {
@@ -87,7 +86,7 @@ export function AppFooter() {
 
 /** Bottom navigation on phones. */
 export function TabBar() {
-  const { auth, activeView, handleFeatureNav } = useOtofolks();
+  const { auth, activeView, handleFeatureNav, handleAccountNav } = useOtofolks();
   return (
     <nav className="tab-bar" aria-label="Primary">
       {destinations.map(({ id, label, icon: Icon }) => (
@@ -98,7 +97,7 @@ export function TabBar() {
           <span>{label}</span>
         </Link>
       ))}
-      <Link to={viewPaths.account} onClick={handleFeatureNav}
+      <Link to={viewPaths.account} onClick={handleAccountNav}
         className={activeView === "account" ? "is-active" : undefined}
         aria-current={activeView === "account" ? "page" : undefined}>
         <UserRound size={22} aria-hidden="true" />

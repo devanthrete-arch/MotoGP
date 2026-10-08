@@ -53,7 +53,7 @@ describe("ui primitives", () => {
     expect(markup).toContain('class="ui-field ui-field--invalid"');
     expect(markup).toContain('aria-invalid="true"');
     expect(markup).toContain('aria-describedby="model-error"');
-    expect(markup).toContain('<p class="ui-field__error" id="model-error">Enter the model</p>');
+    expect(markup).toContain('<p class="ui-field__error" id="model-error" role="alert">Enter the model</p>');
     expect(markup).not.toContain("As on the boot");
   });
 

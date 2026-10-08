@@ -26,6 +26,7 @@ const savedKey = "autoflex.web.saved.v1";
 const feedbackKey = "autoflex.web.feedback.v1";
 const followKey = "autoflex.web.follows.v1";
 const garageKey = "autoflex.web.garage.v1";
+const vehiclePlatesKey = "autoflex.web.vehicle-plates.v1";
 const timelineKey = "autoflex.web.timeline.v1";
 const subscriptionKey = "autoflex.web.subscription.v1";
 const profileKey = "autoflex.web.profile.v1";
@@ -343,6 +344,18 @@ export const loadGarage = (): GarageVehicle[] =>
 
 export const saveGarage = (garage: GarageVehicle[]): void => {
   writeStoredJson(garageKey, garage);
+};
+
+// Registration numbers, by vehicle id. Kept apart from the garage on purpose: the garage is what
+// "Save to account" uploads, and a number must not leave the device before consent exists.
+export const loadVehiclePlates = (): Record<string, string> => {
+  const stored = readStoredJson<unknown>(vehiclePlatesKey, {});
+  if (stored === null || typeof stored !== "object" || Array.isArray(stored)) return {};
+  return Object.fromEntries(Object.entries(stored).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
+};
+
+export const saveVehiclePlates = (plates: Record<string, string>): void => {
+  writeStoredJson(vehiclePlatesKey, plates);
 };
 
 export const createVehicle = (draft: DraftVehicle): GarageVehicle => ({

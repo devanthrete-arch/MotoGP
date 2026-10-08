@@ -41,7 +41,7 @@ describe("account-scoped browser storage", () => {
   });
 
   it.each([
-    "posts", "saved", "feedback", "follows", "garage", "timeline", "subscription",
+    "posts", "saved", "feedback", "follows", "garage", "vehicle-plates", "timeline", "subscription",
     "profile", "reports", "shortlist", "qa-session", "responsive-qa",
     "production-launch", "production-url", "tester-runs", "production-ops",
   ])("isolates %s across accounts and the legacy namespace", (name) => {

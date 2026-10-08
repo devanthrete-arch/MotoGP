@@ -1,63 +1,23 @@
 // The app shell: builds the shared state once, lays out the frame, and routes to one view.
-import { Component, Suspense, use, useEffect, useRef, useState } from "react";
-import type { ComponentType, ReactNode, RefObject } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
+import type { ReactNode, RefObject } from "react";
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router";
-import { LoginGate } from "./auth";
-import { type AppAuthState, type AppProps, type AppView, pathForLegacyHash, viewPaths, viewTitles } from "./model";
-import { AppFooter, AppHeader, ConnectionStrip, DataNotice, TabBar, ToastRegion, ViewLoadError, ViewLoading } from "./Shell";
+import {
+  type AppAuthState, type AppProps, type AppView, type MemberView, memberViews, pathForLegacyHash, viewPaths, viewTitles,
+} from "./model";
+import { fetchedView, ViewBoundary } from "./fetched";
+import { AppFooter, AppHeader, ConnectionStrip, DataNotice, TabBar, ToastRegion, ViewLoading } from "./Shell";
+import { SignInPrompt } from "./SignInPrompt";
 import { OtofolksProvider, useOtofolksState } from "./state";
 import { AccountView } from "./views/AccountView";
-import { HomeView } from "./views/HomeView";
+import { LandingView } from "./views/LandingView";
 
-/**
- * A view kept in its own file. React.lazy would do, but it remembers a failed download for good
- * and makes a view that has already arrived wait one more turn. This one can be told to forget a
- * failure, so the view is fetched again, and shows a downloaded view with no placeholder.
- */
-function fetchedView<Module>(load: () => Promise<Module>, pick: (module: Module) => ComponentType) {
-  let loaded: ComponentType | null = null;
-  let request: Promise<ComponentType> | null = null;
-  let failure: { error: unknown } | null = null;
-  // Where to ask after a failure, when the first address can no longer be used: see freshAddress.
-  let retryAddress: string | null = null;
-  const start = () => (request ??= (retryAddress ? import(/* @vite-ignore */ retryAddress) as Promise<Module> : load()).then(
-    (module) => (loaded = pick(module)),
-    (error: unknown) => { failure = { error }; throw error; },
-  ));
-  const View = () => {
-    const Loaded = loaded ?? use(start());
-    return <Loaded />;
-  };
-  return Object.assign(View, {
-    preload: () => { start().catch(() => { /* Shown to the member only if they open the view. */ }); },
-    forgetFailure: () => {
-      if (!failure) return;
-      retryAddress = freshAddress(failure.error);
-      failure = null;
-      request = null;
-    },
-  });
-}
-
-// Chromium keeps a failed module download for as long as the page stays open, so asking for the
-// same address again fails at once without touching the network. Its error names the address, and
-// the same file under an extra query string is a new request. Other browsers simply fetch again.
-function freshAddress(error: unknown) {
-  const named = /https?:\/\/\S+/.exec(error instanceof Error ? error.message : "")?.[0];
-  if (!named) return null;
-  try {
-    const address = new URL(named);
-    if (address.origin !== window.location.origin) return null;
-    address.searchParams.set("retry", String(Date.now()));
-    return address.href;
-  } catch {
-    return null;
-  }
-}
-
-// Home and Account ship with the shell. Every other view is fetched when it is first opened and,
-// for a signed-in member, quietly ahead of time once the page is idle.
+// The landing page and Account ship with the shell: they are what a visitor meets first. Every
+// other view is fetched when it is first opened and, once the page is idle, quietly ahead of time:
+// all of them for a signed-in member, only the ones open to everyone for a visitor.
 const views = {
+  // A member's front page. Only members ever see it, so only they download it.
+  Home: fetchedView(() => import("./views/HomeView"), (module) => module.HomeView),
   Compare: fetchedView(() => import("./views/CompareView"), (module) => module.CompareView),
   Feed: fetchedView(() => import("./views/FeedView"), (module) => module.FeedView),
   Garage: fetchedView(() => import("./views/GarageView"), (module) => module.GarageView),
@@ -65,55 +25,23 @@ const views = {
     ({ PitStopView, ReelModal }) => () => <><PitStopView /><ReelModal /></>),
   Write: fetchedView(() => import("./views/WriteView"), (module) => module.WriteView),
 };
+// The file behind each view that is fetched ahead. Home is asked for separately, below.
+const viewFiles: Partial<Record<AppView, (typeof views)[keyof typeof views]>> = {
+  compare: views.Compare, feed: views.Feed, garage: views.Garage, "pit-stop": views.PitStop, write: views.Write,
+};
 
-function preloadViews() {
+function preloadViews(forMember: boolean) {
   const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
   // Not on a connection the visitor has asked to spare, and not while there is none.
   if (connection?.saveData || !navigator.onLine) return;
-  for (const view of Object.values(views)) view.preload();
-}
-
-function forgetFailedViews() {
-  for (const view of Object.values(views)) view.forgetFailure();
-}
-
-type ViewBoundaryProps = { resetKey: string; onFail: () => void; children: ReactNode };
-type ViewBoundaryState = { failed: boolean; resetKey: string };
-
-/** Keeps a view that could not be shown from taking the header and navigation down with it. */
-class ViewBoundary extends Component<ViewBoundaryProps, ViewBoundaryState> {
-  state = { failed: false, resetKey: this.props.resetKey };
-
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-
-  static getDerivedStateFromProps(props: ViewBoundaryProps, state: ViewBoundaryState) {
-    if (props.resetKey === state.resetKey) return null;
-    // Every navigation, a second tap on the same link included, clears the error and lets a view
-    // whose download failed be fetched afresh. Runs before the page renders, and doing it twice
-    // changes nothing.
-    forgetFailedViews();
-    return { failed: false, resetKey: props.resetKey };
-  }
-
-  componentDidCatch() {
-    this.props.onFail();
-  }
-
-  retry = () => {
-    forgetFailedViews();
-    this.setState({ failed: false });
-  };
-
-  render() {
-    return this.state.failed ? <ViewLoadError onRetry={this.retry} /> : this.props.children;
+  for (const [view, file] of Object.entries(viewFiles)) {
+    if (forMember || !memberViews.has(view as AppView)) file.preload();
   }
 }
 
-// What is on screen in the routed area: a view, null for the error panel, undefined before the
-// first view has appeared.
-type Shown = AppView | null | undefined;
+// The view the reader was last put in front of, or null after the error panel. It starts as the
+// view the app opened on, whether or not that view's file has arrived yet.
+type Shown = AppView | null;
 
 /**
  * Runs once a routed view is on screen. A link click no longer moves the browser's own focus the
@@ -124,7 +52,7 @@ function RouteArrival({ view, shown }: { view: AppView; shown: RefObject<Shown> 
     const previous = shown.current;
     shown.current = view;
     // On first load the browser's own starting point is right; only a change of view moves focus.
-    if (previous === undefined || previous === view) return;
+    if (previous === view) return;
     const heading = document.querySelector<HTMLElement>(
       "main.app-shell > section:not([hidden]):not(.connection-strip) :is(h1, h2, h3)");
     if (!heading) return;
@@ -136,32 +64,47 @@ function RouteArrival({ view, shown }: { view: AppView; shown: RefObject<Shown> 
 
 function AppFrame(props: AppProps & { auth: AppAuthState }) {
   const state = useOtofolksState(props);
-  const { activeView, auth, clerkEnabled, shouldShowFeatures } = state;
+  const { activeView, audience, visitorPages } = state;
   const location = useLocation();
-  const shown = useRef<Shown>(undefined);
+  const shown = useRef<Shown>(activeView);
 
   // Named from the address, not from the view, so the tab is right while a view is still loading.
   useEffect(() => {
     document.title = viewTitles[activeView];
   }, [activeView]);
 
+  // A visitor is never sent the views they cannot open. While it is not yet known who is here,
+  // nothing is fetched ahead for a device that was signed in before.
+  const fetchAhead = audience === "member" ? "all" : visitorPages ? "open" : "none";
+  // Home is where a member starts, so it is asked for at once, even while sign-in is still loading
+  // on a device that was signed in before. A visitor never downloads it.
+  const expectMember = audience === "member" || !visitorPages;
   useEffect(() => {
-    // Visitors who are not signed in cannot open these views, so nothing is fetched for them.
-    if (!shouldShowFeatures) return;
+    if (expectMember) views.Home.preload();
+  }, [expectMember]);
+  useEffect(() => {
+    if (fetchAhead === "none") return;
+    const preload = () => preloadViews(fetchAhead === "all");
     if (typeof window.requestIdleCallback === "function") {
-      const handle = window.requestIdleCallback(preloadViews);
+      const handle = window.requestIdleCallback(preload);
       return () => window.cancelIdleCallback(handle);
     }
-    const handle = window.setTimeout(preloadViews, 1500);
+    const handle = window.setTimeout(preload, 1500);
     return () => window.clearTimeout(handle);
-  }, [shouldShowFeatures]);
+  }, [fetchAhead]);
 
   const page = (view: AppView, content: ReactNode) => <>{content}<RouteArrival view={view} shown={shown} /></>;
-  // Everything except Home and Account needs an account.
-  const members = (view: AppView, content: ReactNode) => {
-    if (shouldShowFeatures) return page(view, content);
-    return page(view, clerkEnabled ? <LoginGate isLoaded={auth.isLoaded} />
-      : <section className="panel auth-gate"><h2>Sign-in is temporarily unavailable</h2><p>Please try again later.</p></section>);
+  // The one place that decides what an address shows to whom. memberViews (model.tsx) says which
+  // views need an account; a visitor gets a sign-in prompt in their place, at the same address, so
+  // signing in brings them straight back to the view.
+  const route = (view: AppView, content: ReactNode) => {
+    if (audience === "member") return page(view, content);
+    if (memberViews.has(view)) {
+      return page(view, audience === "unknown" ? <ViewLoading /> : <SignInPrompt view={view as MemberView} />);
+    }
+    // Open to everyone, but not the same for everyone: a returning member waits for sign-in to
+    // load rather than see (or add to) a visitor's version for a moment.
+    return page(view, visitorPages ? content : <ViewLoading />);
   };
 
   return (
@@ -170,19 +113,20 @@ function AppFrame(props: AppProps & { auth: AppAuthState }) {
         <AppHeader />
         <ToastRegion />
         <ConnectionStrip />
-        {shouldShowFeatures ? <DataNotice /> : null}
+        <DataNotice />
         {/* Always mounted, shown only at its own address: see AccountView. */}
         <AccountView />
         <ViewBoundary resetKey={location.key} onFail={() => { shown.current = null; }}>
           <Suspense fallback={<ViewLoading />}>
             <Routes>
-              <Route path={viewPaths.top} element={page("top", <HomeView />)} />
+              <Route path={viewPaths.top} element={route("top", audience === "member" ? <views.Home /> : <LandingView />)} />
               <Route path={viewPaths.account} element={page("account", null)} />
-              <Route path={viewPaths.garage} element={members("garage", <views.Garage />)} />
-              <Route path={viewPaths.feed} element={members("feed", <views.Feed />)} />
-              <Route path={viewPaths.write} element={members("write", <views.Write />)} />
-              <Route path={viewPaths["pit-stop"]} element={members("pit-stop", <views.PitStop />)} />
-              <Route path={viewPaths.compare} element={members("compare", <views.Compare />)} />
+              <Route path={viewPaths.garage} element={route("garage", <views.Garage />)} />
+              <Route path={viewPaths.feed} element={route("feed", <views.Feed />)} />
+              <Route path={viewPaths.write} element={route("write", <views.Write />)} />
+              {/* Pit Stop holds nothing of the reader's, so it never has to wait to know who they are. */}
+              <Route path={viewPaths["pit-stop"]} element={page("pit-stop", <views.PitStop />)} />
+              <Route path={viewPaths.compare} element={route("compare", <views.Compare />)} />
               <Route path="*" element={<Navigate to={viewPaths.top} replace />} />
             </Routes>
           </Suspense>

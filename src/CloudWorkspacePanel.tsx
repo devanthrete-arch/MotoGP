@@ -67,7 +67,7 @@ export function CloudWorkspacePanel({ client, owner, workspace, onRestore, confi
     <p role="status">{!client ? configurationError || "Account saving is not available yet. Your data stays on this device."
       : busy ? "Connecting to your account..." : message || (remote ? `Last saved ${new Date(remote.updatedAt).toLocaleString()}` : ready ? "No account copy yet." : "Account copy unavailable.")}</p>
     {client ? <>
-      <p className="form-note">Garage, maintenance, profile, shortlist and saved advice. Community drafts stay on this device.</p>
+      <p className="form-note">Garage, maintenance, profile, shortlist and saved advice. Community drafts and registration numbers stay on this device.</p>
       <div className="auth-actions">
         <button className="primary-action" type="button" disabled={busy || !ready} onClick={() => void run(true)}><CloudUpload size={18} aria-hidden="true" />Save to account</button>
         <button className="secondary-action" type="button" disabled={busy || !ready || !remote} onClick={() => {

@@ -19,6 +19,10 @@ describe("private workspace decoding", () => {
   it("preserves all private fields without publishing drafts", () => {
     expect(parsePrivateWorkspace(fixture)).toEqual(fixture);
     expect(() => parsePrivateWorkspace({ ...fixture, posts: [] })).toThrow();
+    // A registration number stays on the device: even if one were put on a vehicle, it is not uploaded.
+    const withNumber = { ...fixture, garage: fixture.garage.map((vehicle) => ({ ...vehicle, registration: "MH12AB1234" })) };
+    expect(parsePrivateWorkspace(withNumber)).toEqual(fixture);
+    expect(JSON.stringify(parsePrivateWorkspace(withNumber))).not.toContain("MH12AB1234");
   });
   it.each([
     { ...fixture, version: 2 }, { ...fixture, timeline: undefined },
