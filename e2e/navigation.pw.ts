@@ -176,7 +176,7 @@ test("with Save-Data on, a member's view is fetched only when it is opened", asy
   await afterIdle(page);
   // Only what is on screen: Home, and the account-copy panel that every signed-in page carries.
   expect(fetched()).toEqual(["CloudWorkspacePanel", "HomeView"]);
-  await page.getByRole("navigation", { name: "Primary", exact: true }).getByRole("link", { name: "Compare" }).click();
+  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "Compare" }).click();
   await expect(page.locator("#compare")).toBeVisible();
   expect(fetched()).toEqual(["CloudWorkspacePanel", "CompareView", "HomeView"]);
 });
