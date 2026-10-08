@@ -6,11 +6,11 @@ import { useOtofolks } from "../state";
 
 export function GarageView() {
   const {
-    garage, timeline, vehicleDraft, setVehicleDraft, timelineDraft, setTimelineDraft, activeView,
+    garage, timeline, vehicleDraft, setVehicleDraft, timelineDraft, setTimelineDraft,
     garageInsights, garageCostLedger, garageReminders, exportGarage, addVehicle, addTimelineNote,
   } = useOtofolks();
   return (
-    <section className="panel" id="garage" hidden={activeView !== "garage"}>
+    <section className="panel" id="garage">
       <div className="section-head">
         <div>
           <p className="eyebrow">Garage timeline</p>

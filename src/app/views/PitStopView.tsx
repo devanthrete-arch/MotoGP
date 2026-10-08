@@ -2,16 +2,16 @@
 import { MouseEvent } from "react";
 import { Play, X } from "lucide-react";
 import { pitStopCategories } from "../../pitstop";
-import { isEmbeddableReel, pitStopCollectionUrl, toEmbedSrc } from "../model";
+import { isEmbeddableReel, pitStopCollectionId, toEmbedSrc } from "../model";
 import { useOtofolks } from "../state";
 
 export function PitStopView() {
   const {
     selectedPitStopCategory, setSelectedPitStopCategory, selectedPitStopCollection,
-    setSelectedPitStopCollection, setActiveReel, activeView, filteredPitStopClips, selectedPitStopReels,
+    setSelectedPitStopCollection, setActiveReel, filteredPitStopClips, selectedPitStopReels,
   } = useOtofolks();
   return (
-    <section className="panel pit-stop-panel" id="pit-stop" hidden={activeView !== "pit-stop"}>
+    <section className="panel pit-stop-panel" id="pit-stop">
       <div className="section-head">
         <div>
           <p className="eyebrow">Pit Stop</p>
@@ -58,7 +58,7 @@ export function PitStopView() {
         ))}
       </div>
       {selectedPitStopCollection && selectedPitStopReels.length > 0 ? (
-      <div className="pit-stop-reel-section" id={pitStopCollectionUrl(selectedPitStopCollection).slice(2)}>
+      <div className="pit-stop-reel-section" id={pitStopCollectionId(selectedPitStopCollection)}>
         <div className="section-head compact">
           <div>
             <p className="eyebrow">{selectedPitStopCollection}</p>

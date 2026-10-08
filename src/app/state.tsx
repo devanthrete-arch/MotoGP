@@ -1,6 +1,7 @@
 // All state and behaviour of the signed-in app, as one hook. Views read it through useOtofolks().
 // It is one hook because the features still share state; split it per feature as each is rebuilt.
-import { FormEvent, MouseEvent, useEffect, useMemo, useState, createContext, useContext } from "react";
+import { FormEvent, MouseEvent, createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate, useNavigationType } from "react-router";
 import {
   deleteCommunityPost, isSharedPost, loadCommunityComments, loadCommunityPosts, loadMyCommunityPostIds,
   publishCommunityComment, publishCommunityPost, reportCommunityPost,
@@ -8,29 +9,27 @@ import {
 import { toastDuration } from "../ui/Toast";
 import { buildTopPitStopReels, filterPitStopClipsByCategory, pitStopClips, type PitStopClip } from "../pitstop";
 import {
-  privacyReadinessItems, starterRoutes, type DraftPost, type DraftShortlistItem, type DraftTimelineEntry,
-  type DraftVehicle, type FollowState, type GarageVehicle, type KnowledgeLabel, type OwnerPost,
-  type Profile, type ReportRecord, type ShortlistItem, type SubscriptionSettings, type TimelineEntry,
+  type DraftPost, type DraftShortlistItem, type DraftTimelineEntry, type DraftVehicle, type FollowState,
+  type GarageVehicle, type KnowledgeLabel, type OwnerPost, type Profile, type ReportRecord,
+  type ShortlistItem, type TimelineEntry,
 } from "../domain";
 import {
-  assessPostQuality, buildCityCircles, buildConnectionStatusCopy, buildGarageCostLedger,
-  buildGarageInsights, buildGarageExportMarkdown, buildGarageReminders, buildInspectionChecklists,
-  buildModelSharePayload, buildModerationSummary, buildNotificationPreview, buildOwnershipPlaybooks,
-  buildPostSharePayload, buildPrivacyReadinessSummary, buildReturnNudges, buildShortlistComparisons,
-  buildStarterRouteProgress, filterPostsByMode, groupByModel, modelKeyFor,
+  assessPostQuality, buildConnectionStatusCopy, buildGarageCostLedger, buildGarageInsights,
+  buildGarageExportMarkdown, buildGarageReminders, buildInspectionChecklists, buildPostSharePayload,
+  buildShortlistComparisons, filterPostsByMode, modelKeyFor,
 } from "../insights";
 import {
   createReport, createShortlistItem, createTimelineEntry, createVehicle, loadFollows, loadGarage,
-  loadProfile, loadPosts, loadReports, loadSaved, loadShortlist, loadSubscriptionSettings, loadTimeline,
-  saveFollows, saveGarage, savePosts, saveProfile, saveReports, saveSaved, saveShortlist,
-  saveSubscriptionSettings, saveTimeline, setStorageUser, readStoredJson, writeStoredJson,
+  loadProfile, loadPosts, loadReports, loadSaved, loadShortlist, loadTimeline, saveFollows, saveGarage,
+  savePosts, saveProfile, saveReports, saveSaved, saveShortlist, saveTimeline, setStorageUser,
+  readStoredJson, writeStoredJson,
 } from "../storage";
 import {
   type AppAuthState, type AppProps, type AppView, type ComparisonSection, type FeedMode, type PriceState,
   buildCompareVerdict, compareMetricSections, comparisonSectionTitles, defaultPriceState,
   firstVariantForModel, getInitialOnlineStatus, initialDraft, initialShortlistDraft, initialTimelineDraft,
-  initialVehicleDraft, modelDetailsFor, pitStopCategoryFromHash, priceForModel, priceSourceFor,
-  stateForCity, viewFromHash,
+  initialVehicleDraft, modelDetailsFor, pathForLegacyHash, pitStopCategoryFromHash, priceForModel, priceSourceFor,
+  stateForCity, viewFromPath, viewPaths,
 } from "./model";
 
 export function useOtofolksState({ auth, clerkEnabled = false }: AppProps & { auth: AppAuthState }) {
@@ -45,14 +44,15 @@ export function useOtofolksState({ auth, clerkEnabled = false }: AppProps & { au
   const [shortlist, setShortlist] = useState<ShortlistItem[]>(() => loadShortlist());
   const [saved, setSaved] = useState<Set<string>>(() => loadSaved());
   const [follows, setFollows] = useState<FollowState>(() => loadFollows());
-  const [subscriptionSettings, setSubscriptionSettings] = useState<SubscriptionSettings>(() => loadSubscriptionSettings());
   const [garage, setGarage] = useState<GarageVehicle[]>(() => loadGarage());
   const [timeline, setTimeline] = useState<TimelineEntry[]>(() => loadTimeline());
   const [query, setQuery] = useState("");
   const [mode, setMode] = useState<FeedMode>("latest");
   const [selectedLabel, setSelectedLabel] = useState<KnowledgeLabel | "All">("All");
   const [selectedFeedState, setSelectedFeedState] = useState<PriceState | "All">("All");
-  const initialPitStopCollection = pitStopCategoryFromHash();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const initialPitStopCollection = pitStopCategoryFromHash(location.hash);
   const [selectedPitStopCategory, setSelectedPitStopCategory] = useState<PitStopClip["category"] | "All">(
     initialPitStopCollection ?? "All",
   );
@@ -70,6 +70,11 @@ export function useOtofolksState({ auth, clerkEnabled = false }: AppProps & { au
   const [dealerQuote, setDealerQuote] = useState(0);
   const [commentDraft, setCommentDraft] = useState("");
   const [reportDraft, setReportDraft] = useState("");
+  // Which collapsible parts are open is kept here, so it survives a visit to another view.
+  const [reportOpen, setReportOpen] = useState(false);
+  const [openComparisonSections, setOpenComparisonSections] = useState<string[]>([comparisonSectionTitles[0]]);
+  const setComparisonSectionOpen = (title: string, open: boolean) => setOpenComparisonSections(
+    (titles) => open ? (titles.includes(title) ? titles : [...titles, title]) : titles.filter((value) => value !== title));
   const [toast, setToast] = useState<{ id: number; text: string } | null>(null);
   const setActionMessage = (text: string) => setToast(text ? { id: Date.now(), text } : null);
   useEffect(() => {
@@ -83,15 +88,30 @@ export function useOtofolksState({ auth, clerkEnabled = false }: AppProps & { au
   const [navMenuOpen, setNavMenuOpen] = useState(false);
   const [helpfulIds, setHelpfulIds] = useState<string[]>(() => readStoredJson("otofolks.helpful.v1", []));
   const [confirmedIds, setConfirmedIds] = useState<string[]>(() => readStoredJson("otofolks.confirmed.v1", []));
-  const [activeView, setActiveView] = useState<AppView>(viewFromHash);
+  // The URL decides the view. A link in the old fragment form that turns up while the app is open
+  // (a fragment typed into the address bar) is sent to its path; one the app was opened with has
+  // already been rewritten before first render, in OtofolksApp.
+  const activeView: AppView = viewFromPath(location.pathname);
+  const legacyTarget = location.pathname === "/" ? pathForLegacyHash(location.hash) : null;
+  const legacyPathname = legacyTarget?.pathname;
+  const legacyHash = legacyTarget?.hash;
   useEffect(() => {
-    const syncView = () => {
-      setActiveView(viewFromHash());
-      setNavMenuOpen(false);
-      setActiveReel(null);
-      setComposerOpen(false);
-      window.scrollTo({ top: 0 });
-    };
+    if (!legacyPathname) return;
+    navigate({ pathname: legacyPathname, search: location.search, hash: legacyHash }, { replace: true });
+  }, [legacyPathname, legacyHash, location.search, navigate]);
+  // Arriving on a different page starts it clean: menus and overlays closed, scrolled to the top.
+  // Back and Forward are left to the browser, which returns to where the page was.
+  const navigationType = useNavigationType();
+  const previousPath = useRef(location.pathname);
+  useEffect(() => {
+    if (previousPath.current === location.pathname) return;
+    previousPath.current = location.pathname;
+    setNavMenuOpen(false);
+    setActiveReel(null);
+    setComposerOpen(false);
+    if (navigationType !== "POP") window.scrollTo({ top: 0 });
+  }, [location.pathname, navigationType]);
+  useEffect(() => {
     const closeMenu = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setNavMenuOpen(false);
@@ -99,12 +119,8 @@ export function useOtofolksState({ auth, clerkEnabled = false }: AppProps & { au
         document.querySelector<HTMLButtonElement>(".nav-toggle")?.focus();
       }
     };
-    window.addEventListener("hashchange", syncView);
     window.addEventListener("keydown", closeMenu);
-    return () => {
-      window.removeEventListener("hashchange", syncView);
-      window.removeEventListener("keydown", closeMenu);
-    };
+    return () => window.removeEventListener("keydown", closeMenu);
   }, []);
   const [isOnline, setIsOnline] = useState(getInitialOnlineStatus);
   const feedPosts = useMemo(() => [...sharedPosts, ...posts], [sharedPosts, posts]);
@@ -147,8 +163,6 @@ export function useOtofolksState({ auth, clerkEnabled = false }: AppProps & { au
     });
     return () => { active = false; };
   }, [auth.cloudClient, auth.cloudToken, auth.isSignedIn, isOnline, selectedPost?.id]);
-
-  const notebooks = useMemo(() => groupByModel(posts), [posts]);
   const followedModelSet = useMemo(() => new Set(follows.models), [follows.models]);
   const followedTopicSet = useMemo(() => new Set(follows.topics), [follows.topics]);
 
@@ -185,38 +199,11 @@ export function useOtofolksState({ auth, clerkEnabled = false }: AppProps & { au
     () => pitStopReels.filter((reel) => reel.category === selectedPitStopCollection).slice(0, 50),
     [pitStopReels, selectedPitStopCollection],
   );
-
-  const returnNudges = useMemo(
-    () => buildReturnNudges({ followedModelSet, followedTopicSet, garage, posts, savedCount: saved.size }),
-    [followedModelSet, followedTopicSet, garage, posts, saved.size],
-  );
-  const starterProgress = useMemo(
-    () =>
-      buildStarterRouteProgress({
-        follows,
-        garage,
-        profile,
-        routes: starterRoutes,
-        savedCount: saved.size,
-        shortlistCount: shortlist.length,
-      }),
-    [follows, garage, profile, saved.size, shortlist.length],
-  );
-  const completedStarterSteps = starterProgress.filter((step) => step.complete).length;
   const connectionStatus = useMemo(() => buildConnectionStatusCopy(isOnline), [isOnline]);
-
-  const notificationPreview = useMemo(
-    () => buildNotificationPreview({ follows, posts, preference: subscriptionSettings }),
-    [follows, posts, subscriptionSettings],
-  );
 
   const garageInsights = useMemo(() => buildGarageInsights(garage, timeline, posts), [garage, posts, timeline]);
   const garageCostLedger = useMemo(() => buildGarageCostLedger(garage, timeline), [garage, timeline]);
   const garageReminders = useMemo(() => buildGarageReminders(garage, timeline), [garage, timeline]);
-  const cityCircles = useMemo(() => buildCityCircles(posts, garage), [garage, posts]);
-  const ownershipPlaybooks = useMemo(() => buildOwnershipPlaybooks(posts), [posts]);
-  const moderationSummary = useMemo(() => buildModerationSummary(reports), [reports]);
-  const privacySummary = useMemo(() => buildPrivacyReadinessSummary(privacyReadinessItems), []);
   const shortlistComparisons = useMemo(() => buildShortlistComparisons(shortlist, posts), [posts, shortlist]);
   const comparisonSections = useMemo(() => compareMetricSections(shortlistComparisons), [shortlistComparisons]);
   const displayedComparisonSections: ComparisonSection[] = comparisonSections.length
@@ -260,11 +247,6 @@ export function useOtofolksState({ auth, clerkEnabled = false }: AppProps & { au
   const persistFollows = (nextFollows: FollowState) => {
     setFollows(nextFollows);
     saveFollows(nextFollows);
-  };
-
-  const persistSubscriptionSettings = (nextSettings: SubscriptionSettings) => {
-    setSubscriptionSettings(nextSettings);
-    saveSubscriptionSettings(nextSettings);
   };
 
   const persistProfile = (nextProfile: Profile) => {
@@ -347,7 +329,7 @@ export function useOtofolksState({ auth, clerkEnabled = false }: AppProps & { au
       setCommunityStatus("This is a local example. Select a shared note to join its discussion.");
       return;
     }
-    if (!auth.isSignedIn) { auth.requireSignIn("#feed"); return; }
+    if (!auth.isSignedIn) { auth.requireSignIn(viewPaths.feed); return; }
     if (!auth.cloudClient || !isOnline) { setCommunityStatus("Connect to publish a comment."); return; }
     const id = selectedPost.id;
     const author = (profile.displayName.trim() || "Anonymous garage member").slice(0, 80);
@@ -423,17 +405,6 @@ export function useOtofolksState({ auth, clerkEnabled = false }: AppProps & { au
     } finally { setCommunityBusy(false); }
   };
 
-  const setReportStatus = (reportId: string, status: ReportRecord["status"]) => {
-    persistReports(reports.map((report) => (report.id === reportId ? { ...report, status } : report)));
-  };
-
-  const removeReportedPost = (report: ReportRecord) => {
-    const nextPosts = posts.filter((post) => post.id !== report.postId);
-    persistPosts(nextPosts);
-    persistReports(reports.map((item) => (item.id === report.id ? { ...item, status: "Removed" } : item)));
-    if (selectedPost?.id === report.postId) setSelectedPost(nextPosts[0] ?? null);
-  };
-
   const shareText = async (payload: { text: string; title: string }) => {
     try {
       if (navigator.share) {
@@ -452,12 +423,6 @@ export function useOtofolksState({ auth, clerkEnabled = false }: AppProps & { au
   const shareSelectedPost = () => {
     if (!selectedPost) return;
     void shareText(buildPostSharePayload(selectedPost));
-  };
-
-  const shareModelNotebook = (brand: string, model: string) => {
-    const notebook = notebooks.find((item) => item.key === modelKeyFor(brand, model));
-    if (!notebook) return;
-    void shareText(buildModelSharePayload(notebook));
   };
 
   const exportGarage = () => {
@@ -529,7 +494,7 @@ export function useOtofolksState({ auth, clerkEnabled = false }: AppProps & { au
 
   const publishPost = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!auth.isSignedIn) { auth.requireSignIn("#feed"); return; }
+    if (!auth.isSignedIn) { auth.requireSignIn(viewPaths.feed); return; }
     if (!auth.cloudClient || !isOnline) {
       setCommunityStatus("Shared publishing is unavailable. Connect and retry.");
       return;
@@ -549,7 +514,7 @@ export function useOtofolksState({ auth, clerkEnabled = false }: AppProps & { au
       setMode("latest");
       setSelectedLabel("All");
       setSelectedFeedState("All");
-      window.location.hash = "feed";
+      navigate(viewPaths.feed);
       setCommunityStatus("Published to the shared community.");
     } catch (error) {
       setCommunityStatus(error instanceof Error ? error.message : "Publishing failed. Please retry.");
@@ -586,7 +551,8 @@ export function useOtofolksState({ auth, clerkEnabled = false }: AppProps & { au
   };
 
   const shouldShowFeatures = auth.isSignedIn;
-  const requireSignIn = (destination = "#top") => {
+  // `destination` is the path to return to once signed in.
+  const requireSignIn = (destination = viewPaths.top) => {
     if (shouldShowFeatures) return true;
     auth.requireSignIn(destination);
     if (!auth.isLoaded) {
@@ -598,37 +564,40 @@ export function useOtofolksState({ auth, clerkEnabled = false }: AppProps & { au
   };
   const handleFeatureNav = (event: MouseEvent<HTMLAnchorElement>) => {
     setNavMenuOpen(false);
-    if (event.currentTarget.hash !== "#top" && !shouldShowFeatures) {
+    // Everything but Home needs an account; a signed-out visitor is asked to sign in instead.
+    const destination = event.currentTarget.pathname;
+    if (destination !== viewPaths.top && !shouldShowFeatures) {
       event.preventDefault();
-      requireSignIn(event.currentTarget.hash);
+      requireSignIn(destination);
+      return;
     }
+    // The link for the page already open takes the reader back to its top.
+    if (destination === location.pathname) window.scrollTo({ top: 0 });
   };
 
   return {
     auth, clerkEnabled, posts, setPosts, sharedPosts, setSharedPosts, communityStatus, setCommunityStatus,
     communityBusy, setCommunityBusy, communityRefresh, setCommunityRefresh, profile, setProfile, reports,
-    setReports, shortlist, setShortlist, saved, setSaved, follows, setFollows, subscriptionSettings,
-    setSubscriptionSettings, garage, setGarage, timeline, setTimeline, query, setQuery, mode, setMode,
-    selectedLabel, setSelectedLabel, selectedFeedState, setSelectedFeedState, initialPitStopCollection,
-    selectedPitStopCategory, setSelectedPitStopCategory, selectedPitStopCollection,
-    setSelectedPitStopCollection, activeReel, setActiveReel, selectedPost, setSelectedPost, composerOpen,
-    setComposerOpen, draft, setDraft, vehicleDraft, setVehicleDraft, timelineDraft, setTimelineDraft,
-    shortlistDraft, setShortlistDraft, dealerQuote, setDealerQuote, commentDraft, setCommentDraft,
-    reportDraft, setReportDraft, toast, setToast, setActionMessage, myPostIds, setMyPostIds, navMenuOpen,
-    setNavMenuOpen, helpfulIds, setHelpfulIds, confirmedIds, setConfirmedIds, activeView, setActiveView,
-    isOnline, setIsOnline, feedPosts, notebooks, followedModelSet, followedTopicSet, filteredPosts,
-    publishedPitStopClips, pitStopReels, filteredPitStopClips, selectedPitStopReels, returnNudges,
-    starterProgress, completedStarterSteps, connectionStatus, notificationPreview, garageInsights,
-    garageCostLedger, garageReminders, cityCircles, ownershipPlaybooks, moderationSummary, privacySummary,
-    shortlistComparisons, comparisonSections, displayedComparisonSections, compareVerdict,
-    inspectionChecklists, inspectionChecklistByItemId, draftQuality, selectedPostQuality,
-    shortlistDraftPrice, shortlistDraftSource, shortlistDraftDetails, persistPosts, persistFollows,
-    persistSubscriptionSettings, persistProfile, persistReports, persistShortlist, persistGarage,
-    persistTimeline, toggleSaved, toggleFollowModel, toggleFollowTopic, markHelpful, confirmFix,
-    addComment, reportSelectedPost, deleteSelectedSharedPost, setReportStatus, removeReportedPost,
-    shareText, shareSelectedPost, shareModelNotebook, exportGarage, addShortlistItem,
-    addSelectedToShortlist, updateShortlistItem, removeShortlistItem, publishPost, addVehicle,
-    addTimelineNote, shouldShowFeatures, requireSignIn, handleFeatureNav,
+    setReports, shortlist, setShortlist, saved, setSaved, follows, setFollows, garage, setGarage, timeline,
+    setTimeline, query, setQuery, mode, setMode, selectedLabel, setSelectedLabel, selectedFeedState,
+    setSelectedFeedState, initialPitStopCollection, selectedPitStopCategory, setSelectedPitStopCategory,
+    selectedPitStopCollection, setSelectedPitStopCollection, activeReel, setActiveReel, selectedPost,
+    setSelectedPost, composerOpen, setComposerOpen, draft, setDraft, vehicleDraft, setVehicleDraft,
+    timelineDraft, setTimelineDraft, shortlistDraft, setShortlistDraft, dealerQuote, setDealerQuote,
+    commentDraft, setCommentDraft, reportDraft, setReportDraft, reportOpen, setReportOpen,
+    openComparisonSections, setComparisonSectionOpen, toast, setToast, setActionMessage,
+    myPostIds, setMyPostIds, navMenuOpen, setNavMenuOpen, helpfulIds, setHelpfulIds, confirmedIds,
+    setConfirmedIds, activeView, isOnline, setIsOnline, feedPosts, followedModelSet, followedTopicSet,
+    filteredPosts, publishedPitStopClips, pitStopReels, filteredPitStopClips, selectedPitStopReels,
+    connectionStatus, garageInsights, garageCostLedger, garageReminders, shortlistComparisons,
+    comparisonSections, displayedComparisonSections, compareVerdict, inspectionChecklists,
+    inspectionChecklistByItemId, draftQuality, selectedPostQuality, shortlistDraftPrice,
+    shortlistDraftSource, shortlistDraftDetails, persistPosts, persistFollows, persistProfile,
+    persistReports, persistShortlist, persistGarage, persistTimeline, toggleSaved, toggleFollowModel,
+    toggleFollowTopic, markHelpful, confirmFix, addComment, reportSelectedPost, deleteSelectedSharedPost,
+    shareText, shareSelectedPost, exportGarage, addShortlistItem, addSelectedToShortlist,
+    updateShortlistItem, removeShortlistItem, publishPost, addVehicle, addTimelineNote, shouldShowFeatures,
+    requireSignIn, handleFeatureNav,
   };
 }
 

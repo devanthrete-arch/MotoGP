@@ -3,7 +3,8 @@ import { isSharedPost } from "../../communityCloud";
 import { PenLine, X } from "lucide-react";
 import { knowledgeLabels, type KnowledgeLabel } from "../../domain";
 import { modelKeyFor } from "../../insights";
-import { type FeedMode, type PriceState, brands, postSource, priceStates } from "../model";
+import { Link } from "react-router";
+import { type FeedMode, type PriceState, brands, postSource, priceStates, viewPaths } from "../model";
 import { useOtofolks } from "../state";
 
 export function FeedView() {
@@ -11,14 +12,14 @@ export function FeedView() {
     auth, communityStatus, setCommunityStatus, communityBusy, setCommunityRefresh, profile, saved, query,
     setQuery, mode, setMode, selectedLabel, setSelectedLabel, selectedFeedState, setSelectedFeedState,
     selectedPost, setSelectedPost, composerOpen, setComposerOpen, draft, setDraft, commentDraft,
-    setCommentDraft, reportDraft, setReportDraft, myPostIds, helpfulIds, confirmedIds, activeView,
+    setCommentDraft, reportDraft, setReportDraft, reportOpen, setReportOpen, myPostIds, helpfulIds, confirmedIds,
     isOnline, followedModelSet, followedTopicSet, filteredPosts, publishedPitStopClips,
     selectedPostQuality, toggleSaved, toggleFollowModel, toggleFollowTopic, markHelpful, confirmFix,
     addComment, reportSelectedPost, deleteSelectedSharedPost, shareSelectedPost, addSelectedToShortlist,
     publishPost,
   } = useOtofolks();
   return (
-    <section className="panel" id="feed" hidden={activeView !== "feed"}>
+    <section className="panel" id="feed">
       {communityStatus ? <p role="status">{communityStatus}</p> : null}
       {auth.cloudClient && isOnline ? <button className="save-button" type="button" onClick={() => {
         setCommunityStatus("Loading shared notes...");
@@ -88,7 +89,7 @@ export function FeedView() {
         <div>
           <p className="eyebrow">Community feed</p>
           <h2>From one owner to another</h2>
-          <a className="primary-action" href="#write">Write an owner note</a>
+          <Link className="primary-action" to={viewPaths.write}>Write an owner note</Link>
         </div>
         <div className="filters" aria-label="Feed filters">
           <input
@@ -239,7 +240,8 @@ export function FeedView() {
                   Add comment
                 </button>
               </form>
-              <details className="report-disclosure"><summary>Report this note</summary>
+              <details className="report-disclosure" open={reportOpen}
+                onToggle={(event) => setReportOpen(event.currentTarget.open)}><summary>Report this note</summary>
               <form className="inline-form report-form" onSubmit={reportSelectedPost}>
                 <textarea
                   required

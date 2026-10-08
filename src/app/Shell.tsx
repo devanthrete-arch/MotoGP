@@ -1,7 +1,9 @@
 // The frame around every view: header, status surfaces, footer and the phone tab bar.
 import { Menu, UserRound, X } from "lucide-react";
+import { Link } from "react-router";
+import { Skeleton } from "../ui/Surface";
 import { ThemeToggle } from "../ui/ThemeToggle";
-import { destinations } from "./model";
+import { destinations, viewPaths } from "./model";
 import { useOtofolks } from "./state";
 
 /** Brand, desktop navigation and the theme switch. */
@@ -10,10 +12,10 @@ export function AppHeader() {
   return (
     <header className="app-header">
       <nav className="nav" aria-label="Primary navigation">
-        <a className="brand" href="#top" onClick={() => setNavMenuOpen(false)}>
+        <Link className="brand" to={viewPaths.top} onClick={handleFeatureNav}>
           <span className="logo-mark" aria-hidden="true"><span className="logo-car" /><span className="logo-wrench" /></span>
           Otofolks
-        </a>
+        </Link>
         <button aria-controls="primary-nav-links" aria-expanded={navMenuOpen}
           aria-label={navMenuOpen ? "Close menu" : "Open menu"} className="nav-toggle"
           onClick={() => setNavMenuOpen((open) => !open)} type="button">
@@ -21,13 +23,13 @@ export function AppHeader() {
         </button>
         <div className={`nav-actions ${navMenuOpen ? "is-open" : ""}`} id="primary-nav-links">
           {destinations.map(({ id, label, icon: Icon }) => (
-            <a href={`#${id}`} key={id} onClick={handleFeatureNav} aria-current={activeView === id ? "page" : undefined}>
+            <Link to={viewPaths[id]} key={id} onClick={handleFeatureNav} aria-current={activeView === id ? "page" : undefined}>
               <Icon size={20} aria-hidden="true" />{label}
-            </a>
+            </Link>
           ))}
-          <a href="#account" onClick={handleFeatureNav} aria-current={activeView === "account" ? "page" : undefined}>
+          <Link to={viewPaths.account} onClick={handleFeatureNav} aria-current={activeView === "account" ? "page" : undefined}>
             <UserRound size={20} aria-hidden="true" />{auth.isSignedIn ? "Account" : "Sign in"}
-          </a>
+          </Link>
         </div>
         <ThemeToggle tone="header" className="theme-toggle" />
       </nav>
@@ -89,19 +91,49 @@ export function TabBar() {
   return (
     <nav className="tab-bar" aria-label="Primary">
       {destinations.map(({ id, label, icon: Icon }) => (
-        <a href={`#${id}`} key={id} onClick={handleFeatureNav}
+        <Link to={viewPaths[id]} key={id} onClick={handleFeatureNav}
           className={activeView === id ? "is-active" : undefined}
           aria-current={activeView === id ? "page" : undefined}>
           <Icon size={22} aria-hidden="true" />
           <span>{label}</span>
-        </a>
+        </Link>
       ))}
-      <a href="#account" onClick={handleFeatureNav}
+      <Link to={viewPaths.account} onClick={handleFeatureNav}
         className={activeView === "account" ? "is-active" : undefined}
         aria-current={activeView === "account" ? "page" : undefined}>
         <UserRound size={22} aria-hidden="true" />
         <span>{auth.isSignedIn ? "Account" : "Sign in"}</span>
-      </a>
+      </Link>
     </nav>
+  );
+}
+
+/**
+ * Shown in place of a view that could not be shown: its code was not fetched (offline, or a tab
+ * left open across an update) or it failed while rendering.
+ */
+export function ViewLoadError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <section className="panel view-error" role="alert">
+      <h2>This page did not load</h2>
+      <p>If you are offline, reconnect and try again. If it still does not load, reload Otofolks; anything typed but not yet saved will be lost.</p>
+      <div className="view-error-actions">
+        <button className="primary-action" type="button" onClick={onRetry}>Try again</button>
+        <button className="secondary-action" type="button" onClick={() => window.location.reload()}>Reload Otofolks</button>
+      </div>
+    </section>
+  );
+}
+
+/** Shown while a view's code is being fetched. */
+export function ViewLoading() {
+  return (
+    <section className="panel view-loading" aria-busy="true">
+      <p className="ui-visually-hidden" role="status">Loading</p>
+      <Skeleton width="38%" height={30} />
+      <Skeleton />
+      <Skeleton width="82%" />
+      <Skeleton width="64%" />
+    </section>
   );
 }

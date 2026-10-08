@@ -5,10 +5,10 @@ import { useOtofolks } from "../state";
 
 export function WriteView() {
   const {
-    auth, communityStatus, communityBusy, draft, setDraft, activeView, isOnline, draftQuality, publishPost,
+    auth, communityStatus, communityBusy, draft, setDraft, isOnline, draftQuality, publishPost,
   } = useOtofolks();
   return (
-    <section className="panel split-panel" id="write" hidden={activeView !== "write"}>
+    <section className="panel split-panel" id="write">
       <div>
         <p className="eyebrow">Owner note</p>
         <h2>What did you learn about your car?</h2>

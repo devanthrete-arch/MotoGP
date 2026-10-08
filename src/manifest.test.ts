@@ -12,6 +12,6 @@ describe("Otofolks web manifest", () => {
       purpose: "any maskable",
       src: "/icon.svg",
     });
-    expect(manifest.shortcuts.map((shortcut) => shortcut.url)).toEqual(["/#feed", "/#pit-stop", "/#compare"]);
+    expect(manifest.shortcuts.map((shortcut) => shortcut.url)).toEqual(["/community", "/pit-stop", "/compare"]);
   });
 });

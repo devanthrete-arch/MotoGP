@@ -36,7 +36,7 @@ export const ClerkConnectedApp = () => {
         cloudError: cloud.error,
         isLoaded,
         isSignedIn: Boolean(isSignedIn),
-        requireSignIn: (destination = "#top") => {
+        requireSignIn: (destination = "/") => {
           setPendingSignIn(destination);
         },
       }}

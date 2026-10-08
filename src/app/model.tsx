@@ -3,10 +3,11 @@ import { isSharedPost } from "../communityCloud";
 import { comparisonFields, verifiedComparisonFor } from "../comparisonCatalog";
 import type { ClerkTokenGetter, CloudClient } from "../supabase";
 import { Car, House, MessageCircle, Play, Scale } from "lucide-react";
+import { matchRoutes } from "react-router";
 import { pitStopCategories, type PitStopClip } from "../pitstop";
 import {
   seedPosts, type DraftPost, type DraftShortlistItem, type DraftTimelineEntry, type DraftVehicle,
-  type Profile, type ShortlistItem,
+  type ShortlistItem,
 } from "../domain";
 import { formatMoney, type ShortlistComparison } from "../insights";
 
@@ -18,10 +19,42 @@ export const postSource = (id: string) => isSharedPost(id) ? "Shared" : seedPost
 
 export type AppView = "top" | "feed" | "pit-stop" | "compare" | "account" | "garage" | "write";
 
-export const viewFromHash = (): AppView => {
-  const hash = typeof window === "undefined" ? "" : window.location.hash.slice(1);
-  if (hash.startsWith("pit-stop")) return "pit-stop";
-  return hash === "feed" || hash === "compare" || hash === "account" || hash === "garage" || hash === "write" ? hash : "top";
+// Where each view lives. Links, redirects and the route table all read this one map.
+export const viewPaths: Record<AppView, string> = {
+  top: "/",
+  garage: "/garage",
+  feed: "/community",
+  write: "/community/write",
+  "pit-stop": "/pit-stop",
+  compare: "/compare",
+  account: "/account",
+};
+
+// Browser tab and history titles.
+export const viewTitles: Record<AppView, string> = {
+  top: "Otofolks",
+  garage: "My garage · Otofolks",
+  feed: "Community · Otofolks",
+  write: "Write an owner note · Otofolks",
+  "pit-stop": "Pit Stop · Otofolks",
+  compare: "Compare · Otofolks",
+  account: "Account · Otofolks",
+};
+
+// Asks the router's own matcher, so the navigation cannot mark one view while another is shown:
+// letter case, a trailing slash and percent-encoding are all treated as the route table treats them.
+const viewRoutes = (Object.keys(viewPaths) as AppView[]).map((view) => ({ id: view, path: viewPaths[view] }));
+export const viewFromPath = (pathname: string): AppView =>
+  (matchRoutes(viewRoutes, { pathname })?.[0]?.route.id as AppView | undefined) ?? "top";
+
+// Views used to be URL fragments (/#feed, /#pit-stop-builds). Bookmarks, shared links and
+// installed-app shortcuts in that form are sent to the matching path; null means "not one of ours".
+export const pathForLegacyHash = (hash: string): { pathname: string; hash: string } | null => {
+  const name = hash.replace(/^#/, "");
+  // A Pit Stop collection keeps its fragment, which is what selects the collection.
+  if (name.startsWith("pit-stop-")) return { pathname: viewPaths["pit-stop"], hash: `#${name}` };
+  if (name === "top" || !Object.hasOwn(viewPaths, name)) return null;
+  return { pathname: viewPaths[name as AppView], hash: "" };
 };
 
 export const destinations = [
@@ -42,12 +75,13 @@ export const adminModeratorEmails = [
 export const isAdminModeratorEmail = (email: string): boolean =>
   adminModeratorEmails.includes(email.toLowerCase() as (typeof adminModeratorEmails)[number]);
 
-export const pitStopCategoryFromHash = (): PitStopClip["category"] | null => {
-  const hash = typeof window === "undefined" ? "" : window.location.hash.replace("#pit-stop-", "").toLowerCase();
-  return pitStopCategories.find((category): category is PitStopClip["category"] => category !== "All" && category.toLowerCase() === hash) ?? null;
-};
+// A Pit Stop collection is addressed by a fragment on the Pit Stop page: /pit-stop#pit-stop-builds.
+export const pitStopCollectionId = (category: PitStopClip["category"]) => `pit-stop-${category.toLowerCase()}`;
 
-export const pitStopCollectionUrl = (category: PitStopClip["category"]) => `/#pit-stop-${category.toLowerCase()}`;
+export const pitStopCategoryFromHash = (hash: string): PitStopClip["category"] | null => {
+  const name = hash.replace("#pit-stop-", "").toLowerCase();
+  return pitStopCategories.find((category): category is PitStopClip["category"] => category !== "All" && category.toLowerCase() === name) ?? null;
+};
 
 export const priceStates = [
   "Andhra Pradesh",
@@ -317,8 +351,6 @@ export const initialShortlistDraft: DraftShortlistItem = {
   status: "New",
   variant: "Smart Petrol MT",
 };
-
-export const garageRoles: Profile["garageRole"][] = ["Owner", "Buyer", "Enthusiast", "Mechanic"];
 
 export const getInitialOnlineStatus = (): boolean => {
   try {

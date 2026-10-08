@@ -3,9 +3,13 @@ import { SignInButton, SignUpButton, UserButton, useClerk, useUser } from "@cler
 import { LogOut } from "lucide-react";
 import { isAdminModeratorEmail } from "./model";
 
+// Where Clerk sends the visitor after signing in: the page they asked for, or the one they are on.
 export const clerkReturnUrl = (destination?: string) => {
   const url = new URL(window.location.href);
-  if (destination) url.hash = destination;
+  if (destination) {
+    url.pathname = destination;
+    url.hash = "";
+  }
   url.searchParams.set("clerk_return", "1");
   return url.toString();
 };

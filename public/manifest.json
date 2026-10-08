@@ -22,19 +22,19 @@
       "name": "Feed",
       "short_name": "Feed",
       "description": "Browse community car posts.",
-      "url": "/#feed"
+      "url": "/community"
     },
     {
       "name": "Pit Stop",
       "short_name": "Pit Stop",
       "description": "Open curated Instagram car clips.",
-      "url": "/#pit-stop"
+      "url": "/pit-stop"
     },
     {
       "name": "Compare",
       "short_name": "Compare",
       "description": "Turn owner notes into a buying decision.",
-      "url": "/#compare"
+      "url": "/compare"
     }
   ]
 }

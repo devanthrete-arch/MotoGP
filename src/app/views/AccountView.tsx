@@ -11,6 +11,8 @@ export function AccountView() {
     auth, clerkEnabled, profile, shortlist, saved, setSaved, follows, garage, timeline, setTimelineDraft,
     activeView, persistFollows, persistProfile, persistShortlist, persistGarage, persistTimeline,
   } = useOtofolks();
+  // Unlike the other views this one stays mounted and is only hidden, so a save to the account
+  // that is still in flight when the member moves on is not lost.
   return (
     <section className="panel account-view" id="account" hidden={activeView !== "account"} aria-label="Account">
       {clerkEnabled ? <ClerkAccountPanel savedCount={saved.size} /> :

@@ -11,13 +11,13 @@ import { useOtofolks } from "../state";
 
 export function CompareView() {
   const {
-    shortlistDraft, setShortlistDraft, dealerQuote, setDealerQuote, activeView, shortlistComparisons,
+    shortlistDraft, setShortlistDraft, dealerQuote, setDealerQuote, shortlistComparisons,
     comparisonSections, displayedComparisonSections, compareVerdict, inspectionChecklistByItemId,
     shortlistDraftPrice, shortlistDraftSource, shortlistDraftDetails, addShortlistItem,
-    updateShortlistItem, removeShortlistItem,
+    updateShortlistItem, removeShortlistItem, openComparisonSections, setComparisonSectionOpen,
   } = useOtofolks();
   return (
-    <section className="panel" id="compare" hidden={activeView !== "compare"}>
+    <section className="panel" id="compare">
       <div className="section-head">
         <div>
           <p className="eyebrow">Compare</p>
@@ -174,7 +174,9 @@ export function CompareView() {
             ) : null}
             <div className="comparison-sections" role="region" aria-label="Comparison categories">
               {displayedComparisonSections.map((section, index) => (
-                <details className="comparison-section" key={section.title} open={index === 0}>
+                <details className="comparison-section" key={section.title}
+                  open={openComparisonSections.includes(section.title)}
+                  onToggle={(event) => setComparisonSectionOpen(section.title, event.currentTarget.open)}>
                   <summary><span className="comparison-section-number">{String(index + 1).padStart(2, "0")}</span>
                     <span>{section.title}</span><ChevronDown size={18} aria-hidden="true" />
                   </summary>
