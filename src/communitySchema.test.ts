@@ -266,7 +266,7 @@ it("sends reports to moderators, who alone can read them and hide a post", async
   }
 }, 30_000);
 
-it("derives visible authors from Clerk subjects and rejects client-supplied names", async () => {
+it("derives visible authors from Clerk subjects and overrides client-supplied names", async () => {
   const db = await createFeedDatabase([feedMigration, hardeningMigration]);
   try {
     await db.exec("set role authenticated");
@@ -286,10 +286,13 @@ it("derives visible authors from Clerk subjects and rejects client-supplied name
 
     await db.exec("set role authenticated");
     await signInAs(db, "user_test_a");
-    await expect(db.query(`
+    await db.query(`
       insert into public.community_posts (title, author, brand, model, variant, city, "odometerKm", label, topic, body)
       values ('Impersonation', 'Piyush Sahoo', 'Tata', 'Nexon', '', 'Pune', 100, 'Owner note', 'Service', 'Text')
-    `)).rejects.toThrow(/permission denied/);
+    `);
+    const [impostorPost] = (await db.query<{ author: string }>(
+      "select author from public.community_posts where title = 'Impersonation'")).rows;
+    expect(impostorPost.author).toBe(repairedPost.author);
     await insertPostWithoutAuthor(db, "Post by A");
     const [postA] = (await db.query<{ id: string; author: string }>(
       "select id, author from public.community_posts where title = 'Post by A'")).rows;
@@ -302,14 +305,20 @@ it("derives visible authors from Clerk subjects and rejects client-supplied name
     expect(commentA.author).toBe(postA.author);
 
     await signInAs(db, "user_test_b");
-    await expect(db.query(`
+    const [expectedAuthorB] = (await db.query<{ author: string }>("select public.community_author_pseudonym() as author")).rows;
+    expect(expectedAuthorB.author).not.toBe(postA.author);
+    await db.query(`
       insert into public.community_comments (post_id, author, body) values ($1, 'Piyush Sahoo', 'Forged')
-    `, [postA.id])).rejects.toThrow(/permission denied/);
+    `, [postA.id]);
+    const [forgedComment] = (await db.query<{ author: string }>(
+      "select author from public.community_comments where body = 'Forged'")).rows;
+    expect(forgedComment.author).toBe(expectedAuthorB.author);
     await insertPostWithoutAuthor(db, "Post by B");
     const [postB] = (await db.query<{ author: string }>(
       "select author from public.community_posts where title = 'Post by B'")).rows;
     expect(postB.author).toMatch(/^Member-[a-f0-9]{20}$/);
     expect(postB.author).not.toBe(postA.author);
+    expect(postB.author).toBe(expectedAuthorB.author);
   } finally {
     await db.close();
   }
