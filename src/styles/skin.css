@@ -127,6 +127,13 @@
   h1,
   h2 { letter-spacing: -0.02em; }
 
+  /* Placeholder while a view is being fetched, and the message when it cannot be. */
+  .view-loading { display: grid; gap: 12px; align-content: start; }
+  .view-error { display: grid; gap: 12px; align-content: start; justify-items: start; }
+  .view-error-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+  /* A heading that receives focus after a page change is a reading position, not a control. */
+  .app-shell :is(h1, h2, h3)[tabindex="-1"]:focus { outline: none; }
+
   /* Theme switch in the header: placement only; its look comes from src/ui. */
   .theme-toggle { flex: 0 0 auto; margin-left: 8px; }
 
