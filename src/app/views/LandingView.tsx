@@ -35,7 +35,7 @@ export function LandingView() {
 
   const start = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!registration.ok) {
+    if (plateDraft.trim() && !registration.ok) {
       setChecked(true);
       field.current?.focus();
       return;
@@ -43,7 +43,7 @@ export function LandingView() {
     // The number is already held by the tab (the state hook keeps the two in step as it is typed),
     // so it is still here after the page load that ends a sign-in. It is never put in the address:
     // the address is what the sign-in provider is given to come back to.
-    navigate(viewPaths.garage);
+    navigate(viewPaths["owner-onboarding"]);
   };
 
   return (
@@ -61,14 +61,14 @@ export function LandingView() {
             label="Your registration number" aria-describedby="landing-note"
             value={plateDraft} onChange={(value) => setPlateDraft(value)}
             onBlur={(event) => { if (event.target.value) setChecked(true); }}
-            hint={registration.ok ? "That looks like a complete number." : "Type it as it appears on your number plate."}
+            hint={registration.ok ? "That looks like a complete number." : "Optional. Type it as it appears on your number plate."}
             error={checked && !registration.ok ? registrationProblemText[registration.problem] : undefined} />
         </div>
         <Button className="landing-go" type="submit" variant="primary" trailingIcon={<ArrowRight size={18} aria-hidden="true" />}>
-          Continue to my garage
+          Add my vehicle
         </Button>
         <p className="landing-note" id="landing-note">
-          This starts adding your car to My garage, after you sign in. The number stays on this device. We do not look it up.
+          Add a car or two-wheeler by number or choose it from the catalogue. Sign in when you are ready to save.
         </p>
       </form>
 

@@ -24,10 +24,12 @@ const views = {
   PitStop: fetchedView(() => import("./views/PitStopView"),
     ({ PitStopView, ReelModal }) => () => <><PitStopView /><ReelModal /></>),
   Write: fetchedView(() => import("./views/WriteView"), (module) => module.WriteView),
+  OwnerOnboarding: fetchedView(() => import("./views/OwnerOnboardingView"), (module) => module.OwnerOnboardingView),
 };
 // The file behind each view that is fetched ahead. Home is asked for separately, below.
 const viewFiles: Partial<Record<AppView, (typeof views)[keyof typeof views]>> = {
   compare: views.Compare, feed: views.Feed, garage: views.Garage, "pit-stop": views.PitStop, write: views.Write,
+  "owner-onboarding": views.OwnerOnboarding,
 };
 
 function preloadViews(forMember: boolean) {
@@ -121,6 +123,7 @@ function AppFrame(props: AppProps & { auth: AppAuthState }) {
             <Routes>
               <Route path={viewPaths.top} element={route("top", audience === "member" ? <views.Home /> : <LandingView />)} />
               <Route path={viewPaths.account} element={page("account", null)} />
+              <Route path={viewPaths["owner-onboarding"]} element={route("owner-onboarding", <views.OwnerOnboarding />)} />
               <Route path={viewPaths.garage} element={route("garage", <views.Garage />)} />
               <Route path={viewPaths.feed} element={route("feed", <views.Feed />)} />
               <Route path={viewPaths.write} element={route("write", <views.Write />)} />

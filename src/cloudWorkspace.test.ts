@@ -3,7 +3,7 @@ import { loadCloudWorkspace, parsePrivateWorkspace, saveCloudWorkspace, type Pri
 import { createClerkSupabaseClient, sessionTokenGetter } from "./supabase";
 
 export const fixture: PrivateWorkspace = {
-  version: 1, profile: { displayName: "Owner", city: "Delhi", garageRole: "Owner" },
+  version: 2, profile: { displayName: "Owner", city: "Delhi", garageRole: "Owner" },
   garage: [{ id: "car", nickname: "Family car", brand: "Tata", model: "Nexon", variant: "Smart", city: "Delhi", odometerKm: 400, purchaseMonth: "2025-03" }],
   timeline: [{ id: "service", vehicleId: "car", kind: "Service", title: "Oil", amount: 3000, odometerKm: 400, happenedOn: "2026-10-05", note: "Filter too" }],
   shortlist: [{ id: "choice", brand: "Tata", model: "Punch", budget: 900000, status: "Test drive", notes: "Quote", variant: "Pure", state: "Delhi", priceSource: "Dealer quote" }],
@@ -18,6 +18,11 @@ afterEach(() => vi.unstubAllGlobals());
 describe("private workspace decoding", () => {
   it("preserves all private fields without publishing drafts", () => {
     expect(parsePrivateWorkspace(fixture)).toEqual(fixture);
+    const legacy = parsePrivateWorkspace({ ...fixture, version: 1, garage: [{ ...fixture.garage[0], kind: undefined, catalogueId: undefined }] });
+    expect(legacy.version).toBe(2);
+    const expanded = parsePrivateWorkspace({ ...fixture, garage: [{ ...fixture.garage[0], kind: "car", catalogueId: "car:tata:nexon", colour: "White", fuel: "Petrol", manufactureYear: 2022, registration: "MH12AB1234" }] });
+    expect(expanded.garage[0]).toMatchObject({ kind: "car", catalogueId: "car:tata:nexon", colour: "White", fuel: "Petrol", manufactureYear: 2022 });
+    expect(JSON.stringify(expanded)).not.toContain("MH12AB1234");
     expect(() => parsePrivateWorkspace({ ...fixture, posts: [] })).toThrow();
     // A registration number stays on the device: even if one were put on a vehicle, it is not uploaded.
     const withNumber = { ...fixture, garage: fixture.garage.map((vehicle) => ({ ...vehicle, registration: "MH12AB1234" })) };
@@ -25,7 +30,7 @@ describe("private workspace decoding", () => {
     expect(JSON.stringify(parsePrivateWorkspace(withNumber))).not.toContain("MH12AB1234");
   });
   it.each([
-    { ...fixture, version: 2 }, { ...fixture, timeline: undefined },
+    { ...fixture, version: 3 }, { ...fixture, timeline: undefined },
     { ...fixture, garage: [...fixture.garage, ...fixture.garage] },
     { ...fixture, timeline: [{ ...fixture.timeline[0], vehicleId: "someone-else" }] },
     { ...fixture, timeline: [{ ...fixture.timeline[0], happenedOn: "2026-02-30" }] },

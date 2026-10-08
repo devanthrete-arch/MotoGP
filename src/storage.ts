@@ -133,7 +133,7 @@ export const buildOtofolksBackup = (exportedAt = new Date().toISOString()): Otof
   data: {
     feedback: loadFeedback(),
     follows: loadFollows(),
-    garage: loadGarage(),
+    garage: loadGarage().map(({ registration: _registration, ...vehicle }) => vehicle),
     posts: loadPosts(),
     profile: loadProfile(),
     productionLaunch: [...loadProductionLaunch()],
@@ -166,7 +166,7 @@ export const parseOtofolksBackup = (raw: string): OtofolksBackup | null => {
             models: [],
             topics: [],
           },
-      garage: Array.isArray(parsed.data.garage) ? (parsed.data.garage as GarageVehicle[]) : [],
+      garage: Array.isArray(parsed.data.garage) ? (parsed.data.garage as GarageVehicle[]).map(({ registration: _registration, ...vehicle }) => vehicle) : [],
       posts: Array.isArray(parsed.data.posts) ? (parsed.data.posts as OwnerPost[]) : [],
       profile: isRecord(parsed.data.profile)
         ? (parsed.data.profile as Profile)

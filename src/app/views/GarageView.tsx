@@ -184,8 +184,8 @@ export function GarageView() {
           <article className="vehicle-card" key={vehicle.id}>
             <span className="pill">{vehicle.brand}</span>
             <h3>{vehicle.nickname}</h3>
-            {vehiclePlates[vehicle.id] ? (
-              <p><b className="vehicle-plate">{plateText(vehiclePlates[vehicle.id])}</b> · number kept on this device only</p>
+            {(vehicle.registration || vehiclePlates[vehicle.id]) ? (
+              <p><b className="vehicle-plate">{plateText(vehicle.registration ?? vehiclePlates[vehicle.id])}</b> · number kept on this device only</p>
             ) : null}
             <p>
               {vehicle.model} {vehicle.variant} · {vehicle.city} · {vehicle.odometerKm.toLocaleString("en-IN")} km

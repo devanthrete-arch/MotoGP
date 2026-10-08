@@ -3,7 +3,8 @@ import { parsePrivateWorkspace } from "./cloudWorkspace";
 import type { ShortlistItem } from "./domain";
 import { loadShortlist, loadVehiclePlates, saveShortlist, saveVehiclePlates, setStorageUser } from "./storage";
 import {
-  adoptVisitorShortlist, claimTab, forgetPlate, forgetVisitorData, type KeyValueStorage, loadVisitorShortlist,
+  adoptVisitorShortlist, claimTab, forgetPlate, forgetVisitorData, loadOwnerOnboardingDraft, saveOwnerOnboardingDraft,
+  type OwnerOnboardingDraft, type KeyValueStorage, loadVisitorShortlist,
   mergeShortlists, readMemberHint, readSigningIn, recallPlate, rememberPlate, saveVisitorShortlist, writeMemberHint,
   writeSigningIn,
 } from "./visitor";
@@ -63,6 +64,23 @@ describe("the registration number a tab remembers", () => {
       expect(claimTab("member-a", true, storage)).toBe(false);
       expect(claimTab(null, true, storage)).toBe(false);
     }
+  });
+});
+
+describe("resumable owner setup", () => {
+  it("keeps the vehicle choice through a sign-in redirect and clears it when the tab changes hands", () => {
+    const tab = memory();
+    const draft: OwnerOnboardingDraft = { kind: "two-wheeler", brand: "Honda", model: "Activa 6G", generation: "", variant: "",
+      colour: "Blue", fuel: "Petrol", manufactureYear: "2024", registration: "MH12AB1234", manual: true, step: "profile" };
+    saveOwnerOnboardingDraft(draft, tab);
+    expect(loadOwnerOnboardingDraft(tab)).toEqual(draft);
+    forgetVisitorData(tab);
+    expect(loadOwnerOnboardingDraft(tab)).toBeNull();
+  });
+  it("ignores malformed or incomplete tab data", () => {
+    const tab = memory();
+    tab.values.set("otofolks.owner-onboarding.v1", JSON.stringify({ kind: "car", step: "profile" }));
+    expect(loadOwnerOnboardingDraft(tab)).toBeNull();
   });
 });
 

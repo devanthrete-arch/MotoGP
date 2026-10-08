@@ -3,6 +3,7 @@ import type { FeedbackNote } from "./domain";
 import { seedGarage, seedPosts, seedTimeline } from "./domain";
 import {
   createTesterRun,
+  buildOtofolksBackup,
   loadGarage,
   loadPosts,
   loadProfile,
@@ -92,6 +93,17 @@ describe("account-scoped browser storage", () => {
     setStorageUser(null);
     expect(loadGarage()).toEqual(seedGarage);
     expect(loadTimeline()).toHaveLength(seedTimeline.length);
+  });
+
+  it("keeps registration numbers out of exported and restored backups", () => {
+    saveGarage([{ ...seedGarage[0], registration: "MH12AB1234", kind: "car", colour: "White" }]);
+    const backup = buildOtofolksBackup();
+    expect(backup.data.garage[0]).not.toHaveProperty("registration");
+    const imported = parseOtofolksBackup(JSON.stringify({ ...backup, data: {
+      ...backup.data, garage: [{ ...backup.data.garage[0], registration: "MH12AB1234" }],
+    } }));
+    expect(imported?.data.garage[0]).not.toHaveProperty("registration");
+    expect(imported?.data.garage[0]).toHaveProperty("kind", "car");
   });
 
   it("keeps explicitly supplied adapters unscoped", () => {

@@ -67,6 +67,15 @@ select pg_temp.check_true(revision = 1 and user_id = pg_catalog.current_setting(
 from public.save_otofolks_private_workspace(pg_temp.fixture(), 0);
 select pg_temp.check_true(count(*) = 1 and bool_and(user_id = pg_catalog.current_setting('test.workspace_b')),
   'B sees only B') from public.otofolks_private_workspaces;
+select pg_temp.check_true(payload -> 'version' = '2'::jsonb
+  and payload #>> '{garage,0,catalogueId}' = 'car-tata-nexon'
+  and payload #>> '{garage,0,kind}' = 'car', 'vehicle v2 fields are retained')
+from public.save_otofolks_private_workspace(
+  pg_catalog.jsonb_set(
+    pg_catalog.jsonb_set(pg_temp.fixture(), '{version}', '2'),
+    '{garage,0}',
+    (pg_temp.fixture() #> '{garage,0}') || '{"kind":"car","catalogueId":"car-tata-nexon","colour":"White","fuel":"Petrol","manufactureYear":2022}'::jsonb
+  ), 1);
 
 -- Exercise every required root key/type and nested field/type; failures must not advance revision.
 do $$
@@ -78,8 +87,9 @@ declare
   path text[];
 begin
   foreach bad in array array[null::jsonb, 'null'::jsonb, '[]'::jsonb, 'true'::jsonb,
-    base || '{"version":"1"}', base || '{"version":2}', base || '{"posts":[]}',
+    base || '{"version":"1"}', base || '{"version":3}', base || '{"posts":[]}',
     base || '{"reports":[]}', base || '{"moderator":true}', base || '{"user_id":"user_other"}',
+    pg_catalog.jsonb_set(pg_catalog.jsonb_set(base, '{version}', '2'), '{garage,0,registration}', '"MH12AB1234"', true),
     pg_catalog.jsonb_set(base, '{profile,displayName}', pg_catalog.to_jsonb(pg_catalog.repeat('x',501))),
     pg_catalog.jsonb_set(base, '{timeline,0,note}', pg_catalog.to_jsonb(pg_catalog.repeat('x',1048577))),
     pg_catalog.jsonb_set(base, '{garage,0,odometerKm}', '-1'),
@@ -127,7 +137,7 @@ end;
 $$;
 select pg_temp.expect_error('select * from public.save_otofolks_private_workspace(pg_temp.fixture(), null)', '22023');
 select pg_temp.expect_error('select * from public.save_otofolks_private_workspace(pg_temp.fixture(), -1)', '22023');
-select pg_temp.check_true(count(*) = 1 and min(revision) = 1 and bool_and(payload = pg_temp.fixture()),
+select pg_temp.check_true(count(*) = 1 and min(revision) = 2 and bool_and(payload -> 'version' = '2'::jsonb),
   'malformed requests leave B unchanged') from public.otofolks_private_workspaces;
 
 -- The RPC independently rejects invalid claims, even when invoked as authenticated.

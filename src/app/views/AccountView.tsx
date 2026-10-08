@@ -28,7 +28,7 @@ export function AccountView() {
           <Suspense fallback={null}>
             <AccountCopyPanel
               client={auth.cloudClient ?? null} owner={auth.userId} configurationError={auth.cloudError}
-              workspace={{ version: 1, profile, garage, timeline, shortlist, follows, saved: [...saved] }}
+              workspace={{ version: 2, profile, garage, timeline, shortlist, follows, saved: [...saved] }}
               onRestore={(data: PrivateWorkspace) => {
                 persistProfile(data.profile);
                 persistGarage(data.garage);

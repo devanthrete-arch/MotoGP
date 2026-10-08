@@ -18,7 +18,7 @@ export const seedPostIds = new Set(seedPosts.map(post => post.id));
 
 export const postSource = (id: string) => isSharedPost(id) ? "Shared" : seedPostIds.has(id) ? "Example" : "On this device";
 
-export type AppView = "top" | "feed" | "pit-stop" | "compare" | "account" | "garage" | "write";
+export type AppView = "top" | "feed" | "pit-stop" | "compare" | "account" | "garage" | "write" | "owner-onboarding";
 
 // Where each view lives. Links, redirects and the route table all read this one map.
 export const viewPaths: Record<AppView, string> = {
@@ -29,6 +29,7 @@ export const viewPaths: Record<AppView, string> = {
   "pit-stop": "/pit-stop",
   compare: "/compare",
   account: "/account",
+  "owner-onboarding": "/owner/onboarding",
 };
 
 // Views that need an account. Every other view is open to visitors. The route guard, the
@@ -45,6 +46,7 @@ export const viewTitles: Record<AppView, string> = {
   "pit-stop": "Pit Stop · Otofolks",
   compare: "Compare · Otofolks",
   account: "Account · Otofolks",
+  "owner-onboarding": "Add your vehicle · Otofolks",
 };
 
 // Asks the router's own matcher, so the navigation cannot mark one view while another is shown:
@@ -342,6 +344,9 @@ export const initialVehicleDraft: DraftVehicle = {
   odometerKm: 0,
   purchaseMonth: "",
 };
+
+export const catalogueVehicleId = (brand: string, model: string) =>
+  `car:${brand}:${model}`.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
 export const initialTimelineDraft: DraftTimelineEntry = {
   vehicleId: "",
