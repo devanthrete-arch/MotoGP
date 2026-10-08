@@ -439,9 +439,10 @@ test("vehicle and maintenance records survive reload", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openApp(page, true, "/garage");
   const garage = page.locator("#garage");
+  const garageForm = garage.locator("form").nth(0);
   await expect(garage.getByRole("button", { name: "Add timeline note" })).toBeDisabled();
-  await garage.getByPlaceholder("Nickname", { exact: true }).fill("Family car");
-  await garage.getByPlaceholder("Model", { exact: true }).fill("Nexon");
+  await garageForm.getByPlaceholder("Nickname", { exact: true }).fill("Family car");
+  await garageForm.getByPlaceholder("Model", { exact: true }).fill("Nexon");
   await garage.getByRole("button", { name: "Save vehicle" }).click();
   await garage.getByPlaceholder("What happened?").fill("Oil and filter replaced");
   await garage.getByPlaceholder("Amount paid").fill("4200");
@@ -518,7 +519,7 @@ test("toast clears itself and never covers the mobile tab bar", async ({ page })
   await page.setViewportSize({ width: 390, height: 844 });
   await openApp(page, true, "/garage");
   const garage = page.locator("#garage");
-  await garage.getByPlaceholder("Model", { exact: true }).fill("Nexon");
+  await garage.locator("form").nth(0).getByPlaceholder("Model", { exact: true }).fill("Nexon");
   await garage.getByRole("button", { name: "Save vehicle" }).click();
   const toast = page.locator(".action-message");
   await expect(toast).toHaveText("Vehicle saved on this device.");
