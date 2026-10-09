@@ -46,7 +46,7 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "destination": "/index.html",
+      "destination": "/",
       "source": "/((?!assets/|vite.svg|favicon.ico|manifest.json|icon.svg).*)"
     }
   ]
