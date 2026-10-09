@@ -30,9 +30,11 @@ for (const width of [320, 390, 768, 1440, 1920]) {
       await expect(landing.getByRole("textbox", { name: "Your registration number" })).toBeVisible();
       await expect(landing.getByRole("button", { name: "Add my vehicle" })).toBeVisible();
       await expect(landing.getByRole("link", { name: "Find my next car" })).toBeVisible();
+      await expect(landing.getByRole("link", { name: "Care guides" })).toBeVisible();
       await expect(landing.getByRole("link", { name: "Read owner stories" })).toBeVisible();
-      // The stage is built from the page's own elements: no picture of a car, and no 3D yet.
-      await expect(landing.locator("img, picture, video, canvas, svg image")).toHaveCount(0);
+      // The poster is immediate; the interactive model is only loaded after the visitor asks for it.
+      await expect(landing.locator(".landing-stage__poster")).toBeVisible();
+      await expect(landing.locator("canvas")).toHaveCount(0);
       await expectNoOverflow(page);
       await page.evaluate(() => document.fonts.ready);
       await page.screenshot({ path: `test-results/landing-${width}-${colorScheme}.png`, fullPage: true });
@@ -126,7 +128,7 @@ test("the landing page and the sign-in prompt pass accessibility checks in both 
   }
 });
 
-test("the two other ways in move within the app: Compare opens, owner stories ask for sign-in", async ({ page }) => {
+test("the car finder stays public and leads to Compare; owner stories ask for sign-in", async ({ page }) => {
   await openApp(page, false);
   await page.evaluate(() => { (window as unknown as { stillHere: boolean }).stillHere = true; });
   const stillHere = () => page.evaluate(() => (window as unknown as { stillHere?: boolean }).stillHere === true);
@@ -136,14 +138,21 @@ test("the two other ways in move within the app: Compare opens, owner stories as
     expect(shape.radius, name).toBeGreaterThanOrEqual(shape.height / 2);
   }
 
-  await expect(page.getByRole("link", { name: "Find my next car" })).toHaveAttribute("href", "/compare");
+  await expect(page.getByRole("link", { name: "Find my next car" })).toHaveAttribute("href", "/find-car");
   await page.getByRole("link", { name: "Find my next car" }).click();
+  await expect(page).toHaveURL(/\/find-car$/);
+  await expect(page.getByRole("heading", { name: "Find a car that fits your life" })).toBeFocused();
+  await page.getByLabel("State or territory").selectOption("Delhi");
+  await page.getByLabel("Petrol price (₹ per litre)").fill("96");
+  await page.getByRole("button", { name: "Show my matches" }).click();
+  await expect(page.getByRole("heading", { name: "Recommendations aren’t ready yet" })).toBeVisible();
+  await page.getByRole("link", { name: "Compare cars" }).click();
   await expect(page).toHaveURL(/\/compare$/);
   await expect(page.getByRole("heading", { name: "Which car feels right?" })).toBeFocused();
-  // A visitor's shortlist is not kept the way a member's is, and Compare says so.
   await expect(page.locator(".data-notice")).toHaveText("This shortlist lasts only as long as this tab. Sign in to keep it.");
   expect(await stillHere()).toBe(true);
 
+  await page.goBack();
   await page.goBack();
   await expect(page.getByRole("link", { name: "Read owner stories" })).toHaveAttribute("href", "/community");
   await page.getByRole("link", { name: "Read owner stories" }).click();
@@ -261,7 +270,7 @@ test("a number typed on the landing page reaches the add-vehicle form and never 
   const plate = garage.getByRole("textbox", { name: "Registration number (optional)" });
   await expect(plate).toHaveValue("MH 12 AB 1234");
   await page.screenshot({ path: "test-results/garage-carried-number.png" });
-  await garage.getByPlaceholder("Model", { exact: true }).fill("Nexon");
+  await garage.locator("form").nth(0).getByPlaceholder("Model", { exact: true }).fill("Nexon");
   await garage.getByRole("button", { name: "Save vehicle" }).click();
   const cards = garage.locator(".timeline-board .vehicle-card");
   await expect(cards).toHaveCount(1);
@@ -273,7 +282,7 @@ test("a number typed on the landing page reaches the add-vehicle form and never 
 
   // The number is kept beside the garage, under this account, and is not part of a vehicle.
   const garageRows = JSON.parse((await stored(page, "localStorage", accountKey("garage")))!) as Record<string, unknown>[];
-  expect(Object.keys(garageRows[0]).sort()).toEqual(["brand", "city", "id", "model", "nickname", "odometerKm", "purchaseMonth", "variant"]);
+  expect(Object.keys(garageRows[0]).sort()).toEqual(["brand", "city", "id", "kind", "model", "nickname", "odometerKm", "purchaseMonth", "source", "variant"]);
   expect(JSON.parse((await stored(page, "localStorage", accountKey("vehicle-plates")))!)).toEqual({ [garageRows[0].id as string]: "MH12AB1234" });
   expect(await stored(page, "localStorage", "autoflex.web.vehicle-plates.v1")).toBeNull();
   await page.reload();
@@ -284,7 +293,7 @@ test("a number typed on the landing page reaches the add-vehicle form and never 
   // vehicle, does not make the next number an error from its first character...
   const plateProblem = garage.locator(".ui-field__error");
   await plate.focus();
-  await garage.getByPlaceholder("Model", { exact: true }).fill("Punch");
+  await garage.locator("form").nth(0).getByPlaceholder("Model", { exact: true }).fill("Punch");
   await plate.pressSequentially("MH 12");
   await expect(plateProblem).toHaveCount(0);
   // ...but one that is started must be finished or cleared: saving says so and goes to the field.
@@ -338,7 +347,7 @@ test("saving to the account uploads the vehicle without its registration number"
   await openApp(page, true, "/garage", true);
   const garage = page.locator("#garage");
   await garage.getByRole("textbox", { name: "Registration number (optional)" }).fill("dl 3c ab 1234");
-  await garage.getByPlaceholder("Model", { exact: true }).fill("Creta");
+  await garage.locator("form").nth(0).getByPlaceholder("Model", { exact: true }).fill("Creta");
   await garage.getByRole("button", { name: "Save vehicle" }).click();
   await expect(garage.locator(".timeline-board .vehicle-card").first()).toContainText("DL 3 CAB 1234");
 
@@ -350,14 +359,14 @@ test("saving to the account uploads the vehicle without its registration number"
   expect(uploads).toHaveLength(1);
   expect(uploads[0]).not.toMatch(/DL\W*3\W*C\W*AB\W*1234/i);
   const [vehicle] = JSON.parse(uploads[0]).p_payload.garage as Record<string, unknown>[];
-  expect(Object.keys(vehicle).sort()).toEqual(["brand", "city", "id", "model", "nickname", "odometerKm", "purchaseMonth", "variant"]);
+  expect(Object.keys(vehicle).sort()).toEqual(["brand", "city", "id", "kind", "model", "nickname", "odometerKm", "purchaseMonth", "source", "variant"]);
   expect(vehicle.model).toBe("Creta");
 
   // A second vehicle is added with a number, then the garage is restored from the account copy,
   // which has only the first. The first keeps its number; the removed vehicle's number goes with it.
   await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "My garage" }).click();
   await garage.getByRole("textbox", { name: "Registration number (optional)" }).fill("KA 01 AB 1234");
-  await garage.getByPlaceholder("Model", { exact: true }).fill("Seltos");
+  await garage.locator("form").nth(0).getByPlaceholder("Model", { exact: true }).fill("Seltos");
   await garage.getByRole("button", { name: "Save vehicle" }).click();
   await expect(garage.locator(".timeline-board .vehicle-card")).toHaveCount(2);
   expect(Object.values(JSON.parse((await stored(page, "localStorage", accountKey("vehicle-plates")))!)).sort()).toEqual(["DL3CAB1234", "KA01AB1234"]);

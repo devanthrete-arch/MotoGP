@@ -2,8 +2,8 @@
 //
 // It reads nothing from the state hook except the registration number being typed: for a visitor
 // the hook holds only example data, which must not be shown as theirs.
-import { ArrowRight } from "lucide-react";
-import { type FormEvent, useRef, useState } from "react";
+import { ArrowRight, Bike, BookOpen, Box, Camera, CarFront } from "lucide-react";
+import { Suspense, lazy, type CSSProperties, type FormEvent, useRef, useState } from "react";
 import { Link, useHref, useLinkClickHandler, useNavigate } from "react-router";
 import { Button, LinkButton, type LinkButtonProps } from "../../ui/Button";
 import { PlateInput } from "../../ui/PlateInput";
@@ -19,6 +19,14 @@ const about: Record<"garage" | "feed" | "pit-stop" | "compare", string> = {
   compare: "Shortlist cars and read two side by side across twelve categories, with manufacturer-verified specifications where available. It will not pick a winner from incomplete data.",
 };
 const areas = destinations.filter((destination) => destination.id !== "top");
+const InteractiveVehicle = lazy(() => import("../../vehicles/VehicleViewer"));
+const vehiclePaints = [
+  { name: "Deep teal", value: "#0f6568" },
+  { name: "Pearl white", value: "#e5e5df" },
+  { name: "Graphite", value: "#464b50" },
+  { name: "Oxblood", value: "#713f47" },
+];
+const posterPath = "/vehicles/compact-crossover-poster.webp";
 
 // A pill that moves within the app. The button primitive itself stays free of the router.
 function RouteButton({ to, ...rest }: Omit<LinkButtonProps, "href"> & { to: string }) {
@@ -31,6 +39,9 @@ export function LandingView() {
   const field = useRef<HTMLInputElement>(null);
   // An error waits until the visitor has left the field or tried to continue.
   const [checked, setChecked] = useState(false);
+  const [showViewer, setShowViewer] = useState(false);
+  const [vehicleShape, setVehicleShape] = useState<"crossover" | "motorcycle">("crossover");
+  const [paint, setPaint] = useState(vehiclePaints[0].value);
   const registration = parseRegistration(plateDraft);
 
   const start = (event: FormEvent<HTMLFormElement>) => {
@@ -55,8 +66,33 @@ export function LandingView() {
       </div>
 
       <form className="landing-form" noValidate onSubmit={start}>
-        {/* The stage: where a 3D model of the vehicle will stand. Today the number is the exhibit. */}
         <div className="landing-stage" data-ready={registration.ok ? "" : undefined}>
+          <div className="landing-stage__visual">
+            {showViewer ? <Suspense fallback={<img className="landing-stage__poster" src={posterPath} alt="Generic compact crossover concept" />}>
+              <InteractiveVehicle paint={paint} shape={vehicleShape} />
+            </Suspense> : <img className="landing-stage__poster" src={posterPath} alt="Generic compact crossover concept, shown for illustration" width="1439" height="810" fetchPriority="high" />}
+          </div>
+          <div className="landing-stage__controls">
+            <Button variant="secondary" icon={showViewer ? <Camera size={16} aria-hidden="true" /> : <Box size={16} aria-hidden="true" />}
+              aria-pressed={showViewer} onClick={() => setShowViewer(value => !value)}>
+              {showViewer ? "Back to photo" : "View in 3D"}
+            </Button>
+            {showViewer && <>
+              <div className="landing-stage__shapes" role="group" aria-label="Illustrative vehicle type">
+                <Button size="sm" variant={vehicleShape === "crossover" ? "primary" : "secondary"}
+                  aria-pressed={vehicleShape === "crossover"} onClick={() => setVehicleShape("crossover")}
+                  icon={<CarFront size={15} aria-hidden="true" />}>Car</Button>
+                <Button size="sm" variant={vehicleShape === "motorcycle" ? "primary" : "secondary"}
+                  aria-pressed={vehicleShape === "motorcycle"} onClick={() => setVehicleShape("motorcycle")}
+                  icon={<Bike size={15} aria-hidden="true" />}>Two-wheeler</Button>
+              </div>
+              <div className="landing-stage__swatches" role="group" aria-label="Vehicle colour">
+                {vehiclePaints.map(color => <button key={color.value} className="landing-stage__swatch" type="button"
+                  aria-label={color.name} aria-pressed={paint === color.value} title={color.name}
+                  style={{ "--swatch": color.value } as CSSProperties} onClick={() => setPaint(color.value)} />)}
+              </div>
+            </>}
+          </div>
           <PlateInput ref={field} className="landing-plate" name="registration" enterKeyHint="go"
             label="Your registration number" aria-describedby="landing-note"
             value={plateDraft} onChange={(value) => setPlateDraft(value)}
@@ -73,9 +109,10 @@ export function LandingView() {
       </form>
 
       <div className="landing-paths">
-        <RouteButton to={viewPaths.compare}>Find my next car</RouteButton>
+        <RouteButton to={viewPaths.guides} icon={<BookOpen size={16} aria-hidden="true" />}>Care guides</RouteButton>
+        <RouteButton to={viewPaths["find-car"]}>Find my next car</RouteButton>
         <RouteButton to={viewPaths.feed}>Read owner stories</RouteButton>
-        <p className="landing-note">Compare is open to everyone. Owner stories open after you sign in.</p>
+        <p className="landing-note">Guides, Compare and the car finder are open. Owner stories open after you sign in.</p>
       </div>
 
       <div className="landing-today">

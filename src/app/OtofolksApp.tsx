@@ -25,11 +25,15 @@ const views = {
     ({ PitStopView, ReelModal }) => () => <><PitStopView /><ReelModal /></>),
   Write: fetchedView(() => import("./views/WriteView"), (module) => module.WriteView),
   OwnerOnboarding: fetchedView(() => import("./views/OwnerOnboardingView"), (module) => module.OwnerOnboardingView),
+  Guides: fetchedView(() => import("./views/GuidesView"), (module) => module.GuidesView),
+  FindCar: fetchedView(() => import("./views/FindCarView"), (module) => module.FindCarView),
 };
 // The file behind each view that is fetched ahead. Home is asked for separately, below.
 const viewFiles: Partial<Record<AppView, (typeof views)[keyof typeof views]>> = {
   compare: views.Compare, feed: views.Feed, garage: views.Garage, "pit-stop": views.PitStop, write: views.Write,
   "owner-onboarding": views.OwnerOnboarding,
+  guides: views.Guides,
+  "find-car": views.FindCar,
 };
 
 function preloadViews(forMember: boolean) {
@@ -130,6 +134,8 @@ function AppFrame(props: AppProps & { auth: AppAuthState }) {
               {/* Pit Stop holds nothing of the reader's, so it never has to wait to know who they are. */}
               <Route path={viewPaths["pit-stop"]} element={page("pit-stop", <views.PitStop />)} />
               <Route path={viewPaths.compare} element={route("compare", <views.Compare />)} />
+              <Route path={`${viewPaths.guides}/:slug?`} element={page("guides", <views.Guides />)} />
+              <Route path={viewPaths["find-car"]} element={page("find-car", <views.FindCar />)} />
               <Route path="*" element={<Navigate to={viewPaths.top} replace />} />
             </Routes>
           </Suspense>

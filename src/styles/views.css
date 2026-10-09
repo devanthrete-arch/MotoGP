@@ -22,17 +22,20 @@
      The air above is where the 3D model will stand. */
   .landing-stage {
     --u: clamp(20px, 6.2vw, 40px);
-    position: relative; isolation: isolate; inline-size: 100%; padding-block-start: clamp(16px, 16vh - 60px, 160px);
-  }
-  /* The light. It stops above the hint line: only the label may sit in it (contrast in dark). */
-  .landing-stage::before {
-    content: ""; position: absolute; inset: 0 0 48px; z-index: -1; opacity: 0.6;
-    background: radial-gradient(closest-side, var(--stage-light), transparent);
-    transition: opacity var(--duration-base) var(--ease-out);
+    position: relative; isolation: isolate; inline-size: 100%; display: grid; justify-items: center; gap: 10px;
   }
   .landing-stage[data-ready] { --ring: var(--color-accent); }
-  .landing-stage[data-ready]::before { opacity: 1; }
-  .landing-stage > .ui-field { inline-size: min(100%, 540px); margin-inline: auto; padding-block-start: calc(var(--u) * 3.7 - 51px); }
+  .landing-stage__visual { position: relative; inline-size: min(100%, 920px); aspect-ratio: 16 / 9; overflow: hidden; background: var(--color-surface); }
+  .landing-stage__poster { display: block; inline-size: 100%; block-size: 100%; object-fit: cover; object-position: center 54%; }
+  .landing-stage__controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; min-block-size: 40px; }
+  .landing-stage__shapes { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+  .landing-stage__swatches { display: flex; align-items: center; gap: 6px; }
+  .landing-stage__swatch {
+    inline-size: 34px; block-size: 34px; flex: 0 0 34px; padding: 5px; border: 1px solid var(--color-border); border-radius: 50%;
+    background: var(--glass-fill); box-shadow: inset 0 0 0 6px var(--swatch); cursor: pointer;
+  }
+  .landing-stage__swatch[aria-pressed="true"] { outline: 2px solid var(--color-accent-text); outline-offset: 2px; }
+  .landing-stage > .ui-field { inline-size: min(100%, 540px); margin-inline: auto; padding-block-start: 0; }
   .landing-stage .ui-field__label { color: var(--color-text); }
   /* Room is kept for the hint or error, so the button does not move when the text changes. */
   .landing-stage :is(.ui-field__hint, .ui-field__error) { min-height: 1.4em; }
@@ -51,6 +54,20 @@
   }
   .landing-plate .ui-plate__tag { height: calc(16px + var(--u) * 1.4); padding-inline: calc(var(--u) * 0.7); font-size: calc(8px + var(--u) * 0.2); }
   .landing-plate .ui-plate__input { font-size: var(--u); text-align: start; caret-color: var(--color-accent); }
+  .vehicle-viewer { position: relative; inline-size: 100%; block-size: 100%; background: var(--color-surface); }
+  .vehicle-viewer__canvas { display: block; inline-size: 100%; block-size: 100%; touch-action: pan-y; }
+  .vehicle-viewer__actions { position: absolute; z-index: 1; inset-block-start: 10px; inset-inline-end: 10px; display: flex; gap: 6px; }
+  .vehicle-viewer__caption { position: absolute; inset-inline-start: 12px; inset-block-end: 8px; margin: 0; color: var(--color-text-secondary); font-size: 11px; line-height: 1.3; }
+  .vehicle-viewer__fallback-bike {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;
+    background: radial-gradient(ellipse at 50% 78%, var(--glass-border), transparent 50%), var(--color-surface);
+  }
+  .vehicle-viewer__fallback-bike > span { inline-size: clamp(62px, 12vw, 130px); aspect-ratio: 1; border: clamp(5px, 1vw, 9px) solid #333b3d; border-radius: 50%; }
+  .vehicle-viewer__fallback-bike > span + span { margin-inline-start: clamp(42px, 9vw, 96px); }
+  .vehicle-viewer__fallback-bike > i {
+    position: absolute; inset-inline-start: 50%; inset-block-start: 47%; inline-size: 27%; block-size: 9%; transform: translateX(-50%) rotate(-8deg);
+    border-radius: 50% 16% 18% 24%; background: var(--color-accent); box-shadow: 0 -15px 0 -5px #353c3e;
+  }
   .landing-go { inline-size: min(100%, 320px); min-height: 52px; font-size: 16px; }
 
   .landing-paths { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; inline-size: min(100%, 440px); }
@@ -93,6 +110,7 @@
   .owner-onboarding__confirm p { color: var(--color-text-secondary); font-size: 14px; }
   .owner-onboarding__confirm small { color: var(--color-text-muted); font-size: 12px; }
   .owner-onboarding__note { margin: 0; color: var(--color-text-muted); font-size: 13px; line-height: 1.5; }
+  .owner-onboarding__source { color: var(--color-accent-text); font-size: 13px; line-height: 1.45; text-underline-offset: 3px; overflow-wrap: anywhere; }
   .owner-onboarding__error { margin: 0; color: var(--color-danger, #a32e27); font-size: 14px; }
   @media (max-width: 520px) {
     .owner-onboarding__details { grid-template-columns: minmax(0, 1fr); }
@@ -116,4 +134,90 @@
   .garage-plate .ui-plate__input { font-size: clamp(16px, 5.3vw, 20px); }
   .auth-gate-plate,
   .vehicle-plate { font-family: var(--font-mono); font-weight: 500; letter-spacing: 0.06em; white-space: nowrap; }
+  .garage-form { display: grid; align-content: start; gap: 14px; }
+  .garage-form > h3 { margin: 0; }
+  .garage-form__row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .vehicle-card__actions { display: flex; justify-content: flex-end; gap: 6px; margin-block-start: 12px; }
+  .vehicle-card > p { overflow-wrap: anywhere; }
+  @media (max-width: 520px) {
+    .garage-form__row { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  /* ---- public owner guides ---- */
+  .guide-page { inline-size: min(100%, 920px); margin-inline: auto; padding: clamp(20px, 4vw, 48px) clamp(16px, 4vw, 32px) 64px; color: var(--color-text); }
+  .guide-page :is(h1, h2, h3, p) { margin-block-start: 0; }
+  .guide-head { display: grid; gap: 10px; margin-block-end: 28px; }
+  .guide-head .eyebrow { display: flex; align-items: center; gap: 7px; color: var(--color-accent-text); }
+  .guide-head h1, .guide-article-head h1 { margin-block-end: 0; font: 600 32px/1.15 var(--font-sans); color: var(--color-text); }
+  .guide-head > p:last-child, .guide-article-head > p:not(.guide-topic) { max-inline-size: 58ch; margin-block-end: 0; color: var(--color-text-secondary); line-height: 1.55; }
+  .guide-list { display: grid; }
+  .guide-list-item { display: grid; grid-template-columns: minmax(0, 250px) minmax(0, 1fr); gap: 22px; padding-block: 22px; border-top: 1px solid var(--color-border); }
+  .guide-list-item:last-child { border-bottom: 1px solid var(--color-border); }
+  .guide-list-item:not(:has(.guide-list-item__image)) .guide-list-item__body { grid-column: 1 / -1; }
+  .guide-list-item__image { display: block; overflow: hidden; align-self: start; aspect-ratio: 16 / 10; border-radius: 6px; background: var(--color-surface-sunken); }
+  .guide-list-item__image img { display: block; inline-size: 100%; block-size: 100%; object-fit: cover; }
+  .guide-list-item__body { display: grid; align-content: center; justify-items: start; gap: 9px; }
+  .guide-list-item__body :is(h2, p) { margin: 0; }
+  .guide-list-item__body h2 { font: 600 20px/1.3 var(--font-sans); color: var(--color-text); }
+  .guide-list-item__body h2 a { color: inherit; text-decoration: none; }
+  .guide-list-item__body h2 a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .guide-list-item__body > p:not(.guide-topic) { color: var(--color-text-secondary); font-size: 14px; line-height: 1.5; }
+  .guide-topic { margin: 0; color: var(--color-accent-text); font: 500 12px/1.4 var(--font-mono); }
+  .guide-read, .guide-back { display: inline-flex; align-items: center; gap: 6px; color: var(--color-accent-text); font-size: 14px; font-weight: 600; text-underline-offset: 3px; }
+  .guide-back { margin-block-end: 18px; text-decoration: none; }
+  .guide-hero { display: block; inline-size: 100%; block-size: auto; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 8px; background: var(--color-surface-sunken); }
+  .guide-article-head { display: grid; gap: 10px; padding-block: 22px; }
+  .guide-article-head time { color: var(--color-text-muted); font: 12px/1.4 var(--font-mono); }
+  .guide-prose { max-inline-size: 68ch; color: var(--color-text-secondary); font-size: 16px; line-height: 1.75; }
+  .guide-prose :is(h2, h3) { margin-block: 28px 8px; color: var(--color-text); font-family: var(--font-sans); line-height: 1.3; }
+  .guide-prose h2 { font-size: 21px; }
+  .guide-prose h3 { font-size: 18px; }
+  .guide-prose p { margin-block: 0 16px; }
+  .guide-prose ul, .guide-prose ol { padding-inline-start: 22px; }
+  .guide-prose li { padding-inline-start: 4px; margin-block: 7px; }
+  .guide-prose a { color: var(--color-accent-text); font-weight: 600; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; overflow-wrap: anywhere; }
+  .guide-next { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin-block-start: 32px; padding-block-start: 20px; border-top: 1px solid var(--color-border); }
+  .guide-next > p { flex-basis: 100%; margin: 0; color: var(--color-text); font-weight: 600; }
+  .guide-static { margin: 0; background: var(--color-bg); font-family: var(--font-sans); }
+
+  /* ---- public car finder ---- */
+  .find-car { inline-size: min(100%, 900px); margin-inline: auto; padding: clamp(24px, 5vw, 56px) clamp(16px, 4vw, 36px) 64px; color: var(--color-text); }
+  .find-car__head { display: grid; gap: 10px; margin-block-end: 28px; }
+  .find-car__head :is(h1, p) { margin: 0; }
+  .find-car__head .eyebrow { display: flex; align-items: center; gap: 7px; color: var(--color-accent-text); }
+  .find-car__head h1 { font: 600 32px/1.15 var(--font-sans); }
+  .find-car__head > p:last-child { max-inline-size: 60ch; color: var(--color-text-secondary); line-height: 1.55; }
+  .find-car__form { display: grid; justify-items: start; gap: 20px; }
+  .find-car__fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; inline-size: 100%; }
+  .find-car__result { margin-block-start: 30px; padding-block: 22px; border-block: 1px solid var(--color-border); }
+  .find-car__result :is(h2, p) { margin: 0 0 10px; }
+  .find-car__result h2 { font: 600 20px/1.3 var(--font-sans); }
+  .find-car__result > p { max-inline-size: 68ch; color: var(--color-text-secondary); line-height: 1.55; }
+  .find-car__matches { display: grid; gap: 12px; margin: 16px 0 0; padding: 0; list-style: none; }
+  .find-car__match > article { padding: 16px; border: 1px solid var(--color-border); border-radius: 8px; background: var(--glass-fill); }
+  .find-car__match header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 12px; }
+  .find-car__match header :is(h3, span, b), .find-car__match > article > p { margin: 0; }
+  .find-car__match header h3 { flex: 1; font: 600 18px/1.3 var(--font-sans); }
+  .find-car__match header > span, .find-car__match header > b { color: var(--color-accent-text); font: 600 13px/1.4 var(--font-mono); }
+  .find-car__match > article > p { margin-block-start: 8px; color: var(--color-text-secondary); font-size: 14px; }
+  .find-car__match .find-car__cost { color: var(--color-text); font-weight: 600; }
+  .find-car__match ul { padding-inline-start: 20px; color: var(--color-text-secondary); font-size: 14px; line-height: 1.5; }
+  .find-car__match details { margin-block-start: 12px; color: var(--color-text-secondary); font-size: 13px; }
+  .find-car__match summary { color: var(--color-accent-text); cursor: pointer; font-weight: 600; }
+  .find-car__match a { color: var(--color-accent-text); overflow-wrap: anywhere; }
+  .find-car__honesty { display: flex; align-items: flex-start; gap: 8px; }
+  .find-car__honesty svg { flex: 0 0 auto; color: var(--color-accent-text); }
+  .find-car__actions { display: flex; flex-wrap: wrap; gap: 9px; margin-block-start: 18px; }
+  @media (max-width: 560px) {
+    .find-car__head h1 { font-size: 27px; }
+    .find-car__fields { grid-template-columns: minmax(0, 1fr); }
+    .find-car__form > .ui-button { inline-size: 100%; }
+  }
+
+  @media (max-width: 560px) {
+    .guide-head h1, .guide-article-head h1 { font-size: 27px; }
+    .guide-list-item { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+    .guide-list-item:not(:has(.guide-list-item__image)) .guide-list-item__body { grid-column: auto; }
+    .guide-list-item__image { inline-size: min(100%, 420px); }
+  }
 }

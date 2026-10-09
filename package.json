@@ -6,7 +6,7 @@
   "scripts": {
     "api:dev": "tsx server-ts/index.ts",
     "dev": "vite --host 0.0.0.0 --port 8080",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/generate-guides.mjs",
     "preview": "vite preview --host 0.0.0.0 --port 8080",
     "bundle:check": "node scripts/check-bundle-size.mjs",
     "release:check": "npm run test && npm run build && npm run bundle:check",
@@ -18,13 +18,17 @@
     "@fastify/cors": "^11.3.0",
     "@fontsource-variable/geist": "^5.3.0",
     "@fontsource-variable/geist-mono": "^5.3.0",
+    "@react-three/fiber": "^9.8.1",
     "@supabase/postgrest-js": "^2.111.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "dompurify": "^3.4.16",
     "fastify": "^5.10.0",
     "lucide-react": "^1.51.0",
+    "marked": "^18.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router": "^7.18.4",
+    "three": "^0.186.1",
     "typescript": "^5.7.2",
     "vite": "^6.0.7"
   },
@@ -35,6 +39,10 @@
     "@types/node": "^26.1.1",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
+    "@types/sanitize-html": "^2.16.2",
+    "@types/three": "^0.186.0",
+    "pngjs": "^7.0.0",
+    "sanitize-html": "^2.18.0",
     "tsx": "^4.23.1",
     "vitest": "^4.1.10"
   }

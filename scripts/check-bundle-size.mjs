@@ -8,10 +8,12 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { gzipSync } from "node:zlib";
 
-// First load is about 136 kB: React and React DOM, Clerk, the router (about 19 kB), the database
+// First load is about 137 kB: React and React DOM, Clerk, the router (about 19 kB), the database
 // client (about 25 kB, a candidate for loading on demand) and the shared state for every view.
 // PR5 adds a 2.4 kB gzip owner-onboarding chunk loaded on demand; route metadata adds <0.2 kB upfront.
-export const budgets = { initialJs: 137_000, totalJs: 153_000, css: 13_000 };
+// PR6/7 add the Garage editor and catalogue. PR8's 258.8 kB gzip 3D runtime stays behind user action.
+// The Markdown reader and its three article bodies are lazy chunks; the added guide styles join global CSS.
+export const budgets = { initialJs: 140_000, totalJs: 450_000, css: 14_000 };
 
 /** Asset file names index.html loads up front: its scripts, module preloads and stylesheets. */
 export function initialAssets(indexHtml) {

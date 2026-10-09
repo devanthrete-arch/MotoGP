@@ -316,6 +316,20 @@ export function useOtofolksState({ auth, clerkEnabled = false, accountPanel }: A
     }
   };
 
+  const updateVehicle = (updated: GarageVehicle, plates = vehiclePlates) => {
+    if (!garage.some(vehicle => vehicle.id === updated.id)) return;
+    persistGarage(garage.map(vehicle => vehicle.id === updated.id ? updated : vehicle), plates);
+    setActionMessage("Vehicle details updated on this device.");
+  };
+
+  const removeVehicle = (vehicleId: string) => {
+    const nextGarage = garage.filter(vehicle => vehicle.id !== vehicleId);
+    persistGarage(nextGarage, Object.fromEntries(Object.entries(vehiclePlates).filter(([id]) => id !== vehicleId)));
+    persistTimeline(timeline.filter(entry => entry.vehicleId !== vehicleId));
+    setTimelineDraft({ ...initialTimelineDraft, vehicleId: nextGarage[0]?.id ?? "" });
+    setActionMessage("Vehicle and its maintenance history removed from this device.");
+  };
+
   const persistTimeline = (nextTimeline: TimelineEntry[]) => {
     setTimeline(nextTimeline);
     saveTimeline(nextTimeline);
@@ -376,13 +390,10 @@ export function useOtofolksState({ auth, clerkEnabled = false, accountPanel }: A
     if (!auth.isSignedIn) { auth.requireSignIn(viewPaths.feed); return; }
     if (!auth.cloudClient || !isOnline) { setCommunityStatus("Connect to publish a comment."); return; }
     const id = selectedPost.id;
-    const author = (profile.displayName.trim() || "Anonymous garage member").slice(0, 80);
     const body = commentDraft.trim();
     setCommunityBusy(true);
     try {
-      await publishCommunityComment(auth.cloudClient, id, author, body);
-      setSharedPosts(current => current.map(post => post.id === id
-        ? { ...post, comments: [`${author}: ${body}`, ...post.comments] } : post));
+      await publishCommunityComment(auth.cloudClient, id, body);
       setCommentDraft("");
       setCommunityStatus("");
       try {
@@ -678,7 +689,7 @@ export function useOtofolksState({ auth, clerkEnabled = false, accountPanel }: A
     comparisonSections, displayedComparisonSections, compareVerdict, inspectionChecklists,
     inspectionChecklistByItemId, draftQuality, selectedPostQuality, shortlistDraftPrice,
     shortlistDraftSource, shortlistDraftDetails, persistPosts, persistFollows, persistProfile,
-    persistReports, persistShortlist, persistGarage, persistTimeline, toggleSaved, toggleFollowModel,
+    persistReports, persistShortlist, persistGarage, persistTimeline, updateVehicle, removeVehicle, toggleSaved, toggleFollowModel,
     toggleFollowTopic, markHelpful, confirmFix, addComment, reportSelectedPost, deleteSelectedSharedPost,
     shareText, shareSelectedPost, exportGarage, addShortlistItem, addSelectedToShortlist,
     updateShortlistItem, removeShortlistItem, publishPost, addVehicle, addTimelineNote, shouldShowFeatures,

@@ -2,11 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import type { GarageVehicle, Profile } from "../../domain";
 import { createVehicle } from "../../storage";
+import {
+  catalogueBrands, catalogueModelsForBrand, catalogueVariantFor, catalogueVariantsForModel,
+  findCatalogueModel,
+} from "../../catalogue/catalogue";
 import { Button } from "../../ui/Button";
 import { SelectField, TextField } from "../../ui/Field";
 import { formatRegistrationInput, parseRegistration } from "../../ui/plate";
 import {
-  brands, catalogueVehicleId, firstModelForBrand, firstVariantForModel, modelsForBrand, variantsForModel, viewPaths,
+  catalogueVehicleId, viewPaths,
 } from "../model";
 import { useOtofolks } from "../state";
 import { loadOwnerOnboardingDraft, recallPlate, saveOwnerOnboardingDraft, type OwnerOnboardingDraft } from "../../visitor";
@@ -26,14 +30,16 @@ export function OwnerOnboardingView() {
   const [displayName, setDisplayName] = useState(profile.displayName);
   const [city, setCity] = useState(profile.city);
   const [error, setError] = useState("");
-  const models = useMemo(() => modelsForBrand(draft.brand), [draft.brand]);
-  const variants = useMemo(() => variantsForModel(draft.brand, draft.model), [draft.brand, draft.model]);
+  const models = useMemo(() => catalogueModelsForBrand(draft.brand), [draft.brand]);
+  const variants = useMemo(() => catalogueVariantsForModel(draft.brand, draft.model), [draft.brand, draft.model]);
+  const selectedVariant = useMemo(() => catalogueVariantFor(draft.brand, draft.model, draft.variant), [draft.brand, draft.model, draft.variant]);
 
   useEffect(() => { saveOwnerOnboardingDraft(draft); }, [draft]);
   const patch = (updates: Partial<OwnerOnboardingDraft>) => setDraft(value => ({ ...value, ...updates }));
   const startCatalogue = (brand: string) => {
-    const model = firstModelForBrand(brand);
-    patch({ brand, model, variant: firstVariantForModel(brand, model), manual: false });
+    const model = catalogueModelsForBrand(brand)[0];
+    const variant = model?.variants[0];
+    patch({ brand, model: model?.name ?? "", variant: variant?.name ?? "", manual: false });
   };
 
   const saveVehicle = () => {
@@ -50,12 +56,13 @@ export function OwnerOnboardingView() {
       requireSignIn(viewPaths["owner-onboarding"], "sign-up");
       return;
     }
+    const selectedCatalogueModel = draft.manual ? undefined : findCatalogueModel(draft.model, draft.brand);
     const savedProfile: Profile = { ...profile, displayName: displayName.trim(), city: city.trim(), garageRole: "Owner" };
     const vehicle: GarageVehicle = createVehicle({
       nickname: `${draft.brand.trim()} ${draft.model.trim()}`,
       brand: draft.brand.trim(), model: draft.model.trim(), variant: draft.variant.trim(), city: city.trim(),
       odometerKm: 0, purchaseMonth: "", kind: draft.kind,
-      catalogueId: draft.manual ? undefined : catalogueVehicleId(draft.brand, draft.model),
+      catalogueId: selectedCatalogueModel ? catalogueVehicleId(selectedCatalogueModel.brand, selectedCatalogueModel.name) : undefined,
       generation: draft.generation.trim() || undefined, generationId: undefined,
       registration: registration.ok ? registration.normalized : undefined,
       colour: draft.colour.trim() || undefined, fuel: draft.fuel.trim() || undefined,
@@ -85,13 +92,18 @@ export function OwnerOnboardingView() {
           </Button>)}
         </div>
         {draft.kind === "car" && !draft.manual ? <>
-          <SelectField label="Make" options={brands} placeholder="Choose a make" value={draft.brand}
+          <SelectField label="Make" options={catalogueBrands} placeholder="Choose a make" value={draft.brand}
             onChange={event => startCatalogue(event.target.value)} />
-          <SelectField label="Model" options={models.map(item => item.model)} placeholder="Choose a model" value={draft.model}
-            onChange={event => patch({ model: event.target.value, variant: firstVariantForModel(draft.brand, event.target.value) })} />
+          <SelectField label="Model" options={models.map(item => item.name)} placeholder="Choose a model" value={draft.model}
+            onChange={event => patch({ model: event.target.value, variant: catalogueVariantsForModel(draft.brand, event.target.value)[0]?.name ?? "" })} />
           <SelectField label="Variant" options={variants.map(item => item.name)} placeholder="Choose a variant" value={draft.variant}
             onChange={event => patch({ variant: event.target.value })} />
-          <p className="owner-onboarding__note">This list is a starting catalogue. Confirm the exact generation and variant from your documents.</p>
+          {selectedVariant && <a className="owner-onboarding__source" href={selectedVariant.source.url} target="_blank" rel="noreferrer">
+            Manufacturer source: {selectedVariant.source.label}{selectedVariant.sourceCheckedOn
+              ? ` · checked ${new Date(`${selectedVariant.sourceCheckedOn}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
+              : " · check date not recorded"}
+          </a>}
+          <p className="owner-onboarding__note">Variants link to manufacturer sources. Check dates and generation coverage are still being verified; add the generation from your vehicle documents or leave it blank.</p>
           <Button type="button" variant="ghost" onClick={() => patch({ manual: true, brand: "", model: "", variant: "" })}>My vehicle is not listed</Button>
         </> : <>
           {draft.kind === "two-wheeler" && <p className="owner-onboarding__note">Two-wheeler catalogue is coming later. Add the make and model as shown on your documents.</p>}

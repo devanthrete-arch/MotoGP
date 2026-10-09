@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [master]
+    branches: [master, 'codex/**']
   workflow_dispatch: {}
 
 permissions:

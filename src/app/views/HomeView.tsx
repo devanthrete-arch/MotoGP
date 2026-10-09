@@ -18,7 +18,7 @@ export function HomeView() {
           { id: "garage", label: "My garage", detail: "Vehicles and maintenance", icon: Car },
           { id: "feed", label: "Ask the community", detail: "Advice from fellow owners", icon: MessageCircle },
           { id: "pit-stop", label: "Take a Pit Stop", detail: "Car stories and inspiration", icon: Play },
-          { id: "compare", label: "Find your next car", detail: "Compare your favourites", icon: Scale },
+          { id: "find-car", label: "Find your next car", detail: "A few questions to get started", icon: Scale },
           { id: "feed", label: "Saved advice", detail: "Good tips, kept close", icon: Bookmark },
         ] as const).map(({ id, label, detail, icon: Icon }) => (
           <Link className="home-shortcut" to={viewPaths[id]} key={label} onClick={(event) => {

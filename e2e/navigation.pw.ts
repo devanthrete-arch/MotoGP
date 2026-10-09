@@ -163,8 +163,9 @@ test("with Save-Data on, a visitor's view is fetched only when it is opened", as
   await afterIdle(page);
   expect(fetched()).toEqual([]);
   await page.getByRole("link", { name: "Find my next car" }).click();
-  await expect(page.locator("#compare")).toBeVisible();
-  expect(fetched()).toEqual(["CompareView"]);
+  await expect(page).toHaveURL(/\/find-car$/);
+  await expect(page.getByRole("heading", { name: "Find a car that fits your life" })).toBeVisible();
+  expect(fetched()).toEqual(["FindCarView"]);
 });
 
 test("with Save-Data on, a member's view is fetched only when it is opened", async ({ page }) => {
@@ -439,9 +440,10 @@ test("vehicle and maintenance records survive reload", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openApp(page, true, "/garage");
   const garage = page.locator("#garage");
+  const garageForm = garage.locator("form").nth(0);
   await expect(garage.getByRole("button", { name: "Add timeline note" })).toBeDisabled();
-  await garage.getByPlaceholder("Nickname", { exact: true }).fill("Family car");
-  await garage.getByPlaceholder("Model", { exact: true }).fill("Nexon");
+  await garageForm.getByPlaceholder("Nickname", { exact: true }).fill("Family car");
+  await garageForm.getByPlaceholder("Model", { exact: true }).fill("Nexon");
   await garage.getByRole("button", { name: "Save vehicle" }).click();
   await garage.getByPlaceholder("What happened?").fill("Oil and filter replaced");
   await garage.getByPlaceholder("Amount paid").fill("4200");
@@ -518,7 +520,7 @@ test("toast clears itself and never covers the mobile tab bar", async ({ page })
   await page.setViewportSize({ width: 390, height: 844 });
   await openApp(page, true, "/garage");
   const garage = page.locator("#garage");
-  await garage.getByPlaceholder("Model", { exact: true }).fill("Nexon");
+  await garage.locator("form").nth(0).getByPlaceholder("Model", { exact: true }).fill("Nexon");
   await garage.getByRole("button", { name: "Save vehicle" }).click();
   const toast = page.locator(".action-message");
   await expect(toast).toHaveText("Vehicle saved on this device.");
@@ -664,7 +666,7 @@ test("comparison remains usable after adding cars and changing views", async ({ 
   await expect(page.getByText("Lean towards", { exact: false })).toHaveCount(0);
   await expectNoOverflow(page);
   await page.getByRole("navigation", { name: "Primary", exact: true }).getByRole("link", { name: "Home", exact: true }).click();
-  await page.getByRole("link", { name: "Find your next car" }).click();
+  await page.getByRole("navigation", { name: "Primary", exact: true }).getByRole("link", { name: "Compare" }).click();
   await expect(page.getByRole("table", { name: "Basic Information comparison" })).toBeVisible();
   // The categories opened before leaving are still open.
   await expect(page.getByRole("table", { name: "Dimensions & Capacity comparison" })).toBeVisible();

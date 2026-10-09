@@ -47,7 +47,7 @@
   "rewrites": [
     {
       "destination": "/",
-      "source": "/((?!assets/|vite.svg|favicon.ico|manifest.json|icon.svg).*)"
+      "source": "/(.*)"
     }
   ]
 }
