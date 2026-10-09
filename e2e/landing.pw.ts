@@ -33,7 +33,7 @@ for (const width of [320, 390, 768, 1440, 1920]) {
       await expect(landing.getByRole("link", { name: "Care guides" })).toBeVisible();
       await expect(landing.getByRole("link", { name: "Read owner stories" })).toBeVisible();
       // The poster is immediate; the interactive model is only loaded after the visitor asks for it.
-      await expect(landing.locator(".landing-stage__poster")).toBeVisible();
+      await expect(landing.getByRole("img", { name: /Original unbranded car concept/ })).toBeVisible();
       await expect(landing.locator("canvas")).toHaveCount(0);
       await expectNoOverflow(page);
       await page.evaluate(() => document.fonts.ready);
