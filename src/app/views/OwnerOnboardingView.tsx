@@ -30,7 +30,10 @@ export function OwnerOnboardingView() {
   const [displayName, setDisplayName] = useState(profile.displayName);
   const [city, setCity] = useState(profile.city);
   const [error, setError] = useState("");
-  const models = useMemo(() => catalogueModelsForBrand(draft.brand), [draft.brand]);
+  const matchingModels = useMemo(() => catalogueModelsForBrand(draft.brand).filter(model =>
+    draft.kind === "two-wheeler" ? model.kind === "two-wheeler" : model.kind !== "two-wheeler"), [draft.brand, draft.kind]);
+  const matchingBrands = useMemo(() => [...new Set(catalogueBrands.filter(brand => catalogueModelsForBrand(brand).some(model =>
+    draft.kind === "two-wheeler" ? model.kind === "two-wheeler" : model.kind !== "two-wheeler")))], [draft.kind]);
   const variants = useMemo(() => catalogueVariantsForModel(draft.brand, draft.model), [draft.brand, draft.model]);
   const selectedVariant = useMemo(() => catalogueVariantFor(draft.brand, draft.model, draft.variant), [draft.brand, draft.model, draft.variant]);
 
@@ -87,29 +90,31 @@ export function OwnerOnboardingView() {
       {draft.step === "vehicle" ? <form className="owner-onboarding__form" onSubmit={event => { event.preventDefault(); setError(""); saveVehicle(); }}>
         <div className="owner-onboarding__segmented" role="group" aria-label="Vehicle type">
           {(["car", "two-wheeler"] as const).map(kind => <Button key={kind} type="button" variant={draft.kind === kind ? "primary" : "secondary"}
-            aria-pressed={draft.kind === kind} onClick={() => patch({ kind, brand: "", model: "", variant: "", manual: kind === "two-wheeler" })}>
+            aria-pressed={draft.kind === kind} onClick={() => patch({ kind, brand: "", model: "", variant: "", manual: false })}>
             {kind === "car" ? "Car" : "Two-wheeler"}
           </Button>)}
         </div>
-        {draft.kind === "car" && !draft.manual ? <>
-          <SelectField label="Make" options={catalogueBrands} placeholder="Choose a make" value={draft.brand}
+        {!draft.manual ? <>
+          <SelectField label="Make" options={matchingBrands} placeholder="Choose a make" value={draft.brand}
             onChange={event => startCatalogue(event.target.value)} />
-          <SelectField label="Model" options={models.map(item => item.name)} placeholder="Choose a model" value={draft.model}
+          <SelectField label="Model" options={matchingModels.map(item => item.name)} placeholder="Choose a model" value={draft.model}
             onChange={event => patch({ model: event.target.value, variant: catalogueVariantsForModel(draft.brand, event.target.value)[0]?.name ?? "" })} />
-          <SelectField label="Variant" options={variants.map(item => item.name)} placeholder="Choose a variant" value={draft.variant}
-            onChange={event => patch({ variant: event.target.value })} />
-          {selectedVariant && <a className="owner-onboarding__source" href={selectedVariant.source.url} target="_blank" rel="noreferrer">
-            Manufacturer source: {selectedVariant.source.label}{selectedVariant.sourceCheckedOn
+          {variants.length > 0 && <SelectField label="Variant" options={variants.map(item => item.name)} placeholder="Choose a variant" value={draft.variant}
+            onChange={event => patch({ variant: event.target.value })} />}
+          {(selectedVariant?.source ?? matchingModels.find(model => model.name === draft.model)?.lineupSource) && <a className="owner-onboarding__source"
+            href={(selectedVariant?.source ?? matchingModels.find(model => model.name === draft.model)?.lineupSource)?.url} target="_blank" rel="noreferrer">
+            Manufacturer source: {(selectedVariant?.source ?? matchingModels.find(model => model.name === draft.model)?.lineupSource)?.label}{selectedVariant?.sourceCheckedOn
               ? ` · checked ${new Date(`${selectedVariant.sourceCheckedOn}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
-              : " · check date not recorded"}
+              : matchingModels.find(model => model.name === draft.model)?.lineupSource?.checkedOn
+                ? ` · checked ${new Date(`${matchingModels.find(model => model.name === draft.model)?.lineupSource?.checkedOn}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
+                : " · check date not recorded"}
           </a>}
-          <p className="owner-onboarding__note">Variants link to manufacturer sources. Check dates and generation coverage are still being verified; add the generation from your vehicle documents or leave it blank.</p>
+          <p className="owner-onboarding__note">{variants.length ? "Variants link to manufacturer sources. Generation is optional; check your vehicle documents or leave it blank." : "Model names link to the manufacturer's current product list. Add the variant from your documents if you know it."}</p>
           <Button type="button" variant="ghost" onClick={() => patch({ manual: true, brand: "", model: "", variant: "" })}>My vehicle is not listed</Button>
         </> : <>
-          {draft.kind === "two-wheeler" && <p className="owner-onboarding__note">Two-wheeler catalogue is coming later. Add the make and model as shown on your documents.</p>}
           <TextField label="Make" required maxLength={80} value={draft.brand} onChange={event => patch({ brand: event.target.value })} placeholder="e.g. Honda" />
           <TextField label="Model" required maxLength={100} value={draft.model} onChange={event => patch({ model: event.target.value })} placeholder="e.g. Activa 6G" />
-          {draft.kind === "car" && <Button type="button" variant="ghost" onClick={() => { patch({ manual: false, brand: "", model: "", variant: "" }); }}>Back to car catalogue</Button>}
+          <Button type="button" variant="ghost" onClick={() => { patch({ manual: false, brand: "", model: "", variant: "" }); }}>Back to catalogue</Button>
         </>}
         <div className="owner-onboarding__details">
           <TextField label="Generation (optional)" maxLength={80} value={draft.generation} onChange={event => patch({ generation: event.target.value })} placeholder="e.g. 2020–2024" />
@@ -124,7 +129,7 @@ export function OwnerOnboardingView() {
           <h2>Check your vehicle</h2>
           <p><strong>{draft.brand || "Make"} {draft.model || "model"}</strong>{draft.variant ? ` · ${draft.variant}` : ""}</p>
           <p>{[draft.generation, draft.manufactureYear, draft.colour, draft.fuel].filter(Boolean).join(" · ") || "You can add more details later."}</p>
-          <small>{draft.manual ? "Added manually" : "Selected from the car catalogue"}</small>
+          <small>{draft.manual ? "Added manually" : "Selected from the manufacturer catalogue"}</small>
         </section>
         {error && <p className="owner-onboarding__error" role="alert">{error}</p>}
         <Button type="submit" variant="primary" fullWidth>{auth.isSignedIn ? "Save vehicle" : "Continue to sign up"}</Button>
