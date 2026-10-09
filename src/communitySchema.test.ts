@@ -5,6 +5,7 @@ import { expect, it } from "vitest";
 const feedMigration = "202610070001_clerk_community_feed.sql";
 const hardeningMigration = "202610080001_community_feed_hardening.sql";
 const authorPseudonymMigration = "202610090001_community_author_pseudonyms.sql";
+const ownerReviewMigration = "202610090002_structured_owner_reviews.sql";
 
 const applyMigration = async (db: PGlite, name: string) =>
   db.exec(await readFile(new URL(`../supabase/migrations/${name}`, import.meta.url), "utf8"));
@@ -319,6 +320,34 @@ it("derives visible authors from Clerk subjects and overrides client-supplied na
     expect(postB.author).toMatch(/^Member-[a-f0-9]{20}$/);
     expect(postB.author).not.toBe(postA.author);
     expect(postB.author).toBe(expectedAuthorB.author);
+  } finally {
+    await db.close();
+  }
+}, 30_000);
+
+it("stores structured owner reviews only when all three answers are complete", async () => {
+  const db = await createFeedDatabase([feedMigration, hardeningMigration, authorPseudonymMigration, ownerReviewMigration]);
+  try {
+    await db.exec("set role authenticated");
+    await signInAs(db, "user_review_owner");
+    const [review] = (await db.query<{ review_pros: string; review_cons: string; review_verdict: string }>(`
+      insert into public.community_posts (title, brand, model, variant, city, "odometerKm", label, topic, body,
+        review_pros, review_cons, review_verdict)
+      values ('Ownership after a year', 'Tata', 'Nexon', 'XZ petrol', 'Pune', 12000, 'Review', 'Ownership', 'Daily use',
+        'Easy in traffic', 'Boot is small', 'buy-again')
+      returning review_pros, review_cons, review_verdict
+    `)).rows;
+    expect(review).toEqual({ review_pros: "Easy in traffic", review_cons: "Boot is small", review_verdict: "buy-again" });
+    await expect(db.query(`
+      insert into public.community_posts (title, brand, model, variant, city, "odometerKm", label, topic, body,
+        review_pros, review_cons, review_verdict)
+      values ('Incomplete', 'Tata', 'Nexon', '', 'Pune', 100, 'Review', 'Ownership', 'Details', 'Good', '', '')
+    `)).rejects.toThrow(/community_posts_review_fields_complete/);
+    await expect(db.query(`
+      insert into public.community_posts (title, brand, model, variant, city, "odometerKm", label, topic, body,
+        review_pros, review_cons, review_verdict)
+      values ('Not a review', 'Tata', 'Nexon', '', 'Pune', 100, 'Owner note', 'Ownership', 'Details', 'Good', 'Bad', 'unsure')
+    `)).rejects.toThrow(/community_posts_review_fields_complete/);
   } finally {
     await db.close();
   }

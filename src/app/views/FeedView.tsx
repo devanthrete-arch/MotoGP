@@ -2,7 +2,7 @@
 import { isSharedPost } from "../../communityCloud";
 import { PenLine, X } from "lucide-react";
 import { knowledgeLabels, type KnowledgeLabel } from "../../domain";
-import { modelKeyFor } from "../../insights";
+import { buildModelReviewSummaries, modelKeyFor } from "../../insights";
 import { Link } from "react-router";
 import { type FeedMode, type PriceState, brands, postSource, priceStates, viewPaths } from "../model";
 import { useOtofolks } from "../state";
@@ -13,11 +13,12 @@ export function FeedView() {
     setQuery, mode, setMode, selectedLabel, setSelectedLabel, selectedFeedState, setSelectedFeedState,
     selectedPost, setSelectedPost, composerOpen, setComposerOpen, draft, setDraft, commentDraft,
     setCommentDraft, reportDraft, setReportDraft, reportOpen, setReportOpen, myPostIds, helpfulIds, confirmedIds,
-    isOnline, followedModelSet, followedTopicSet, filteredPosts, publishedPitStopClips,
+    isOnline, followedModelSet, followedTopicSet, filteredPosts, feedPosts, publishedPitStopClips,
     selectedPostQuality, toggleSaved, toggleFollowModel, toggleFollowTopic, markHelpful, confirmFix,
     addComment, reportSelectedPost, deleteSelectedSharedPost, shareSelectedPost, addSelectedToShortlist,
     publishPost,
   } = useOtofolks();
+  const modelReviewSummaries = buildModelReviewSummaries(feedPosts);
   return (
     <section className="panel" id="feed">
       {communityStatus ? <p role="status">{communityStatus}</p> : null}
@@ -74,9 +75,35 @@ export function FeedView() {
               <input
                 value={draft.model}
                 onChange={(event) => setDraft({ ...draft, model: event.target.value })}
-                placeholder="Model (optional)"
+                placeholder={draft.label === "Review" ? "Model" : "Model (optional)"}
+                required={draft.label === "Review"}
               />
             </div>
+            {draft.label === "Review" ? (
+              <fieldset className="review-prompts">
+                <legend>Help another owner understand life with this car</legend>
+                <label>What has worked well?
+                  <textarea rows={2} maxLength={2000} required value={draft.reviewPros ?? ""}
+                    onChange={(event) => setDraft({ ...draft, reviewPros: event.target.value })}
+                    placeholder="Comfort, reliability, service experience..." />
+                </label>
+                <label>What should a buyer know or watch for?
+                  <textarea rows={2} maxLength={2000} required value={draft.reviewCons ?? ""}
+                    onChange={(event) => setDraft({ ...draft, reviewCons: event.target.value })}
+                    placeholder="Trade-offs, costs, things you would change..." />
+                </label>
+                <label>Would you choose it again?
+                  <select required value={draft.reviewVerdict ?? ""} onChange={(event) => setDraft({
+                    ...draft, reviewVerdict: event.target.value as typeof draft.reviewVerdict,
+                  })}>
+                    <option value="">Choose one</option>
+                    <option value="buy-again">Yes</option>
+                    <option value="unsure">Not sure</option>
+                    <option value="not-again">No</option>
+                  </select>
+                </label>
+              </fieldset>
+            ) : null}
             <div className="composer-actions">
               <span className="form-note">Posting as {profile.displayName.trim() || "Anonymous owner"}</span>
               <button className="primary-action" disabled={communityBusy || !auth.cloudClient || !isOnline} type="submit">Post</button>
@@ -169,6 +196,16 @@ export function FeedView() {
                 {selectedPost.city}
               </p>
               <p>{selectedPost.body}</p>
+              {selectedPost.label === "Review" && (selectedPost.reviewPros || selectedPost.reviewCons || selectedPost.reviewVerdict) ? (
+                <section className="owner-review-detail" aria-label="Structured owner review">
+                  <h3>Owner’s experience</h3>
+                  {selectedPost.reviewPros ? <p><strong>Worked well:</strong> {selectedPost.reviewPros}</p> : null}
+                  {selectedPost.reviewCons ? <p><strong>Worth knowing:</strong> {selectedPost.reviewCons}</p> : null}
+                  {selectedPost.reviewVerdict ? <p><strong>Choose it again:</strong> {{
+                    "buy-again": "Yes", unsure: "Not sure", "not-again": "No",
+                  }[selectedPost.reviewVerdict]}</p> : null}
+                </section>
+              ) : null}
               {selectedPostQuality ? (
                 <div className={`quality-card ${selectedPostQuality.grade.toLowerCase().replace(/\s+/g, "-")}`}>
                   <div className="quality-meter">
@@ -262,6 +299,31 @@ export function FeedView() {
           )}
         </aside>
       </div>
+
+      <section className="model-review-summaries" aria-labelledby="model-review-title">
+        <div className="section-head"><div><p className="eyebrow">Owner experience</p><h2 id="model-review-title">What owners say by model</h2></div></div>
+        {modelReviewSummaries.length ? (
+          <div className="content-grid">
+            {modelReviewSummaries.slice(0, 4).map((summary) => (
+              <article className="detail-card" key={summary.key}>
+                <h3>{summary.brand} {summary.model}</h3>
+                <p className="form-note">{summary.evidence.length} structured owner review{summary.evidence.length === 1 ? "" : "s"}; each note reflects one owner’s experience.</p>
+                {summary.evidence.map((review) => (
+                  <div className="owner-review-summary" key={review.id}>
+                    <strong>{review.title}</strong>
+                    <p>{review.variant || "Variant not specified"} · {review.city || "Location not specified"} · {review.author}</p>
+                    {review.reviewPros ? <p><strong>Worked well:</strong> {review.reviewPros}</p> : null}
+                    {review.reviewCons ? <p><strong>Worth knowing:</strong> {review.reviewCons}</p> : null}
+                    {review.reviewVerdict ? <p><strong>Choose it again:</strong> {{
+                      "buy-again": "Yes", unsure: "Not sure", "not-again": "No",
+                    }[review.reviewVerdict]}</p> : null}
+                  </div>
+                ))}
+              </article>
+            ))}
+          </div>
+        ) : <p className="empty-state">Structured model reviews will appear here as owners share them.</p>}
+      </section>
     </section>
   );
 }

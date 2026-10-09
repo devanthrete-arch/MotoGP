@@ -183,6 +183,16 @@ export type OwnershipPlaybook = {
   evidenceCount: number;
 };
 
+export type ModelReviewEvidence = Pick<OwnerPost,
+  "id" | "author" | "title" | "variant" | "city" | "createdAt" | "reviewPros" | "reviewCons" | "reviewVerdict">;
+
+export type ModelReviewSummary = {
+  key: string;
+  brand: string;
+  model: string;
+  evidence: ModelReviewEvidence[];
+};
+
 export type PostQualityInput = Pick<OwnerPost, "body" | "city" | "label" | "odometerKm" | "variant">;
 
 export type PostQualityReport = {
@@ -896,6 +906,18 @@ export function buildOwnershipPlaybooks(posts: OwnerPost[]): OwnershipPlaybook[]
       };
     })
     .sort((first, second) => second.evidenceCount - first.evidenceCount || first.key.localeCompare(second.key));
+}
+
+export function buildModelReviewSummaries(posts: OwnerPost[]): ModelReviewSummary[] {
+  return groupByModel(posts).flatMap((notebook) => {
+    const evidence = notebook.posts
+      .filter((post) => post.label === "Review" && (post.reviewPros?.trim() || post.reviewCons?.trim() || post.reviewVerdict))
+      .sort((first, second) => Date.parse(second.createdAt) - Date.parse(first.createdAt))
+      .map(({ id, author, title, variant, city, createdAt, reviewPros, reviewCons, reviewVerdict }) => ({
+        id, author, title, variant, city, createdAt, reviewPros, reviewCons, reviewVerdict,
+      }));
+    return evidence.length ? [{ key: notebook.key, brand: notebook.brand, model: notebook.model, evidence }] : [];
+  }).sort((first, second) => second.evidence.length - first.evidence.length || first.key.localeCompare(second.key));
 }
 
 export function assessPostQuality(post: PostQualityInput): PostQualityReport {

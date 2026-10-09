@@ -340,6 +340,9 @@ export const initialDraft: DraftPost = {
   label: "Owner note",
   topic: "Ownership review",
   body: "",
+  reviewPros: "",
+  reviewCons: "",
+  reviewVerdict: "",
 };
 
 export const initialVehicleDraft: DraftVehicle = {

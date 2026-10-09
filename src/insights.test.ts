@@ -28,6 +28,7 @@ import {
   buildModerationSummary,
   buildNotificationPreview,
   buildOwnershipPlaybooks,
+  buildModelReviewSummaries,
   buildPostSharePayload,
   buildPrivacyReadinessSummary,
   buildProductionLaunchSummary,
@@ -540,6 +541,19 @@ describe("Otofolks insights", () => {
     });
     expect(nexon?.ownerSignals).toContain("Confirmed fixes are available before the owner needs a dealer second opinion.");
     expect(nexon?.buyerChecks[0]).toBe("Ask whether the common fix has already been done and keep the bill handy.");
+  });
+
+  it("groups structured owner reviews by model without erasing individual evidence", () => {
+    const reviews = buildModelReviewSummaries([
+      { ...seedPosts[0], label: "Review", reviewPros: "Easy to service", reviewCons: "Road noise", reviewVerdict: "buy-again" },
+      { ...seedPosts[1], brand: "Tata", model: "Nexon", label: "Review", reviewPros: "Comfortable", reviewCons: "Small boot", reviewVerdict: "unsure" },
+      { ...seedPosts[2], brand: "Tata", model: "Nexon", label: "Review" },
+    ]);
+    expect(reviews).toHaveLength(1);
+    expect(reviews[0]).toMatchObject({ brand: "Tata", model: "Nexon", evidence: [
+      { reviewPros: "Easy to service", reviewCons: "Road noise", reviewVerdict: "buy-again" },
+      { reviewPros: "Comfortable", reviewCons: "Small boot", reviewVerdict: "unsure" },
+    ] });
   });
 
   it("assesses post quality with actionable missing context prompts", () => {

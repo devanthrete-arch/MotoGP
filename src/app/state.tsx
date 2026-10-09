@@ -550,6 +550,11 @@ export function useOtofolksState({ auth, clerkEnabled = false, accountPanel }: A
   const publishPost = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!auth.isSignedIn) { auth.requireSignIn(viewPaths.feed); return; }
+    if (draft.label === "Review" && (!draft.model.trim() || !draft.reviewPros?.trim()
+      || !draft.reviewCons?.trim() || !draft.reviewVerdict)) {
+      setCommunityStatus("Add the model, what worked, what to watch for, and whether you’d choose it again.");
+      return;
+    }
     if (!auth.cloudClient || !isOnline) {
       setCommunityStatus("Shared publishing is unavailable. Connect and retry.");
       return;
