@@ -2,7 +2,8 @@ import type { CloudClient } from "./supabase";
 import type { DraftPost, OwnerPost } from "./domain";
 import type { ClerkTokenGetter } from "./supabase";
 
-const postColumns = "id,title,author,brand,model,variant,city,odometerKm,label,topic,body,createdAt";
+const postColumns = "id,title,author,brand,model,variant,city,odometerKm,label,topic,body,reviewPros:review_pros,reviewCons:review_cons,reviewVerdict:review_verdict,createdAt";
+const legacyPostColumns = "id,title,author,brand,model,variant,city,odometerKm,label,topic,body,createdAt";
 type PostRow = Omit<OwnerPost, "comments" | "helpful" | "fixesConfirmed">;
 type CommentRow = { author: string; body: string };
 
@@ -11,6 +12,7 @@ const cloudId = (postId: string) => postId.slice(6);
 
 // Missing table, missing function, or a schema cache that has not seen the migration yet.
 const notSetUpCodes = ["PGRST202", "PGRST205", "42P01", "42883"];
+const missingReviewColumns = ["PGRST204", "42703"];
 
 function communityError(code?: string): Error {
   return new Error(notSetUpCodes.includes(code ?? "")
@@ -28,9 +30,18 @@ async function requireToken(getToken: ClerkTokenGetter): Promise<void> {
 
 export async function loadCommunityPosts(client: CloudClient, getToken: ClerkTokenGetter): Promise<OwnerPost[]> {
   await requireToken(getToken);
-  const { data, error } = await client.from("community_posts")
+  const current = await client.from("community_posts")
     .select(postColumns).eq("status", "published").order("createdAt", { ascending: false })
     .limit(50).abortSignal(AbortSignal.timeout(15000));
+  let data: unknown = current.data;
+  let error = current.error;
+  if (error && missingReviewColumns.includes(error.code ?? "")) {
+    const legacy = await client.from("community_posts")
+      .select(legacyPostColumns).eq("status", "published").order("createdAt", { ascending: false })
+      .limit(50).abortSignal(AbortSignal.timeout(15000));
+    data = legacy.data;
+    error = legacy.error;
+  }
   if (error) throw communityError(error.code);
   return (data as PostRow[]).map(asPost);
 }
@@ -54,11 +65,21 @@ export async function loadMyCommunityPostIds(client: CloudClient, getToken: Cler
 
 export async function publishCommunityPost(client: CloudClient, draft: DraftPost): Promise<OwnerPost> {
   // The database derives the visible author from the authenticated Clerk subject.
-  const { data, error } = await client.from("community_posts").insert({
+  const record = {
     title: draft.title.trim(), brand: draft.brand, model: draft.model,
     variant: draft.variant, city: draft.city, odometerKm: draft.odometerKm, label: draft.label,
     topic: draft.topic, body: draft.body.trim(),
+  };
+  let { data, error } = await client.from("community_posts").insert({
+    ...record,
+    review_pros: draft.label === "Review" ? draft.reviewPros?.trim() ?? "" : "",
+    review_cons: draft.label === "Review" ? draft.reviewCons?.trim() ?? "" : "",
+    review_verdict: draft.label === "Review" ? draft.reviewVerdict || "" : "",
   }).select(postColumns).single();
+  if (error && missingReviewColumns.includes(error.code ?? "")) {
+    if (draft.label === "Review") throw new Error("Structured reviews aren’t available until the community database update is installed.");
+    ({ data, error } = await client.from("community_posts").insert(record).select(legacyPostColumns).single());
+  }
   if (error || !data) throw communityError(error?.code);
   return asPost(data as PostRow);
 }

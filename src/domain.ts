@@ -14,6 +14,9 @@ export type OwnerPost = {
   label: KnowledgeLabel;
   topic: string;
   body: string;
+  reviewPros?: string;
+  reviewCons?: string;
+  reviewVerdict?: "buy-again" | "unsure" | "not-again" | "";
   createdAt: string;
   helpful: number;
   fixesConfirmed: number;

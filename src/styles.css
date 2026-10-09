@@ -1130,3 +1130,12 @@ button.pit-stop-card { width: 100%; text-align: left; font: inherit; cursor: poi
 .reel-collection strong { font-size: 18px; }
 .reel-collection small { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
 }
+
+.review-prompts { display: grid; gap: 12px; margin: 16px 0; padding: 14px; border: 1px solid var(--hair); border-radius: 10px; }
+.review-prompts legend { padding: 0 6px; font-weight: 650; }
+.review-prompts label { display: grid; gap: 6px; }
+.review-prompts textarea, .review-prompts select { width: 100%; }
+.model-review-summaries { margin-top: 32px; }
+.owner-review-summary { border-top: 1px solid var(--hair); margin-top: 14px; padding-top: 12px; overflow-wrap: anywhere; }
+.owner-review-summary p, .owner-review-detail p { line-height: 1.55; }
+.owner-review-summary > p:first-of-type { color: var(--on-surface-variant); font-size: 13px; }
