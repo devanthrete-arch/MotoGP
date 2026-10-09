@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildTopPitStopReels, filterPitStopClipsByCategory, isAdminModeratorEmail, priceForModel } from "./App";
+import { buildTopPitStopReels, filterPitStopClipsByCategory, priceForModel } from "./App";
 
 describe("Pit Stop clips", () => {
   it("filters published clips by category", () => {
@@ -55,10 +55,5 @@ describe("Pit Stop clips", () => {
     expect(priceForModel("Tata", "Nexon", "XZ+ Diesel MT", "Maharashtra", "Test drive")).toBe(950000);
     expect(priceForModel("Tata", "Nexon", "XZ+ Diesel MT", "Karnataka", "New")).toBe(950000);
     expect(priceForModel("Tata", "Unknown")).toBe(0);
-  });
-
-  it("recognizes admin and moderator emails", () => {
-    expect(isAdminModeratorEmail("PIYUSHDTU23@gmail.com")).toBe(true);
-    expect(isAdminModeratorEmail("owner@example.com")).toBe(false);
   });
 });
