@@ -102,9 +102,9 @@ export function FindCarView() {
               </li>;
             })}
           </ol>
-        </> : !result.notEnoughVerifiedData.length && Object.values(result.excluded).every(items => !items.length) ? <>
+        </> : result.candidateCount === 0 ? <>
           <h2 id="find-car-result-title">Recommendations aren’t ready yet</h2>
-          <p>We don’t yet have complete, verified car records with prices and ownership costs for your state, so we haven’t ranked any.</p>
+          <p>Verified car recommendations aren’t connected yet. No cars were checked or ranked for your answers.</p>
           <p className="find-car__honesty"><Info size={17} aria-hidden="true" /> We haven’t used example prices or guessed a winner.</p>
         </> : result.notEnoughVerifiedData.length ? <>
           <h2 id="find-car-result-title">We’re still checking the details</h2>

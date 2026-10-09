@@ -44,6 +44,7 @@ export type RankedCandidate = {
 };
 
 export type RankingResult = {
+  candidateCount: number;
   recommendations: RankedCandidate[];
   notEnoughVerifiedData: string[];
   excluded: Record<"fuel" | "budget" | "locality", string[]>;
@@ -125,7 +126,12 @@ export function rankCars(
   preferences: RecommenderPreferences,
   today = new Date().toISOString().slice(0, 10),
 ): RankingResult {
-  const result: RankingResult = { recommendations: [], notEnoughVerifiedData: [], excluded: { fuel: [], budget: [], locality: [] } };
+  const result: RankingResult = {
+    candidateCount: candidates.length,
+    recommendations: [],
+    notEnoughVerifiedData: [],
+    excluded: { fuel: [], budget: [], locality: [] },
+  };
   if (!preferences.state.trim() || !Number.isFinite(preferences.budgetRupees) || preferences.budgetRupees <= 0
     || !Number.isFinite(preferences.monthlyKm) || preferences.monthlyKm <= 0
     || (preferences.monthlyServiceBudgetRupees !== undefined
