@@ -35,7 +35,7 @@ describe("community client", () => {
 
   it("falls back to legacy post fields until the structured-review migration is installed", async () => {
     let calls = 0;
-    const fetchMock = vi.fn(async (_input: RequestInfo | URL) => {
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => {
       calls += 1;
       if (calls === 1) return new Response(JSON.stringify({ code: "PGRST204", message: "review_pros missing" }), {
         status: 400, headers: { "content-type": "application/json" },
@@ -64,7 +64,7 @@ describe("community client", () => {
 
   it("still publishes ordinary owner notes to a database without review columns", async () => {
     let calls = 0;
-    const fetchMock = vi.fn(async (_input: RequestInfo | URL) => {
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => {
       calls += 1;
       if (calls === 1) return new Response(JSON.stringify({ code: "PGRST204", message: "review_pros missing" }), {
         status: 400, headers: { "content-type": "application/json" },
