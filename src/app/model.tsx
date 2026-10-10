@@ -80,16 +80,6 @@ export const destinations = [
   { id: "compare", label: "Compare", icon: Scale },
 ] as const;
 
-export const adminModeratorEmails = [
-  "piyushdtu23@gmail.com",
-  "priyansht1999@gmail.com",
-  "shauryashivam38@gmail.com",
-  "hemangdtu@gmail.com",
-] as const;
-
-export const isAdminModeratorEmail = (email: string): boolean =>
-  adminModeratorEmails.includes(email.toLowerCase() as (typeof adminModeratorEmails)[number]);
-
 // A Pit Stop collection is addressed by a fragment on the Pit Stop page: /pit-stop#pit-stop-builds.
 export const pitStopCollectionId = (category: PitStopClip["category"]) => `pit-stop-${category.toLowerCase()}`;
 
@@ -218,7 +208,11 @@ export const firstVariantForModel = (brand: string, model: string) => variantsFo
 
 export const modelDetailsFor = (brand: string, model: string) => optionForModel(brand, model);
 
-export const stateForCity = (city: string): PriceState | "" => cityStateMap[city.trim()] ?? "";
+// Own properties only: a city called "__proto__" or "constructor" must not find anything on Object.prototype.
+export const stateForCity = (city: string): PriceState | "" => {
+  const name = city.trim();
+  return Object.hasOwn(cityStateMap, name) ? cityStateMap[name] : "";
+};
 
 export const priceSourceFor = (state: string, _status: ShortlistItem["status"]) =>
   `Example price only; confirm a dealer quote in ${state || defaultPriceState}`;

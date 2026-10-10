@@ -2,7 +2,6 @@
 import { SignInButton, SignUpButton, UserButton, useClerk, useUser } from "@clerk/react";
 import { LogOut } from "lucide-react";
 import { forgetVisitorData } from "../visitor";
-import { isAdminModeratorEmail } from "./model";
 import { redirectsFor, returnAddress } from "./signInReturn";
 
 // Where Clerk sends the visitor after signing in: the page they asked for, or the one they are on.
@@ -13,7 +12,9 @@ export const ClerkAccountPanel = ({ savedCount }: { savedCount: number }) => {
   const { isLoaded, isSignedIn, user } = useUser();
   const email = user?.primaryEmailAddress?.emailAddress ?? "";
   const metadataRole = typeof user?.publicMetadata?.role === "string" ? user.publicMetadata.role : "";
-  const role = metadataRole === "moderator" || (email && isAdminModeratorEmail(email)) ? "Moderator" : "User";
+  // A label only. Moderator powers live in the database (community_moderators), not here, and only the
+  // sign-in provider's backend can set this metadata.
+  const role = metadataRole === "moderator" ? "Moderator" : "User";
 
   if (!isLoaded) {
     return <p>Loading Clerk sign-in…</p>;

@@ -2,5 +2,5 @@
 // The app itself lives in src/app.
 export { App } from "./app/ClerkApp";
 export { OtofolksApp } from "./app/OtofolksApp";
-export { isAdminModeratorEmail, priceForModel } from "./app/model";
+export { priceForModel } from "./app/model";
 export { buildTopPitStopReels, filterPitStopClipsByCategory } from "./pitstop";
