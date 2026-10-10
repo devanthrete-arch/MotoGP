@@ -1,5 +1,6 @@
 import { verifiedComparisonFor } from "../comparisonCatalog";
 import { modelPriceOptions } from "../app/model";
+import { indiaLineup, type LineupEntry, type LineupKind, type LineupShape } from "./indiaLineup";
 
 export type CatalogueVariant = {
   id: string;
@@ -15,6 +16,10 @@ export type CatalogueModel = {
   aliases: readonly string[];
   variants: readonly CatalogueVariant[];
   generationStatus: "manual";
+  kind?: LineupKind;
+  shape?: LineupShape;
+  lineupSource?: LineupEntry["source"];
+  status?: LineupEntry["status"];
 };
 
 const modelAliases: Record<string, readonly string[]> = {
@@ -49,6 +54,17 @@ for (const entry of verifiedCatalogueEntries) {
       name: entry.variant,
       source: entry.source,
     }],
+  });
+}
+
+for (const entry of indiaLineup) {
+  const key = `${entry.brand}|${entry.model}`;
+  const id = slug(key);
+  const existing = modelMap.get(key);
+  modelMap.set(key, {
+    id, brand: entry.brand, name: entry.model, aliases: existing?.aliases ?? modelAliases[key] ?? [],
+    variants: existing?.variants ?? [], generationStatus: "manual", kind: entry.kind, shape: entry.shape,
+    lineupSource: entry.source, status: entry.status,
   });
 }
 

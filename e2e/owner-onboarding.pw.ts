@@ -1,22 +1,24 @@
 import { expect, test } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-test("owner setup offers catalogue and manual two-wheeler paths without leaving the app", async ({ page }) => {
+test("owner setup offers manufacturer-backed car and two-wheeler catalogues", async ({ page }) => {
   await page.goto("/owner/onboarding");
   await expect(page.getByRole("heading", { name: "Add your vehicle" })).toBeVisible();
   expect((await new AxeBuilder({ page }).include(".owner-onboarding").analyze()).violations).toEqual([]);
   await page.getByRole("button", { name: "Car", exact: true }).click();
   await page.getByLabel("Make").selectOption({ label: "Tata" });
-  await expect(page.getByLabel("Model")).toHaveValue("Nexon");
+  await page.getByLabel("Model").selectOption({ label: "Nexon" });
   await expect(page.getByLabel("Variant")).toHaveValue("Smart Petrol MT");
   await expect(page.getByRole("link", { name: /Manufacturer source: Tata Motors/ })).toHaveAttribute("href", /cars\.tatamotors\.com/);
-  await expect(page.locator(".owner-onboarding__note")).toContainText("generation coverage are still being verified");
   await page.getByRole("button", { name: "My vehicle is not listed" }).click();
   await page.getByLabel("Make").fill("Honda");
   await page.getByLabel("Model").fill("City");
   await page.getByRole("button", { name: "Two-wheeler", exact: true }).click();
-  await expect(page.getByText("Two-wheeler catalogue is coming later.")).toBeVisible();
+  await page.getByLabel("Make").selectOption({ label: "Honda" });
+  await page.getByLabel("Model").selectOption({ label: "Activa110" });
+  await expect(page.getByRole("link", { name: /Manufacturer source: Honda India/ })).toHaveAttribute("href", /honda2wheelersindia\.com/);
   expect((await new AxeBuilder({ page }).include(".owner-onboarding").analyze()).violations).toEqual([]);
+  await page.getByRole("button", { name: "My vehicle is not listed" }).click();
   await page.getByLabel("Make").fill("Honda");
   await page.getByLabel("Model").fill("Activa 6G");
   await page.getByLabel("Manufacture year (optional)").fill("2022");

@@ -7,7 +7,7 @@ import * as THREE from "three";
 import { RotateCcw, RotateCw } from "lucide-react";
 import { IconButton } from "../ui/Button";
 
-type Props = { paint: string; shape: "crossover" | "motorcycle" };
+type Props = { paint: string; shape: "crossover" | "motorcycle" | "scooter" };
 type BoundaryProps = { children: ReactNode; fallback: ReactNode };
 type BoundaryState = { failed: boolean };
 
@@ -101,18 +101,18 @@ function Crossover({ paint, rotation }: { paint: string; rotation: number }) {
   </group>;
 }
 
-function BikeWheel({ x, paint }: { x: number; paint: string }) {
+function BikeWheel({ x, paint, radius = 0.39 }: { x: number; paint: string; radius?: number }) {
   return <group position={[x, 0.48, 0]}>
     <mesh rotation={[Math.PI / 2, 0, 0]}>
-      <cylinderGeometry args={[0.39, 0.39, 0.11, 28]} />
+      <cylinderGeometry args={[radius, radius, 0.11, 28]} />
       <meshStandardMaterial color="#222629" roughness={0.84} />
     </mesh>
     <mesh>
-      <torusGeometry args={[0.29, 0.025, 7, 24]} />
+      <torusGeometry args={[radius * 0.74, 0.025, 7, 24]} />
       <meshStandardMaterial color="#b7bab5" metalness={0.82} roughness={0.3} />
     </mesh>
     <mesh rotation={[Math.PI / 2, 0, 0]}>
-      <cylinderGeometry args={[0.09, 0.09, 0.15, 16]} />
+      <cylinderGeometry args={[radius * 0.23, radius * 0.23, 0.15, 16]} />
       <meshStandardMaterial color={paint} metalness={0.62} roughness={0.32} />
     </mesh>
   </group>;
@@ -166,6 +166,38 @@ function Motorcycle({ paint, rotation }: { paint: string; rotation: number }) {
   </group>;
 }
 
+function Scooter({ paint, rotation }: { paint: string; rotation: number }) {
+  return <group rotation={[0, rotation, 0]}>
+    <BikeWheel x={-0.78} paint={paint} radius={0.31} />
+    <BikeWheel x={0.78} paint={paint} radius={0.31} />
+    <FrameTube from={[0.5, 0.55]} to={[0.69, 1.38]} radius={0.055} />
+    <FrameTube from={[0.69, 1.38]} to={[0.91, 1.43]} radius={0.035} />
+    <mesh position={[-0.1, 0.76, 0]}>
+      <boxGeometry args={[1.13, 0.19, 0.43]} />
+      <meshPhysicalMaterial color={paint} metalness={0.48} roughness={0.34} clearcoat={0.75} />
+    </mesh>
+    <mesh position={[0.51, 1.04, 0]} rotation={[0, 0, -0.24]}>
+      <capsuleGeometry args={[0.2, 0.52, 4, 10]} />
+      <meshPhysicalMaterial color={paint} metalness={0.48} roughness={0.34} clearcoat={0.75} />
+    </mesh>
+    <mesh position={[-0.31, 1.03, 0]} rotation={[0, 0, -Math.PI / 2]}>
+      <capsuleGeometry args={[0.12, 0.5, 4, 10]} />
+      <meshStandardMaterial color="#20282a" roughness={0.52} />
+    </mesh>
+    <mesh position={[0.7, 1.18, 0]}>
+      <boxGeometry args={[0.13, 0.16, 0.31]} />
+      <meshStandardMaterial color="#e8eadf" emissive="#d6d9c7" emissiveIntensity={0.18} />
+    </mesh>
+    <mesh position={[-0.81, 0.96, 0]}>
+      <boxGeometry args={[0.08, 0.1, 0.2]} />
+      <meshStandardMaterial color="#8f3231" emissive="#511817" emissiveIntensity={0.12} />
+    </mesh>
+    {[-0.19, 0.19].map(z => <mesh key={z} position={[0.91, 1.46, z]}>
+      <boxGeometry args={[0.27, 0.045, 0.045]} /><meshStandardMaterial color="#8b9290" metalness={0.64} roughness={0.32} />
+    </mesh>)}
+  </group>;
+}
+
 function Scene({ paint, rotation, shape, controls }: { paint: string; rotation: number; shape: Props["shape"]; controls: MutableRefObject<OrbitControlsType | null> }) {
   const { camera, gl, invalidate } = useThree();
   useEffect(() => {
@@ -195,25 +227,22 @@ function Scene({ paint, rotation, shape, controls }: { paint: string; rotation: 
       <circleGeometry args={[2.25, 48]} />
       <meshBasicMaterial color="#40494c" transparent opacity={0.15} depthWrite={false} />
     </mesh>
-    {shape === "motorcycle" ? <Motorcycle paint={paint} rotation={rotation} /> : <Crossover paint={paint} rotation={rotation} />}
+    {shape === "motorcycle" ? <Motorcycle paint={paint} rotation={rotation} />
+      : shape === "scooter" ? <Scooter paint={paint} rotation={rotation} /> : <Crossover paint={paint} rotation={rotation} />}
   </>;
 }
 
 export default function VehicleViewer({ paint, shape }: Props) {
   const [rotation, setRotation] = useState(0);
   const controls = useRef<OrbitControlsType | null>(null);
-  const poster = shape === "motorcycle"
-    ? <div className="vehicle-viewer__fallback-bike" role="img" aria-label="Generic motorcycle illustration, shown for illustration">
-      <span /><span /><i />
-    </div>
-    : <img className="landing-stage__poster" src="/vehicles/compact-crossover-poster.webp"
-      alt="Generic compact crossover concept, shown for illustration" width="1439" height="810" />;
-  const label = shape === "motorcycle" ? "motorcycle" : "compact crossover";
+  const poster = <div className={`vehicle-viewer__fallback vehicle-viewer__fallback--${shape}`} role="img"
+    aria-label={`Original unbranded ${shape} concept illustration`}><span /><span /><i /></div>;
+  const label = shape === "crossover" ? "car" : shape;
 
   return <div className="vehicle-viewer" data-shape={shape} data-rotation={rotation.toFixed(3)}>
     <ViewerBoundary fallback={poster}>
       <Canvas key={shape} className="vehicle-viewer__canvas" role="img" aria-label={`Interactive 3D generic ${label} concept`}
-        dpr={[1, 1.5]} frameloop="demand" camera={{ position: [4.6, 2.35, 5.9], fov: 35 }}
+        dpr={[1, 1.5]} frameloop="demand" camera={{ position: shape === "crossover" ? [4.6, 2.35, 5.9] : [3.8, 2.25, 4.8], fov: 35 }}
         gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}>
         <Scene paint={paint} rotation={rotation} shape={shape} controls={controls} />
       </Canvas>
@@ -223,6 +252,6 @@ export default function VehicleViewer({ paint, shape }: Props) {
       <IconButton label="Rotate vehicle right" onClick={() => setRotation(value => value + Math.PI / 8)}><RotateCw size={16} aria-hidden="true" /></IconButton>
       <IconButton label="Reset vehicle view" onClick={() => { setRotation(0); controls.current?.reset(); }}><RotateCcw size={16} aria-hidden="true" /></IconButton>
     </div>
-    <p className="vehicle-viewer__caption">Illustrative {shape} shape · not a specific make or model</p>
+    <p className="vehicle-viewer__caption">Generic {shape} shape · not a specific make or model</p>
   </div>;
 }

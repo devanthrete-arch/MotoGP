@@ -26,10 +26,19 @@
   }
   .landing-stage[data-ready] { --ring: var(--color-accent); }
   .landing-stage__visual { position: relative; inline-size: min(100%, 920px); aspect-ratio: 16 / 9; overflow: hidden; background: var(--color-surface); }
-  .landing-stage__poster { display: block; inline-size: 100%; block-size: 100%; object-fit: cover; object-position: center 54%; }
+  .landing-stage__visual--interactive { block-size: auto; aspect-ratio: auto; overflow: visible; background: transparent; }
+  .landing-stage__placeholder { position: absolute; inset: 0; display: grid; place-items: center; overflow: hidden; background: #e9edeb; }
+  .landing-stage__placeholder-body { position: absolute; inset-inline-start: 22%; inset-block-start: 42%; inline-size: 56%; block-size: 26%; border-radius: 48% 28% 16% 16%; background: #0f6568; box-shadow: inset 0 -8px 0 #124d4f; }
+  .landing-stage__placeholder-window { position: absolute; inset-inline-start: 39%; inset-block-start: 31%; inline-size: 28%; block-size: 17%; clip-path: polygon(12% 100%, 35% 0, 78% 0, 100% 100%); background: #28383a; }
+  .landing-stage__placeholder-wheel { position: absolute; inset-block-start: 62%; inline-size: clamp(32px, 5vw, 54px); aspect-ratio: 1; border: 8px solid #293336; border-radius: 50%; background: #b9c0bd; }
+  .landing-stage__placeholder-wheel--left { inset-inline-start: 30%; }
+  .landing-stage__placeholder-wheel--right { inset-inline-end: 30%; }
+  .landing-stage__placeholder--motorcycle .landing-stage__placeholder-body { inset-inline-start: 39%; inset-block-start: 45%; inline-size: 23%; block-size: 11%; border-radius: 45% 35% 22% 26%; }
+  .landing-stage__placeholder--motorcycle .landing-stage__placeholder-window { inset-inline-start: 45%; inset-block-start: 39%; inline-size: 12%; block-size: 8%; clip-path: none; border-radius: 50%; }
+  .landing-stage__placeholder--motorcycle .landing-stage__placeholder-wheel { inset-block-start: 58%; inline-size: clamp(36px, 5.5vw, 60px); background: transparent; }
   .landing-stage__controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; min-block-size: 40px; }
   .landing-stage__shapes { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
-  .landing-stage__swatches { display: flex; align-items: center; gap: 6px; }
+  .landing-catalogue-note { max-inline-size: 72ch; margin: 10px auto 0; text-align: center; }
   .landing-stage__swatch {
     inline-size: 34px; block-size: 34px; flex: 0 0 34px; padding: 5px; border: 1px solid var(--color-border); border-radius: 50%;
     background: var(--glass-fill); box-shadow: inset 0 0 0 6px var(--swatch); cursor: pointer;
@@ -58,16 +67,23 @@
   .vehicle-viewer__canvas { display: block; inline-size: 100%; block-size: 100%; touch-action: pan-y; }
   .vehicle-viewer__actions { position: absolute; z-index: 1; inset-block-start: 10px; inset-inline-end: 10px; display: flex; gap: 6px; }
   .vehicle-viewer__caption { position: absolute; inset-inline-start: 12px; inset-block-end: 8px; margin: 0; color: var(--color-text-secondary); font-size: 11px; line-height: 1.3; }
-  .vehicle-viewer__fallback-bike {
-    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; overflow: hidden;
-    background: radial-gradient(ellipse at 50% 78%, var(--glass-border), transparent 50%), var(--color-surface);
-  }
-  .vehicle-viewer__fallback-bike > span { inline-size: clamp(62px, 12vw, 130px); aspect-ratio: 1; border: clamp(5px, 1vw, 9px) solid #333b3d; border-radius: 50%; }
-  .vehicle-viewer__fallback-bike > span + span { margin-inline-start: clamp(42px, 9vw, 96px); }
-  .vehicle-viewer__fallback-bike > i {
-    position: absolute; inset-inline-start: 50%; inset-block-start: 47%; inline-size: 27%; block-size: 9%; transform: translateX(-50%) rotate(-8deg);
-    border-radius: 50% 16% 18% 24%; background: var(--color-accent); box-shadow: 0 -15px 0 -5px #353c3e;
-  }
+  .vehicle-garage3d { display: grid; gap: 8px; inline-size: 100%; }
+  .vehicle-garage3d__scene { position: relative; inline-size: 100%; aspect-ratio: 16 / 9; overflow: hidden; background: var(--color-surface); }
+  .vehicle-garage3d__controls { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "catalogue paint" "note note"; align-items: end; gap: 8px 14px; }
+  .vehicle-garage3d__catalogue { display: grid; grid-area: catalogue; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .vehicle-garage3d__catalogue .ui-field { min-inline-size: 0; padding: 0; }
+  .vehicle-garage3d__catalogue .ui-field__label { font-size: 11px; }
+  .vehicle-garage3d__catalogue .ui-field__control { min-block-size: 36px; padding-inline: 8px 26px; font-size: 12px; }
+  .vehicle-garage3d__disclaimer { grid-area: note; color: var(--color-text-muted); font-size: 11px; text-align: start; }
+  .vehicle-garage3d__paint { display: flex; grid-area: paint; gap: 6px; }
+  .vehicle-viewer__fallback { position: absolute; inset: 0; display: grid; place-items: center; background: var(--color-surface); }
+  .vehicle-viewer__fallback > span:first-child { inline-size: 42%; block-size: 22%; border-radius: 42% 28% 18% 18%; background: #0f6568; }
+  .vehicle-viewer__fallback > span:nth-child(2) { inline-size: 18%; block-size: 12%; margin-block-start: -17%; background: #28383a; }
+  .vehicle-viewer__fallback > i { inline-size: 12%; aspect-ratio: 1; margin-block-start: -9%; border: 7px solid #293336; border-radius: 50%; box-shadow: 100px 0 0 -7px #b9c0bd, 100px 0 0 0 #293336; }
+  .vehicle-viewer__fallback:is(.vehicle-viewer__fallback--motorcycle, .vehicle-viewer__fallback--scooter) > span:first-child { inline-size: 28%; block-size: 10%; }
+  .vehicle-viewer__fallback:is(.vehicle-viewer__fallback--motorcycle, .vehicle-viewer__fallback--scooter) > span:nth-child(2) { inline-size: 12%; block-size: 7%; margin-block-start: -10%; }
+  .vehicle-viewer__fallback:is(.vehicle-viewer__fallback--motorcycle, .vehicle-viewer__fallback--scooter) > i { inline-size: 11%; margin-block-start: -1%; box-shadow: 82px 0 0 -7px #b9c0bd, 82px 0 0 0 #293336; }
+  .vehicle-viewer__fallback--scooter > span:first-child { border-radius: 14px 22px 8px 8px; }
   .landing-go { inline-size: min(100%, 320px); min-height: 52px; font-size: 16px; }
 
   .landing-paths { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; inline-size: min(100%, 440px); }
@@ -116,6 +132,8 @@
     .owner-onboarding__details { grid-template-columns: minmax(0, 1fr); }
   }
   @media (max-width: 600px) {
+    .vehicle-garage3d__controls { grid-template-columns: minmax(0, 1fr); grid-template-areas: "catalogue" "paint" "note"; }
+    .vehicle-garage3d__paint .landing-stage__swatch { inline-size: 32px; block-size: 32px; flex-basis: 32px; }
     .landing-stage :is(.ui-field__hint, .ui-field__error) { min-height: 2.8em; }
   }
 

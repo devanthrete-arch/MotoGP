@@ -28,14 +28,14 @@ for (const viewport of [
     });
     await openApp(page, false);
 
-    const poster = page.getByRole("img", { name: /Generic compact crossover concept/ });
+    const poster = page.getByRole("img", { name: /Original unbranded car concept/ });
     await expect(poster).toBeVisible();
-    await expect(poster).toHaveJSProperty("complete", true);
-    expect(scripts.some(url => /VehicleViewer|three|react-three-fiber/i.test(url))).toBe(false);
+    await expect(poster).toHaveClass(/landing-stage__placeholder/);
+    expect(scripts.some(url => /VehicleGarage3D|VehicleViewer|three|react-three-fiber/i.test(url))).toBe(false);
     await expectNoOverflow(page);
 
     await page.getByRole("button", { name: "View in 3D" }).click();
-    const canvas = page.getByRole("img", { name: "Interactive 3D generic compact crossover concept" });
+    const canvas = page.getByRole("img", { name: "Interactive 3D generic car concept" });
     await expect(canvas).toBeVisible();
     const renderedCanvas = canvas.locator("canvas");
     await expect(renderedCanvas).toBeVisible();
@@ -43,7 +43,7 @@ for (const viewport of [
       const target = element as HTMLCanvasElement;
       return target.width > 0 && target.height > 0 && target.getBoundingClientRect().width > 0;
     })).toBe(true);
-    await expect.poll(() => scripts.some(url => /VehicleViewer|three|react-three-fiber/i.test(url))).toBe(true);
+    await expect.poll(() => scripts.some(url => /VehicleGarage3D|VehicleViewer|three|react-three-fiber/i.test(url))).toBe(true);
 
     await page.getByRole("button", { name: "Pearl white" }).click();
     await expect(page.getByRole("button", { name: "Pearl white" })).toHaveAttribute("aria-pressed", "true");
@@ -54,12 +54,20 @@ for (const viewport of [
     await renderedCanvas.screenshot({ path: testInfo.outputPath(`vehicle-canvas-${viewport.name}.png`) });
     await page.screenshot({ path: testInfo.outputPath(`vehicle-stage-${viewport.name}.png`), fullPage: true });
 
-    await page.getByRole("group", { name: "Illustrative vehicle type" }).getByRole("button", { name: "Two-wheeler" }).click();
+    await page.getByLabel("Make").selectOption({ label: "Royal Enfield" });
+    await expect(page.getByLabel("Model")).toHaveValue("Bear 650");
     const bikeCanvas = page.getByRole("img", { name: "Interactive 3D generic motorcycle concept" }).locator("canvas");
     await expect(bikeCanvas).toBeVisible();
-    await expect(page.getByText("Illustrative motorcycle shape · not a specific make or model")).toBeVisible();
+    await expect(page.getByText("Generic motorcycle shape · not a specific make or model")).toBeVisible();
     await expectRenderedPixels(bikeCanvas);
     await bikeCanvas.screenshot({ path: testInfo.outputPath(`motorcycle-canvas-${viewport.name}.png`) });
+    await page.getByLabel("Make").selectOption({ label: "Hero" });
+    await page.getByLabel("Model").selectOption({ label: "Xoom 110" });
+    const scooterCanvas = page.getByRole("img", { name: "Interactive 3D generic scooter concept" }).locator("canvas");
+    await expect(scooterCanvas).toBeVisible();
+    await expect(page.getByText("Generic scooter shape · not a specific make or model")).toBeVisible();
+    await expectRenderedPixels(scooterCanvas);
+    await scooterCanvas.screenshot({ path: testInfo.outputPath(`scooter-canvas-${viewport.name}.png`) });
     expect(pageErrors(page)).toEqual([]);
   });
 }
