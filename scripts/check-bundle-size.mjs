@@ -12,10 +12,12 @@ import { gzipSync } from "node:zlib";
 // client (about 25 kB, a candidate for loading on demand) and the shared state for every view.
 // PR5 adds a 2.4 kB gzip owner-onboarding chunk loaded on demand; route metadata adds <0.2 kB upfront.
 // PR6/7 add the Garage editor and comparison catalogue. PR8's 3D runtime stays behind user action.
-// PR9 adds 183 sourced lineup names and generic car/motorcycle/scooter controls: total JS 452 kB
-// and CSS 15 kB are bounded allowances for that on-demand catalogue and its viewport controls.
-// The Markdown reader and its three article bodies are lazy chunks; the added guide styles join global CSS.
-export const budgets = { initialJs: 140_000, totalJs: 452_000, css: 15_000 };
+// PR9 adds 183 sourced lineup names and generic car/motorcycle/scooter controls. The Stitch-matched
+// dashboard, garage, feed, comparison and Pit Stop add on-demand UI and route CSS. CSS covers every
+// route stylesheet in dist, including the studio-lit garage scene. First-load JS stays at 140 kB;
+// total budgets leave under 1% headroom.
+// The Markdown reader and its three article bodies are lazy chunks; guide styles join global CSS.
+export const budgets = { initialJs: 140_000, totalJs: 465_000, css: 27_500 };
 
 /** Asset file names index.html loads up front: its scripts, module preloads and stylesheets. */
 export function initialAssets(indexHtml) {

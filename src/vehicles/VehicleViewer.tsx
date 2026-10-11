@@ -1,13 +1,13 @@
 import { Component, useEffect, useRef, useState } from "react";
 import type { ErrorInfo, MutableRefObject, ReactNode } from "react";
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import type { OrbitControls as OrbitControlsType } from "three/addons/controls/OrbitControls.js";
 import * as THREE from "three";
 import { RotateCcw, RotateCw } from "lucide-react";
 import { IconButton } from "../ui/Button";
 
-type Props = { paint: string; shape: "crossover" | "motorcycle" | "scooter" };
+type Props = { paint: string; shape: "crossover" | "motorcycle" | "scooter"; autoRotate?: boolean; showControls?: boolean };
 type BoundaryProps = { children: ReactNode; fallback: ReactNode };
 type BoundaryState = { failed: boolean };
 
@@ -198,11 +198,21 @@ function Scooter({ paint, rotation }: { paint: string; rotation: number }) {
   </group>;
 }
 
-function Scene({ paint, rotation, shape, controls }: { paint: string; rotation: number; shape: Props["shape"]; controls: MutableRefObject<OrbitControlsType | null> }) {
+function Scene({ paint, rotation, shape, controls, autoRotate = false }: { paint: string; rotation: number; shape: Props["shape"]; controls: MutableRefObject<OrbitControlsType | null>; autoRotate?: boolean }) {
   const { camera, gl, invalidate } = useThree();
+  const rotating = useRef(autoRotate);
+  useFrame((_, delta) => {
+    const orbit = controls.current;
+    if (orbit && rotating.current) {
+      orbit.autoRotate = true;
+      orbit.autoRotateSpeed = 0.55;
+      orbit.update(delta);
+    }
+  });
   useEffect(() => {
     const orbit = new OrbitControls(camera, gl.domElement);
     orbit.enableDamping = false;
+    orbit.autoRotate = autoRotate;
     orbit.enablePan = false;
     orbit.minDistance = 4.3;
     orbit.maxDistance = 8.5;
@@ -211,28 +221,36 @@ function Scene({ paint, rotation, shape, controls }: { paint: string; rotation: 
     orbit.target.set(0, 0.92, 0);
     orbit.update();
     const requestFrame = () => invalidate();
+    const pauseRotation = () => { rotating.current = false; orbit.autoRotate = false; };
     orbit.addEventListener("change", requestFrame);
+    orbit.addEventListener("start", pauseRotation);
     controls.current = orbit;
     return () => {
       orbit.removeEventListener("change", requestFrame);
+      orbit.removeEventListener("start", pauseRotation);
       orbit.dispose();
       controls.current = null;
     };
-  }, [camera, controls, gl, invalidate]);
+  }, [autoRotate, camera, controls, gl, invalidate]);
   return <>
-    <hemisphereLight args={["#ffffff", "#697274", 2.1]} />
-    <directionalLight position={[3, 6, 5]} intensity={2.2} />
-    <directionalLight position={[-4, 3, -3]} intensity={1.1} color="#d7e5df" />
+    <hemisphereLight args={["#edf5ff", "#151d20", 1.25]} />
+    <spotLight position={[1, 7, 4]} angle={0.72} penumbra={0.8} intensity={70} color="#f6fbff" castShadow />
+    <directionalLight position={[-4, 3, -3]} intensity={1.6} color="#a3c5b6" />
+    <pointLight position={[0, 0.22, 1.6]} intensity={1.8} distance={4.5} color="#35d8a0" />
+    <mesh position={[0, -0.08, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+      <planeGeometry args={[200, 200]} />
+      <shadowMaterial transparent opacity={0.36} />
+    </mesh>
     <mesh position={[0, 0.035, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-      <circleGeometry args={[2.25, 48]} />
-      <meshBasicMaterial color="#40494c" transparent opacity={0.15} depthWrite={false} />
+      <circleGeometry args={[2.35, 64]} />
+      <meshBasicMaterial color="#39d8a0" transparent opacity={0.12} depthWrite={false} />
     </mesh>
     {shape === "motorcycle" ? <Motorcycle paint={paint} rotation={rotation} />
       : shape === "scooter" ? <Scooter paint={paint} rotation={rotation} /> : <Crossover paint={paint} rotation={rotation} />}
   </>;
 }
 
-export default function VehicleViewer({ paint, shape }: Props) {
+export default function VehicleViewer({ paint, shape, autoRotate = false, showControls = true }: Props) {
   const [rotation, setRotation] = useState(0);
   const controls = useRef<OrbitControlsType | null>(null);
   const poster = <div className={`vehicle-viewer__fallback vehicle-viewer__fallback--${shape}`} role="img"
@@ -242,16 +260,16 @@ export default function VehicleViewer({ paint, shape }: Props) {
   return <div className="vehicle-viewer" data-shape={shape} data-rotation={rotation.toFixed(3)}>
     <ViewerBoundary fallback={poster}>
       <Canvas key={shape} className="vehicle-viewer__canvas" role="img" aria-label={`Interactive 3D generic ${label} concept`}
-        dpr={[1, 1.5]} frameloop="demand" camera={{ position: shape === "crossover" ? [4.6, 2.35, 5.9] : [3.8, 2.25, 4.8], fov: 35 }}
-        gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}>
-        <Scene paint={paint} rotation={rotation} shape={shape} controls={controls} />
+        dpr={[1, 1.5]} frameloop={autoRotate ? "always" : "demand"} camera={{ position: shape === "crossover" ? [3.8, 2.15, 5.1] : [3.2, 2.05, 4.2], fov: 35 }}
+        shadows={{ type: THREE.PCFSoftShadowMap }} gl={{ alpha: true, antialias: true, powerPreference: "low-power" }}>
+        <Scene paint={paint} rotation={rotation} shape={shape} controls={controls} autoRotate={autoRotate} />
       </Canvas>
     </ViewerBoundary>
-    <div className="vehicle-viewer__actions" aria-label="Vehicle view controls">
+    {showControls ? <div className="vehicle-viewer__actions" aria-label="Vehicle view controls">
       <IconButton label="Rotate vehicle left" onClick={() => setRotation(value => value - Math.PI / 8)}><RotateCcw size={16} aria-hidden="true" /></IconButton>
       <IconButton label="Rotate vehicle right" onClick={() => setRotation(value => value + Math.PI / 8)}><RotateCw size={16} aria-hidden="true" /></IconButton>
       <IconButton label="Reset vehicle view" onClick={() => { setRotation(0); controls.current?.reset(); }}><RotateCcw size={16} aria-hidden="true" /></IconButton>
-    </div>
-    <p className="vehicle-viewer__caption">Generic {shape} shape · not a specific make or model</p>
+    </div> : null}
+    {showControls ? <p className="vehicle-viewer__caption">Generic {shape} shape · not a specific make or model</p> : null}
   </div>;
 }
