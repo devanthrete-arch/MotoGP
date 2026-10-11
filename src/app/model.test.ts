@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { catalogueVehicleId, memberViews, pathForLegacyHash, viewFromPath, viewPaths, viewTitles } from "./model";
+import { catalogueVehicleId, cityStateMap, memberViews, pathForLegacyHash, stateForCity, viewFromPath, viewPaths, viewTitles } from "./model";
 
 describe("viewFromPath", () => {
   it("finds the view for every path in the table", () => {
@@ -28,6 +28,21 @@ describe("viewFromPath", () => {
 
 it("builds stable catalogue identifiers for picker selections", () => {
   expect(catalogueVehicleId("Maruti Suzuki", "Grand Vitara")).toBe("car-maruti-suzuki-grand-vitara");
+});
+
+describe("stateForCity", () => {
+  it("finds the state of a known city, ignoring surrounding spaces", () => {
+    const [city, state] = Object.entries(cityStateMap)[0];
+    expect(stateForCity(city)).toBe(state);
+    expect(stateForCity(`  ${city} `)).toBe(state);
+  });
+
+  it("finds nothing for a name that only exists on Object.prototype", () => {
+    // A shared post can carry any text as its city. These used to come back as objects and crash Compare.
+    for (const city of ["__proto__", "constructor", "toString", "hasOwnProperty", "valueOf", "", "Nowhereville"]) {
+      expect(stateForCity(city), city).toBe("");
+    }
+  });
 });
 
 describe("memberViews", () => {
