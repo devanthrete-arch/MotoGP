@@ -1,65 +1,65 @@
-/* Otofolks design tokens — "Precision".
-   Ivory gradient base, blue-slate secondary, indicator-amber accent, glass surfaces.
+/* Otofolks design tokens — "Road companion".
+   Cool mist surfaces, forest-green controls and a restrained emerald highlight.
    Light is the default. The dark values are written twice on purpose: once for the system
    setting, once for an explicit choice; src/styles/tokens.test.ts fails if the two drift. */
 :root {
   /* palette stops */
   --ivory-0: #ffffff;
-  --ivory-1: #faf8f3;
-  --ivory-2: #eeebe2;
-  --slate-0: #3d4962;
-  --slate-1: #2a3449;
-  --slate-2: #1b2231;
+  --ivory-1: #f5f6fa;
+  --ivory-2: #edf0f5;
+  --slate-0: #171a19;
+  --slate-1: #111413;
+  --slate-2: #0d0f0e;
 
   /* page */
-  --color-bg: #faf8f3;
+  --color-bg: #f5f6fa;
   --gradient-page:
-    radial-gradient(60vmax 60vmax at 108% -12%, rgba(74, 88, 114, 0.16), transparent 62%),
-    radial-gradient(52vmax 52vmax at -14% 112%, rgba(184, 110, 0, 0.08), transparent 62%),
+    radial-gradient(60vmax 60vmax at 108% -12%, rgba(40, 112, 82, 0.06), transparent 62%),
+    radial-gradient(52vmax 52vmax at -14% 112%, rgba(92, 112, 153, 0.045), transparent 62%),
     linear-gradient(160deg, var(--ivory-0) 0%, var(--ivory-1) 45%, var(--ivory-2) 100%);
 
   /* surfaces */
   --color-surface: #ffffff;
   --color-surface-raised: #ffffff;
-  --color-surface-sunken: #f3f0e8;
-  --color-header: #222b3d;
+  --color-surface-sunken: #eef0f4;
+  --color-header: #0b4b38;
   --glass-fill: linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(255, 255, 255, 0.52));
   --glass-fill-bar: rgba(255, 255, 255, 0.74);
   --glass-border: rgba(255, 255, 255, 0.9);
-  --glass-outline: rgba(74, 88, 114, 0.16);
+  --glass-outline: rgba(34, 57, 46, 0.12);
   --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.95);
-  --glass-shadow: 0 12px 30px rgba(34, 43, 61, 0.1);
+  --glass-shadow: 0 12px 30px rgba(20, 35, 28, 0.08);
   --glass-blur: 16px;
   /* the pool of light on the landing stage; only label text may sit in it */
   --stage-light: rgba(255, 255, 255, 0.9);
 
   /* text */
-  --color-text: #222b3d;
-  --color-text-secondary: #3b4660;
-  --color-text-muted: #4a5872;
-  --color-text-subtle: #7a869c;
+  --color-text: #202522;
+  --color-text-secondary: #48524c;
+  --color-text-muted: #657069;
+  --color-text-subtle: #838d86;
 
   /* lines */
-  --color-border: #ddd8cb;
-  --color-border-strong: #a9a595;
+  --color-border: #e2e5e2;
+  --color-border-strong: #bbc3bd;
 
   /* actions */
-  --color-primary: #222b3d;
-  --gradient-primary: linear-gradient(135deg, #4a5872, #222b3d);
+  --color-primary: #0b4b38;
+  --gradient-primary: linear-gradient(135deg, #14684e, #0b4b38);
   --color-on-primary: #ffffff;
-  --color-primary-text: #2f3b55;
-  --color-primary-soft: rgba(74, 88, 114, 0.1);
+  --color-primary-text: #0b5a40;
+  --color-primary-soft: rgba(16, 110, 75, 0.09);
 
   /* slate feature band: a dark panel with light text in both themes */
-  --gradient-band: linear-gradient(135deg, #4a5872, #222b3d);
+  --gradient-band: linear-gradient(135deg, #17644b, #0b392c);
   --color-on-band: #ffffff;
 
   /* accent: the fill is too light for small text on ivory, so text has its own value */
-  --color-accent: #b86e00;
-  --color-accent-text: #8a5300;
-  --color-accent-soft: rgba(184, 110, 0, 0.14);
+  --color-accent: #13865d;
+  --color-accent-text: #087148;
+  --color-accent-soft: rgba(19, 134, 93, 0.12);
   /* opaque ground for amber text (chips, pressed filters), so its contrast does not depend on what is behind */
-  --color-accent-surface: #f6ead7;
+  --color-accent-surface: #e3f2eb;
 
   /* status */
   --color-success: #166a3e;
@@ -89,80 +89,80 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --color-bg: #222b3d;
+    --color-bg: #111413;
     --gradient-page:
-      radial-gradient(60vmax 60vmax at 108% -12%, rgba(141, 160, 196, 0.18), transparent 62%),
-      radial-gradient(52vmax 52vmax at -14% 112%, rgba(242, 169, 59, 0.07), transparent 62%),
+      radial-gradient(60vmax 60vmax at 108% -12%, rgba(42, 149, 108, 0.09), transparent 62%),
+      radial-gradient(52vmax 52vmax at -14% 112%, rgba(88, 101, 130, 0.045), transparent 62%),
       linear-gradient(160deg, var(--slate-0) 0%, var(--slate-1) 45%, var(--slate-2) 100%);
-    --color-surface: #2a3449;
-    --color-surface-raised: #323d54;
-    --color-surface-sunken: #1b2231;
-    --color-header: #161c28;
+    --color-surface: #1b1f1d;
+    --color-surface-raised: #232825;
+    --color-surface-sunken: #151816;
+    --color-header: #101311;
     --glass-fill: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05));
-    --glass-fill-bar: rgba(27, 34, 49, 0.78);
+    --glass-fill-bar: rgba(21, 24, 22, 0.92);
     --glass-border: rgba(255, 255, 255, 0.16);
     --glass-outline: rgba(0, 0, 0, 0.28);
     --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.14);
     --glass-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
     --stage-light: rgba(255, 255, 255, 0.08);
-    --color-text: #f3f5f9;
-    --color-text-secondary: #d5dbe6;
-    --color-text-muted: #b8c1d1;
-    --color-text-subtle: #8d98ad;
-    --color-border: #44506a;
-    --color-border-strong: #6d7a95;
-    --color-primary: #f3f5f9;
-    --gradient-primary: linear-gradient(135deg, #ffffff, #e4e1d8);
-    --color-on-primary: #222b3d;
-    --color-primary-text: #c8d6f0;
+    --color-text: #f2f5f2;
+    --color-text-secondary: #c8d0ca;
+    --color-text-muted: #9ba69f;
+    --color-text-subtle: #77817a;
+    --color-border: #303733;
+    --color-border-strong: #4c5750;
+    --color-primary: #0d6849;
+    --gradient-primary: linear-gradient(135deg, #137b55, #0b5a3f);
+    --color-on-primary: #ffffff;
+    --color-primary-text: #66d6a3;
     --color-primary-soft: rgba(255, 255, 255, 0.1);
-    --gradient-band: linear-gradient(135deg, #55668a, #323d54);
+    --gradient-band: linear-gradient(135deg, #164a37, #102c22);
     --color-on-band: #ffffff;
-    --color-accent: #f2a93b;
-    --color-accent-text: #f2a93b;
-    --color-accent-soft: rgba(242, 169, 59, 0.16);
-    --color-accent-surface: #3a2f1f;
-    --color-success: #5fd08f;
+    --color-accent: #36bd83;
+    --color-accent-text: #67d8a5;
+    --color-accent-soft: rgba(54, 189, 131, 0.15);
+    --color-accent-surface: #193328;
+    --color-success: #6bd9a3;
     --color-danger: #ffa8a0;
     color-scheme: dark;
   }
 }
 
 :root[data-theme="dark"] {
-  --color-bg: #222b3d;
+  --color-bg: #111413;
   --gradient-page:
-    radial-gradient(60vmax 60vmax at 108% -12%, rgba(141, 160, 196, 0.18), transparent 62%),
-    radial-gradient(52vmax 52vmax at -14% 112%, rgba(242, 169, 59, 0.07), transparent 62%),
+    radial-gradient(60vmax 60vmax at 108% -12%, rgba(42, 149, 108, 0.09), transparent 62%),
+    radial-gradient(52vmax 52vmax at -14% 112%, rgba(88, 101, 130, 0.045), transparent 62%),
     linear-gradient(160deg, var(--slate-0) 0%, var(--slate-1) 45%, var(--slate-2) 100%);
-  --color-surface: #2a3449;
-  --color-surface-raised: #323d54;
-  --color-surface-sunken: #1b2231;
-  --color-header: #161c28;
+  --color-surface: #1b1f1d;
+  --color-surface-raised: #232825;
+  --color-surface-sunken: #151816;
+  --color-header: #101311;
   --glass-fill: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.05));
-  --glass-fill-bar: rgba(27, 34, 49, 0.78);
+  --glass-fill-bar: rgba(21, 24, 22, 0.92);
   --glass-border: rgba(255, 255, 255, 0.16);
   --glass-outline: rgba(0, 0, 0, 0.28);
   --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.14);
   --glass-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
   --stage-light: rgba(255, 255, 255, 0.08);
-  --color-text: #f3f5f9;
-  --color-text-secondary: #d5dbe6;
-  --color-text-muted: #b8c1d1;
-  --color-text-subtle: #8d98ad;
-  --color-border: #44506a;
-  --color-border-strong: #6d7a95;
-  --color-primary: #f3f5f9;
-  --gradient-primary: linear-gradient(135deg, #ffffff, #e4e1d8);
-  --color-on-primary: #222b3d;
-  --color-primary-text: #c8d6f0;
+  --color-text: #f2f5f2;
+  --color-text-secondary: #c8d0ca;
+  --color-text-muted: #9ba69f;
+  --color-text-subtle: #77817a;
+  --color-border: #303733;
+  --color-border-strong: #4c5750;
+  --color-primary: #0d6849;
+  --gradient-primary: linear-gradient(135deg, #137b55, #0b5a3f);
+  --color-on-primary: #ffffff;
+  --color-primary-text: #66d6a3;
   --color-primary-soft: rgba(255, 255, 255, 0.1);
-  --gradient-band: linear-gradient(135deg, #55668a, #323d54);
+  --gradient-band: linear-gradient(135deg, #164a37, #102c22);
   --color-on-band: #ffffff;
-  --color-accent: #f2a93b;
-  --color-accent-text: #f2a93b;
-  --color-accent-soft: rgba(242, 169, 59, 0.16);
-  --color-accent-surface: #3a2f1f;
-  --color-success: #5fd08f;
+  --color-accent: #36bd83;
+  --color-accent-text: #67d8a5;
+  --color-accent-soft: rgba(54, 189, 131, 0.15);
+  --color-accent-surface: #193328;
+  --color-success: #6bd9a3;
   --color-danger: #ffa8a0;
   color-scheme: dark;
 }

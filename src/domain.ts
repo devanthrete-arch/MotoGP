@@ -64,6 +64,7 @@ export type GarageVehicle = {
   colour?: string;
   fuel?: string;
   manufactureYear?: number;
+  pucExpiryDate?: string;
   source?: "catalogue" | "manual" | "lookup";
 };
 

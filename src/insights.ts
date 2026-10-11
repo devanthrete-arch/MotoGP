@@ -595,6 +595,10 @@ export function buildGarageReminders(garage: GarageVehicle[], timeline: Timeline
     const kmToService = Math.max(0, nextServiceKm - vehicle.odometerKm);
     const latestInsurance = latestEntryOfKind(entries, "Insurance");
     const latestTyres = latestEntryOfKind(entries, "Tyres");
+    const pucExpiry = vehicle.pucExpiryDate ? new Date(`${vehicle.pucExpiryDate}T00:00:00`) : null;
+    const daysToPucExpiry = pucExpiry && Number.isFinite(pucExpiry.getTime())
+      ? Math.ceil((pucExpiry.getTime() - new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()) / 86_400_000)
+      : null;
 
     return [
       kmToService <= 1500
@@ -623,6 +627,18 @@ export function buildGarageReminders(garage: GarageVehicle[], timeline: Timeline
             id: `${vehicle.id}-tyre-watch`,
             title: "Inspect tyre age and wear",
             urgency: "Watch" as const,
+            vehicleId: vehicle.id,
+            vehicleName,
+          }
+        : null,
+      daysToPucExpiry !== null && daysToPucExpiry <= 45
+        ? {
+            detail: daysToPucExpiry >= 0
+              ? `Your recorded PUC certificate expires in ${daysToPucExpiry} day${daysToPucExpiry === 1 ? "" : "s"}.`
+              : `Your recorded PUC certificate expired ${Math.abs(daysToPucExpiry)} day${daysToPucExpiry === -1 ? "" : "s"} ago.`,
+            id: `${vehicle.id}-puc-expiry`,
+            title: "Check your PUC certificate",
+            urgency: daysToPucExpiry <= 15 ? ("Soon" as const) : ("Plan" as const),
             vehicleId: vehicle.id,
             vehicleName,
           }

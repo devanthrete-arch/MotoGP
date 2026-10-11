@@ -29,6 +29,7 @@ export async function openApp(page: Page, signedIn: boolean, path = "/", cloud =
     errorsByPage.set(page, errors);
     page.on("pageerror", error => { errors.push(error.message); console.error(error.message); });
   }
+  await page.addInitScript(() => { try { sessionStorage.setItem("otofolks.launch-intro.seen", "1"); } catch { /* test route remains usable */ } });
   await page.unroute("**/src/main.tsx*");
   await page.route("**/src/main.tsx*", route => route.fulfill({
     contentType: "application/javascript",
@@ -60,7 +61,16 @@ export const signInRequests = (page: Page) =>
   page.evaluate(() => (window as unknown as { signInRequests: string[] }).signInRequests);
 
 export async function expectNoOverflow(page: Page) {
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  const metrics = await page.evaluate(() => ({
+    viewport: window.innerWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+    offenders: Array.from(document.querySelectorAll<HTMLElement>("body *"))
+      .map((element) => ({ element, rect: element.getBoundingClientRect() }))
+      .filter(({ rect }) => rect.right > window.innerWidth + 1 && getComputedStyle(document.body).overflowX !== "hidden")
+      .slice(0, 8)
+      .map(({ element, rect }) => `${element.tagName.toLowerCase()}.${String(element.className).replaceAll(" ", ".")} right=${Math.round(rect.right)}`),
+  }));
+  expect(metrics.scrollWidth, JSON.stringify(metrics)).toBeLessThanOrEqual(metrics.viewport);
 }
 
 // The parts of the app that are separate files, fetched apart from the first load: the views a

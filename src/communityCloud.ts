@@ -21,7 +21,14 @@ function communityError(code?: string): Error {
 }
 
 function asPost(row: PostRow): OwnerPost {
-  return { ...row, id: `cloud:${row.id}`, helpful: 0, fixesConfirmed: 0, comments: [] };
+  return {
+    ...row,
+    author: typeof row.author === "string" && row.author.trim() ? row.author : "Vehicle owner",
+    id: `cloud:${row.id}`,
+    helpful: 0,
+    fixesConfirmed: 0,
+    comments: [],
+  };
 }
 
 async function requireToken(getToken: ClerkTokenGetter): Promise<void> {

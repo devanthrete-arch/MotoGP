@@ -26,3 +26,18 @@ test("garage vehicles can be edited and deleted with their local maintenance his
   await expect(garage.locator(".vehicle-card")).toHaveCount(0);
   await expect(garage.locator(".timeline-board")).not.toContainText("Oil changed");
 });
+
+test("a recorded PUC expiry appears in garage reminders", async ({ page }) => {
+  await openApp(page, true, "/garage");
+  const garage = page.locator("#garage");
+  const addForm = garage.locator("form").nth(0);
+  const expiry = new Date();
+  expiry.setDate(expiry.getDate() + 10);
+  const expiryDate = `${expiry.getFullYear()}-${String(expiry.getMonth() + 1).padStart(2, "0")}-${String(expiry.getDate()).padStart(2, "0")}`;
+  await addForm.getByLabel("Nickname").fill("Daily car");
+  await addForm.getByLabel("Model").fill("Nexon");
+  await addForm.getByLabel("PUC expiry date (optional)").fill(expiryDate);
+  await garage.getByRole("button", { name: "Save vehicle" }).click();
+  await expect(garage.locator("#garage-reminders")).toContainText("Check your PUC certificate");
+  await expect(garage.locator("#garage-reminders")).toContainText("expires in 10 days");
+});

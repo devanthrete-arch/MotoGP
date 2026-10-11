@@ -1,11 +1,13 @@
 // Community: the shared feed, its composer, and the selected note with its discussion.
 import { isSharedPost } from "../../communityCloud";
-import { PenLine, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Bookmark, CheckCircle2, Filter, MessageCircle, PenLine, Search, Share2, ThumbsUp, X } from "lucide-react";
 import { knowledgeLabels, type KnowledgeLabel } from "../../domain";
 import { buildModelReviewSummaries, modelKeyFor } from "../../insights";
 import { Link } from "react-router";
 import { type FeedMode, type PriceState, brands, postSource, priceStates, viewPaths } from "../model";
 import { useOtofolks } from "../state";
+import "./FeedView.css";
 
 export function FeedView() {
   const {
@@ -18,15 +20,22 @@ export function FeedView() {
     addComment, reportSelectedPost, deleteSelectedSharedPost, shareSelectedPost, addSelectedToShortlist,
     publishPost,
   } = useOtofolks();
+  const [pendingShareId, setPendingShareId] = useState<string | null>(null);
   const modelReviewSummaries = buildModelReviewSummaries(feedPosts);
+
+  useEffect(() => {
+    if (!pendingShareId || selectedPost?.id !== pendingShareId) return;
+    shareSelectedPost();
+    setPendingShareId(null);
+  }, [pendingShareId, selectedPost, shareSelectedPost]);
   return (
-    <section className="panel" id="feed">
+    <section className="panel community-feed" id="feed" aria-labelledby="community-feed-title">
       {communityStatus ? <p role="status">{communityStatus}</p> : null}
       {auth.cloudClient && isOnline ? <button className="save-button" type="button" onClick={() => {
         setCommunityStatus("Loading shared notes...");
         setCommunityRefresh(current => current + 1);
       }}>Refresh shared notes</button> : null}
-      <div className="feed-composer">
+      <div className="feed-composer community-feed__composer">
         {!composerOpen ? (
           <button className="composer-prompt" type="button" onClick={() => setComposerOpen(true)}>
             <span className="composer-avatar" aria-hidden="true">
@@ -112,72 +121,87 @@ export function FeedView() {
         )}
       </div>
 
-      <div className="section-head">
-        <div>
-          <p className="eyebrow">Community feed</p>
-          <h2>From one owner to another</h2>
-          <Link className="primary-action" to={viewPaths.write}>Write an owner note</Link>
-        </div>
-        <div className="filters" aria-label="Feed filters">
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search brand, model, city, issue..."
-            type="search"
-          />
-          <select value={selectedLabel} onChange={(event) => setSelectedLabel(event.target.value as KnowledgeLabel | "All")}>
-            <option>All</option>
-            {knowledgeLabels.map((label) => (
-              <option key={label}>{label}</option>
-            ))}
-          </select>
+      <header className="community-feed__heading">
+        <p className="eyebrow">Community</p>
+        <h1 id="community-feed-title">Real owners. Real experience.</h1>
+        <p>Honest fixes, running costs, and road notes from vehicle owners.</p>
+      </header>
+
+      <div className="community-feed__search-row">
+        <label className="community-feed__search">
+          <Search size={18} aria-hidden="true" />
+          <span className="sr-only">Search owner posts</span>
+          <input value={query} onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search brand, model, city, issue..." type="search" />
+        </label>
+        <label className="community-feed__state-filter">
+          <Filter size={17} aria-hidden="true" />
+          <span className="sr-only">Filter by state</span>
           <select value={selectedFeedState} onChange={(event) => setSelectedFeedState(event.target.value as PriceState | "All")}>
             <option value="All">All states</option>
-            {priceStates.map((state) => (
-              <option key={state}>{state}</option>
-            ))}
+            {priceStates.map((state) => <option key={state}>{state}</option>)}
           </select>
-          <select value={mode} onChange={(event) => setMode(event.target.value as FeedMode)}>
-            <option value="latest">Latest</option>
-            <option value="helpful">Most helpful</option>
-            <option value="following">Following</option>
-            <option value="saved">Saved</option>
-          </select>
-          <button className="save-button" type="button" onClick={() => setMode("saved")}>
-            Saved notes · {saved.size}
+        </label>
+      </div>
+
+      <div className="community-feed__categories" role="group" aria-label="Filter posts by category">
+        <button type="button" aria-pressed={selectedLabel === "All"} onClick={() => setSelectedLabel("All")}>All</button>
+        {knowledgeLabels.map((label) => (
+          <button key={label} type="button" aria-pressed={selectedLabel === label} onClick={() => setSelectedLabel(label)}>
+            {label === "Known issue" ? "Known issue" : label === "Fix" ? "Fix & DIY" : label}
           </button>
+        ))}
+      </div>
+
+      <div className="community-feed__toolbar">
+        <div className="community-feed__sort" role="group" aria-label="Sort community posts">
+          {([
+            ["latest", "Latest"], ["helpful", "Most helpful"], ["following", "Following"], ["saved", `Saved${saved.size ? ` · ${saved.size}` : ""}`],
+          ] as const).map(([value, label]) => (
+            <button key={value} type="button" aria-pressed={mode === value} onClick={() => setMode(value as FeedMode)}>{label}</button>
+          ))}
         </div>
+        <span className="community-feed__source"><span aria-hidden="true" /> Owner posts and examples</span>
       </div>
 
       <div className="content-grid">
-        <div className="feed-list">
+        <div className="feed-list community-feed__list" aria-label="Community posts">
           {filteredPosts.length ? (
             filteredPosts.map((post) => (
               <article
-                className={`post-card ${selectedPost?.id === post.id ? "is-selected" : ""}`}
+                className={`post-card community-post ${selectedPost?.id === post.id ? "is-selected" : ""}`}
                 key={post.id}
               >
-                <div>
-                  <span className="pill">{post.label}</span>
-                  <span className="pill">{postSource(post.id)}</span>
-                  <h3><button className="post-open" type="button" onClick={() => {
+                <div className="community-post__byline">
+                  <span className="community-post__avatar" aria-hidden="true">{(post.author.trim() || "O").charAt(0).toUpperCase()}</span>
+                  <div className="community-post__author"><strong>{post.author}</strong><span>{post.city || "Location not shared"} · {postSource(post.id)}</span></div>
+                  <span className={`community-post__category community-post__category--${post.label.toLowerCase().replace(/[^a-z]+/g, "-")}`}>{post.label}</span>
+                </div>
+                <p className="community-post__vehicle">{post.brand} {post.model}{post.variant ? ` · ${post.variant}` : ""} · {post.odometerKm.toLocaleString("en-IN")} km</p>
+                <h2><button className="post-open" type="button" onClick={() => {
                     setSelectedPost(post);
                     requestAnimationFrame(() => document.getElementById("note-detail")?.focus());
-                  }}>{post.title}</button></h3>
-                  <p>
-                    {post.brand} {post.model} · {post.city} · {post.odometerKm.toLocaleString("en-IN")} km
-                  </p>
+                  }}>{post.title}</button></h2>
+                <p className="community-post__excerpt">{post.body}</p>
+                {post.label === "Fix" && post.fixesConfirmed > 0 ? (
+                  <p className="community-post__fix"><CheckCircle2 size={16} aria-hidden="true" /><span><strong>{post.fixesConfirmed} owners</strong> marked this fix as helpful</span></p>
+                ) : null}
+                <div className="community-post__actions" aria-label={`Actions for ${post.title}`}>
+                  <button type="button" aria-pressed={helpfulIds.includes(post.id)} disabled={isSharedPost(post.id)} onClick={() => markHelpful(post.id)}>
+                    <ThumbsUp size={16} aria-hidden="true" /> <span>{post.helpful} Helpful</span>
+                  </button>
+                  <button type="button" onClick={() => {
+                    setSelectedPost(post);
+                    requestAnimationFrame(() => document.getElementById("note-detail")?.focus());
+                  }}><MessageCircle size={16} aria-hidden="true" /><span>{post.comments.length}</span></button>
+                  <button type="button" aria-pressed={saved.has(post.id)} aria-label={saved.has(post.id) ? "Remove saved post" : "Save post"} onClick={() => toggleSaved(post.id)}>
+                    <Bookmark size={16} aria-hidden="true" /><span className="sr-only">{saved.has(post.id) ? "Saved" : "Save"}</span>
+                  </button>
+                  <button type="button" aria-label="Share post" onClick={() => {
+                    setPendingShareId(post.id);
+                    setSelectedPost(post);
+                  }}><Share2 size={16} aria-hidden="true" /></button>
                 </div>
-                <button
-                  className="save-button"
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    toggleSaved(post.id);
-                  }}
-                >
-                  {saved.has(post.id) ? "Saved note" : "Save note"}
-                </button>
               </article>
             ))
           ) : (
@@ -298,6 +322,15 @@ export function FeedView() {
             <p>Select a post to inspect owner details.</p>
           )}
         </aside>
+      </div>
+
+      <div className="community-feed__share-cta">
+        <div><strong>Have an experience to share?</strong><span>Your note could help another owner.</span></div>
+        <button className="primary-action" type="button" onClick={() => {
+          setComposerOpen(true);
+          requestAnimationFrame(() => document.querySelector<HTMLInputElement>(".composer-expanded input")?.focus());
+        }}><PenLine size={17} aria-hidden="true" /> Share experience</button>
+        <Link className="community-feed__write-link" to={viewPaths.write}>Write an owner note</Link>
       </div>
 
       <section className="model-review-summaries" aria-labelledby="model-review-title">

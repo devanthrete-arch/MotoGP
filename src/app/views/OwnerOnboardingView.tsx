@@ -16,7 +16,7 @@ import { useOtofolks } from "../state";
 import { loadOwnerOnboardingDraft, recallPlate, saveOwnerOnboardingDraft, type OwnerOnboardingDraft } from "../../visitor";
 
 const freshDraft = (): OwnerOnboardingDraft => ({
-  kind: "car", brand: "", model: "", generation: "", variant: "", colour: "", fuel: "", manufactureYear: "",
+  kind: "car", brand: "", model: "", generation: "", variant: "", colour: "", fuel: "", manufactureYear: "", pucExpiryDate: "",
   registration: "", manual: false, step: "vehicle",
 });
 
@@ -70,6 +70,7 @@ export function OwnerOnboardingView() {
       registration: registration.ok ? registration.normalized : undefined,
       colour: draft.colour.trim() || undefined, fuel: draft.fuel.trim() || undefined,
       manufactureYear: draft.manufactureYear ? Number(draft.manufactureYear) : undefined,
+      pucExpiryDate: draft.pucExpiryDate || undefined,
       source: draft.manual ? "manual" : "catalogue",
     });
     persistProfile(savedProfile);
@@ -121,6 +122,8 @@ export function OwnerOnboardingView() {
           <TextField label="Colour (optional)" maxLength={60} value={draft.colour} onChange={event => patch({ colour: event.target.value })} placeholder="e.g. White" />
           <TextField label="Fuel (optional)" maxLength={40} value={draft.fuel} onChange={event => patch({ fuel: event.target.value })} placeholder="e.g. Petrol" />
           <TextField label="Manufacture year (optional)" inputMode="numeric" maxLength={4} value={draft.manufactureYear} onChange={event => patch({ manufactureYear: event.target.value.replace(/\D/g, "").slice(0, 4) })} placeholder="e.g. 2022" />
+          <TextField label="PUC expiry date (optional)" type="date" value={draft.pucExpiryDate ?? ""} onChange={event => patch({ pucExpiryDate: event.target.value })}
+            hint="We’ll remind you based on the date you enter. Check your certificate for the correct date." />
         </div>
         <TextField label="Registration number (optional)" maxLength={14} value={draft.registration}
           onChange={event => patch({ registration: event.target.value.toUpperCase() })}
