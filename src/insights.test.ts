@@ -365,6 +365,19 @@ describe("Otofolks insights", () => {
     });
   });
 
+  it("adds an expiry reminder for a recorded PUC date", () => {
+    const reminders = buildGarageReminders(
+      [{ ...seedGarage[0], pucExpiryDate: "2026-08-04" }],
+      [],
+      new Date("2026-07-20T12:00:00"),
+    );
+    expect(reminders.find((reminder) => reminder.id.endsWith("-puc-expiry"))).toMatchObject({
+      detail: "Your recorded PUC certificate expires in 15 days.",
+      title: "Check your PUC certificate",
+      urgency: "Soon",
+    });
+  });
+
   it("summarizes moderation queue and flags repeatedly reported posts", () => {
     const summary = buildModerationSummary([
       {

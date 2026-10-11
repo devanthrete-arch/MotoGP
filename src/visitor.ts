@@ -56,6 +56,7 @@ export type OwnerOnboardingDraft = {
   colour: string;
   fuel: string;
   manufactureYear: string;
+  pucExpiryDate?: string;
   registration: string;
   manual: boolean;
   step: "vehicle" | "profile";
@@ -69,7 +70,8 @@ export const loadOwnerOnboardingDraft = (storage = tabStorage()): OwnerOnboardin
     if ((draft.kind !== "car" && draft.kind !== "two-wheeler") || typeof draft.manual !== "boolean"
       || (draft.step !== "vehicle" && draft.step !== "profile")
       || ["brand", "model", "generation", "variant", "colour", "fuel", "manufactureYear", "registration"]
-        .some(key => typeof draft[key] !== "string")) return null;
+        .some(key => typeof draft[key] !== "string")
+      || (draft.pucExpiryDate !== undefined && typeof draft.pucExpiryDate !== "string")) return null;
     return draft as OwnerOnboardingDraft;
   } catch { return null; }
 };

@@ -15,7 +15,7 @@ import { useOtofolks } from "../state";
 const about: Record<"garage" | "feed" | "pit-stop" | "compare", string> = {
   garage: "Your vehicles, a maintenance timeline of what was done and what it cost, a running-cost ledger and reminders.",
   feed: "Notes from owners, labelled as reviews, known issues, fixes, cost notes and travelogues. Save what helps and join the discussion.",
-  "pit-stop": "Car collections grouped as builds, launches, ownership and India. Each one opens on Instagram.",
+  "pit-stop": "Automotive videos grouped into builds, launches, ownership and India.",
   compare: "Shortlist cars and read two side by side across twelve categories, with manufacturer-verified specifications where available. It will not pick a winner from incomplete data.",
 };
 const areas = destinations.filter((destination) => destination.id !== "top");

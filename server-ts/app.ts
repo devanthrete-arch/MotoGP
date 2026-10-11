@@ -13,6 +13,7 @@ import type {
 } from "../src/domain";
 import { createPost, createReport, createShortlistItem, createTimelineEntry, createVehicle } from "../src/storage";
 import { createMemoryStore, makeId, type AutoflexStore, type FeedbackRecord, type InspectionSession } from "./store";
+import { searchPitStopVideos } from "./youtube";
 
 type CreateCommentBody = {
   author?: string;
@@ -66,6 +67,17 @@ export async function buildAutoflexApi(options: ApiOptions = {}): Promise<Fastif
     status: "ok",
     storage: "memory",
   }));
+
+  app.get("/api/pitstop/videos", async (request, reply) => {
+    try {
+      const { videos, error, status } = await searchPitStopVideos((request.query as { category?: string }).category);
+      if (error) return reply.code(status).send({ error });
+      reply.header("Cache-Control", "public, max-age=21600, stale-while-revalidate=86400");
+      return { videos };
+    } catch {
+      return reply.code(502).send({ error: "YouTube search is temporarily unavailable." });
+    }
+  });
 
   app.get("/api/profiles/:profileId", async (request, reply) => {
     const { profileId } = request.params as { profileId: string };

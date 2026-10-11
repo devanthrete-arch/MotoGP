@@ -11,6 +11,7 @@ import { SignInPrompt } from "./SignInPrompt";
 import { OtofolksProvider, useOtofolksState } from "./state";
 import { AccountView } from "./views/AccountView";
 import { LandingView } from "./views/LandingView";
+import { LaunchIntro } from "./LaunchIntro";
 
 // The landing page and Account ship with the shell: they are what a visitor meets first. Every
 // other view is fetched when it is first opened and, once the page is idle, quietly ahead of time:
@@ -72,6 +73,11 @@ function AppFrame(props: AppProps & { auth: AppAuthState }) {
   const state = useOtofolksState(props);
   const { activeView, audience, visitorPages } = state;
   const location = useLocation();
+  const [showLaunchIntro, setShowLaunchIntro] = useState(() => {
+    if (location.pathname !== viewPaths.top || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return false;
+    try { return window.sessionStorage.getItem("otofolks.launch-intro.seen") !== "1"; }
+    catch { return false; }
+  });
   const shown = useRef<Shown>(activeView);
 
   // Named from the address, not from the view, so the tab is right while a view is still loading.
@@ -115,7 +121,7 @@ function AppFrame(props: AppProps & { auth: AppAuthState }) {
 
   return (
     <OtofolksProvider value={state}>
-      <main className="app-shell">
+      <main className="app-shell" inert={showLaunchIntro}>
         <AppHeader />
         <ToastRegion />
         <ConnectionStrip />
@@ -143,6 +149,10 @@ function AppFrame(props: AppProps & { auth: AppAuthState }) {
         <AppFooter />
         <TabBar />
       </main>
+      {showLaunchIntro ? <LaunchIntro
+        onClose={() => { try { window.sessionStorage.setItem("otofolks.launch-intro.seen", "1"); } catch { /* continue without session storage */ } setShowLaunchIntro(false); }}
+        onComplete={() => { try { window.sessionStorage.setItem("otofolks.launch-intro.seen", "1"); } catch { /* continue without session storage */ } setShowLaunchIntro(false); }}
+      /> : null}
     </OtofolksProvider>
   );
 }

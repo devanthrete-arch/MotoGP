@@ -11,7 +11,10 @@ for (const width of [320, 390, 768, 1440, 1920]) {
       await page.emulateMedia({ colorScheme });
       await openApp(page, true);
       await expectNoOverflow(page);
-      const images = page.locator(".service-screens img");
+      await expect(page.getByRole("heading", { name: "Your journey, made easier." })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Quick ownership tools" })).toBeVisible();
+      await expect(page.locator(".member-home__tool-list a")).toHaveCount(4);
+      const images = page.locator(".member-home__guide img");
       for (const img of await images.all()) {
         await expect(img).toHaveJSProperty("complete", true);
         expect(await img.evaluate((node: HTMLImageElement) => node.naturalWidth)).toBeGreaterThan(0);
@@ -115,7 +118,7 @@ test("links in the old fragment form still land on the right view", async ({ pag
   await page.goto("/account");
   await page.goto("/#pit-stop-builds");
   await expect(page).toHaveURL(/\/pit-stop#pit-stop-builds$/);
-  await expect(page.locator(".pit-stop-filters").getByRole("button", { name: "Builds" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".pitstop-tabs").getByRole("button", { name: "Builds" })).toHaveAttribute("aria-pressed", "true");
 
   // A fragment that is not an old view name is left exactly as it is.
   for (const fragment of ["#top", "#/sso-callback"]) {
@@ -224,7 +227,7 @@ test("a view that fails to download leaves the rest of the app working and can b
   offline = false;
   await failure.getByRole("button", { name: "Try again" }).click();
   await expect(page.locator("#garage")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Your vehicles and maintenance" })).toBeFocused();
+  await expect(page.getByRole("heading", { name: "My Garage" })).toBeFocused();
 });
 
 test("a new page starts at the top; Back returns to where the reader was", async ({ page }) => {
@@ -253,7 +256,7 @@ test("moving to another view names it in the tab and puts keyboard focus on its 
   expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true);
 
   await navigation.getByRole("link", { name: "Compare" }).click();
-  await expect(page.getByRole("heading", { name: "Which car feels right?" })).toBeFocused();
+  await expect(page.getByRole("heading", { name: "Compare vehicles" })).toBeFocused();
   await expect(page).toHaveTitle("Compare · Otofolks");
   // The next Tab continues inside the view rather than back at the top of the page.
   await page.keyboard.press("Tab");
@@ -263,7 +266,7 @@ test("moving to another view names it in the tab and puts keyboard focus on its 
   await expect(page.locator("#account :is(h2, h3)").first()).toBeFocused();
   await expect(page).toHaveTitle("Account · Otofolks");
   await page.goBack();
-  await expect(page.getByRole("heading", { name: "Which car feels right?" })).toBeFocused();
+  await expect(page.getByRole("heading", { name: "Compare vehicles" })).toBeFocused();
   await expect(page).toHaveTitle("Compare · Otofolks");
   await navigation.getByRole("link", { name: "Home", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
@@ -445,7 +448,7 @@ test("vehicle and maintenance records survive reload", async ({ page }) => {
   await garageForm.getByPlaceholder("Nickname", { exact: true }).fill("Family car");
   await garageForm.getByPlaceholder("Model", { exact: true }).fill("Nexon");
   await garage.getByRole("button", { name: "Save vehicle" }).click();
-  await garage.getByPlaceholder("What happened?").fill("Oil and filter replaced");
+  await garage.getByLabel("What happened?").fill("Oil and filter replaced");
   await garage.getByPlaceholder("Amount paid").fill("4200");
   await garage.getByRole("button", { name: "Add timeline note" }).click();
   await page.reload();
@@ -539,16 +542,16 @@ test("theme switch overrides the system setting and survives reload; buttons are
   const html = page.locator("html");
   const pageColour = () => page.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
   await expect(html).not.toHaveAttribute("data-theme", /.+/);
-  expect(await pageColour()).toBe("rgb(34, 43, 61)");
+  expect(await pageColour()).toBe("rgb(17, 20, 19)");
 
   await page.getByRole("button", { name: /^Theme: System/ }).click();
   await expect(html).toHaveAttribute("data-theme", "light");
-  expect(await pageColour()).toBe("rgb(250, 248, 243)");
+  expect(await pageColour()).toBe("rgb(245, 246, 250)");
   await page.reload();
   await expect(html).toHaveAttribute("data-theme", "light");
   await page.getByRole("button", { name: /^Theme: Light/ }).click();
   await expect(html).toHaveAttribute("data-theme", "dark");
-  expect(await pageColour()).toBe("rgb(34, 43, 61)");
+  expect(await pageColour()).toBe("rgb(17, 20, 19)");
   await page.getByRole("button", { name: /^Theme: Dark/ }).click();
   await expect(html).not.toHaveAttribute("data-theme", /.+/);
 
@@ -567,15 +570,14 @@ test("theme switch overrides the system setting and survives reload; buttons are
   }
 });
 
-test("Pit Stop collections open on Instagram in a new tab and keep the app in place", async ({ page }) => {
+test("Pit Stop shows an honest empty state until the video source is configured", async ({ page }) => {
   await openApp(page, true, "/pit-stop");
-  const cards = page.locator("#pit-stop .pit-stop-card");
-  await expect(cards.first()).toBeVisible();
-  for (const card of await cards.all()) {
-    await expect(card).toHaveAttribute("target", "_blank");
-    await expect(card).toHaveAttribute("rel", /noopener/);
-    await expect(card).toHaveAttribute("href", /^https:\/\/www\.instagram\.com\//);
-  }
+  await expect(page.getByRole("heading", { name: "Pit Stop" })).toBeVisible();
+  await expect(page.locator("#pit-stop .pitstop-state")).toContainText("Video search is not configured yet.");
+  await expect(page.locator("#pit-stop .pitstop-video")).toHaveCount(0);
+  await page.getByRole("button", { name: "Builds" }).click();
+  await expect(page.getByRole("button", { name: "Builds" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("#pit-stop .pitstop-state")).toContainText("Video search is not configured yet.");
 });
 
 test("a member can report a shared note and delete their own", async ({ page }) => {
@@ -645,17 +647,17 @@ test("comparison remains usable after adding cars and changing views", async ({ 
   await openApp(page, true, "/compare");
   const sections = page.getByRole("region", { name: "Comparison categories" });
   await expect(sections.locator("summary > span:nth-child(2)")).toHaveText([
-    "Basic Information", "Engine & Transmission", "Fuel & Performance", "Suspension, Steering & Brakes",
-    "Dimensions & Capacity", "Comfort & Convenience", "Interior", "Exterior", "Safety", "ADAS",
-    "Advanced Internet", "Entertainment & Communication",
+    "Basic Information", "Dimensions & Capacity", "Fuel & Performance", "Engine & Transmission",
+    "Suspension, Steering & Brakes", "Safety", "ADAS", "Comfort & Convenience", "Interior",
+    "Exterior", "Advanced Internet", "Entertainment & Communication",
   ]);
   await page.getByRole("button", { name: "Add to compare", exact: true }).click();
   await page.getByRole("combobox", { name: "Car brand", exact: true }).selectOption("Honda");
   await page.getByRole("button", { name: "Add to compare", exact: true }).click();
   const basics = page.getByRole("table", { name: "Basic Information comparison" });
   await expect(basics).toBeVisible();
-  expect(await basics.getByRole("columnheader").last().evaluate(
-    (cell) => cell.getBoundingClientRect().right <= window.innerWidth,
+  expect(await page.locator(".compare-table-wrap").first().evaluate(
+    (element) => element.scrollWidth > element.clientWidth,
   )).toBe(true);
   await sections.locator("summary").filter({ hasText: "Dimensions & Capacity" }).click();
   await expect(page.getByRole("table", { name: "Dimensions & Capacity comparison" })).toContainText("Ground clearance");

@@ -10,5 +10,6 @@ export default defineConfig({
   },
   server: {
     port: 8080,
+    proxy: { "/api/pitstop": "http://127.0.0.1:3001" },
   },
 });

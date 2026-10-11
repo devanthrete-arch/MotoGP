@@ -1,14 +1,15 @@
 // The frame around every view: header, status surfaces, footer and the phone tab bar.
-import { Menu, UserRound, X } from "lucide-react";
+import { Bell, Menu, UserRound, X } from "lucide-react";
 import { Link } from "react-router";
 import { Skeleton } from "../ui/Surface";
 import { ThemeToggle } from "../ui/ThemeToggle";
 import { destinations, viewPaths } from "./model";
 import { useOtofolks } from "./state";
+import "./Shell.css";
 
 /** Brand, desktop navigation and the theme switch. */
 export function AppHeader() {
-  const { auth, navMenuOpen, setNavMenuOpen, activeView, handleFeatureNav, handleAccountNav } = useOtofolks();
+  const { auth, navMenuOpen, setNavMenuOpen, activeView, garageReminders, handleFeatureNav, handleAccountNav } = useOtofolks();
   return (
     <header className="app-header">
       <nav className="nav" aria-label="Primary navigation">
@@ -31,7 +32,12 @@ export function AppHeader() {
             <UserRound size={20} aria-hidden="true" />{auth.isSignedIn ? "Account" : "Sign in"}
           </Link>
         </div>
-        <ThemeToggle tone="header" className="theme-toggle" />
+        <div className="nav-utilities">
+          <Link className="nav-notifications" to={`${viewPaths.garage}#garage-reminders`} onClick={handleFeatureNav} aria-label={`Reminders${garageReminders.length ? `, ${garageReminders.length} items` : ""}`}>
+            <Bell size={19} aria-hidden="true" />{garageReminders.length ? <span aria-hidden="true" /> : null}
+          </Link>
+          <ThemeToggle tone="header" className="theme-toggle" />
+        </div>
       </nav>
     </header>
   );

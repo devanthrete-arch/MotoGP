@@ -42,7 +42,7 @@ for (const width of [320, 390, 768, 1440, 1920]) {
       // Each link moves to its own address and shows that page's own heading.
       const navigation = width <= 860 ? page.locator(".tab-bar") : page.locator("#primary-nav-links");
       for (const [href, heading] of [["/garage", "Sign in to open My garage"], ["/community", "Owner notes are for signed-in members"],
-        ["/pit-stop", "A break for your car obsession"], ["/compare", "Which car feels right?"]]) {
+        ["/pit-stop", "Pit Stop"], ["/compare", "Which car feels right?"]]) {
         await navigation.locator(`a[href='${href}']`).click();
         await expect(page).toHaveURL(new RegExp(`${href}$`));
         await expect(page.getByRole("heading", { name: heading })).toBeVisible();

@@ -157,6 +157,19 @@ npm run dev
 
 Open `http://localhost:8080`.
 
+Pit Stop video search also needs the API process in a second terminal. Set the
+server-only YouTube key there before starting it:
+
+```powershell
+$env:YOUTUBE_API_KEY = "your-key"
+npm run api:dev
+```
+
+Set the same `YOUTUBE_API_KEY` in Vercel project environment variables for
+deployment; never use a `VITE_` prefix. Search is limited to embeddable Creative
+Commons videos, with category results cached for six hours. Without a key, Pit
+Stop displays a setup message rather than sample content.
+
 The current TypeScript MVP is local-first so it can move quickly on Vercel while
 the hosted backend path is implemented. It includes owner posts, saved notes,
 followed models/topics, a following feed, garage vehicles, timeline entries,
