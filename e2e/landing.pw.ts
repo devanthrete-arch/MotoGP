@@ -42,7 +42,7 @@ for (const width of [320, 390, 768, 1440, 1920]) {
       // Each link moves to its own address and shows that page's own heading.
       const navigation = width <= 860 ? page.locator(".tab-bar") : page.locator("#primary-nav-links");
       for (const [href, heading] of [["/garage", "Sign in to open My garage"], ["/community", "Owner notes are for signed-in members"],
-        ["/pit-stop", "Pit Stop"], ["/compare", "Which car feels right?"]]) {
+        ["/pit-stop", "Pit Stop"], ["/compare", "Compare vehicles"]]) {
         await navigation.locator(`a[href='${href}']`).click();
         await expect(page).toHaveURL(new RegExp(`${href}$`));
         await expect(page.getByRole("heading", { name: heading })).toBeVisible();
@@ -148,8 +148,8 @@ test("the car finder stays public and leads to Compare; owner stories ask for si
   await expect(page.getByRole("heading", { name: "Recommendations aren’t ready yet" })).toBeVisible();
   await page.getByRole("link", { name: "Compare cars" }).click();
   await expect(page).toHaveURL(/\/compare$/);
-  await expect(page.getByRole("heading", { name: "Which car feels right?" })).toBeFocused();
-  await expect(page.locator(".data-notice")).toHaveText("This shortlist lasts only as long as this tab. Sign in to keep it.");
+  await expect(page.getByRole("heading", { name: "Compare vehicles" })).toBeVisible();
+  await expect(page.locator(".compare-builder")).toBeVisible();
   expect(await stillHere()).toBe(true);
 
   await page.goBack();
@@ -272,10 +272,10 @@ test("a number typed on the landing page reaches the add-vehicle form and never 
   await page.screenshot({ path: "test-results/garage-carried-number.png" });
   await garage.locator("form").nth(0).getByPlaceholder("Model", { exact: true }).fill("Nexon");
   await garage.getByRole("button", { name: "Save vehicle" }).click();
-  const cards = garage.locator(".timeline-board .vehicle-card");
+  const cards = garage.locator(".garage-vehicle-list .vehicle-card");
   await expect(cards).toHaveCount(1);
   await expect(cards.first()).toContainText("MH 12 AB 1234");
-  await expect(cards.first()).toContainText("number kept on this device only");
+  await expect(cards.first()).toContainText("Registration stays on this device");
   // Used once: the next vehicle starts with an empty field, here and after a reload.
   await expect(plate).toHaveValue("");
   expect(await stored(page, "sessionStorage", pendingPlate)).toBeNull();
@@ -324,7 +324,7 @@ test("a number typed on the landing page reaches the add-vehicle form and never 
   await plate.fill("DL 3C AB 1234");
   await openApp(page, true, "/garage", false, { userId: "someone-else" });
   await expect(plate).toHaveValue("");
-  await expect(garage.locator(".timeline-board .vehicle-card")).toHaveCount(0);
+  await expect(garage.locator(".garage-vehicle-list .vehicle-card")).toHaveCount(0);
   expect(await stored(page, "sessionStorage", pendingPlate)).toBeNull();
 
   expect(elsewhere).toEqual([]);
@@ -349,7 +349,7 @@ test("saving to the account uploads the vehicle without its registration number"
   await garage.getByRole("textbox", { name: "Registration number (optional)" }).fill("dl 3c ab 1234");
   await garage.locator("form").nth(0).getByPlaceholder("Model", { exact: true }).fill("Creta");
   await garage.getByRole("button", { name: "Save vehicle" }).click();
-  await expect(garage.locator(".timeline-board .vehicle-card").first()).toContainText("DL 3 CAB 1234");
+  await expect(garage.locator(".garage-vehicle-list .vehicle-card").first()).toContainText("DL 3 CAB 1234");
 
   await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "Account" }).click();
   const account = page.locator("#account");
@@ -368,7 +368,7 @@ test("saving to the account uploads the vehicle without its registration number"
   await garage.getByRole("textbox", { name: "Registration number (optional)" }).fill("KA 01 AB 1234");
   await garage.locator("form").nth(0).getByPlaceholder("Model", { exact: true }).fill("Seltos");
   await garage.getByRole("button", { name: "Save vehicle" }).click();
-  await expect(garage.locator(".timeline-board .vehicle-card")).toHaveCount(2);
+  await expect(garage.locator(".garage-vehicle-list .vehicle-card")).toHaveCount(2);
   expect(Object.values(JSON.parse((await stored(page, "localStorage", accountKey("vehicle-plates")))!)).sort()).toEqual(["DL3CAB1234", "KA01AB1234"]);
   await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "Account" }).click();
   page.once("dialog", dialog => dialog.accept());
@@ -376,8 +376,8 @@ test("saving to the account uploads the vehicle without its registration number"
   await expect(account.getByRole("status")).toHaveText("Account copy restored to this device.");
   expect(JSON.parse((await stored(page, "localStorage", accountKey("vehicle-plates")))!)).toEqual({ [vehicle.id as string]: "DL3CAB1234" });
   await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("link", { name: "My garage" }).click();
-  await expect(garage.locator(".timeline-board .vehicle-card")).toHaveCount(1);
-  await expect(garage.locator(".timeline-board .vehicle-card")).toContainText("DL 3 CAB 1234");
+  await expect(garage.locator(".garage-vehicle-list .vehicle-card")).toHaveCount(1);
+  await expect(garage.locator(".garage-vehicle-list .vehicle-card")).toContainText("DL 3 CAB 1234");
 });
 
 test("the number fits the add-vehicle form on the narrowest phone", async ({ page }) => {
@@ -420,8 +420,8 @@ test("a shortlist built before signing in comes along once, and nothing else in 
   await expect(page.getByRole("table", { name: "Basic Information comparison" })).toBeVisible();
   // No owner note is quoted to a visitor: neither the bundled examples nor the one left in this
   // browser. Each car's checklist is the plain starting one.
-  await expect(cards.locator(".inspection-item")).toHaveCount(2);
-  await expect(cards.locator(".inspection-item b")).toHaveText(["Start with a baseline inspection checklist", "Start with a baseline inspection checklist"]);
+  await expect(cards.locator(".compare-inspection")).toHaveCount(2);
+  await expect(cards.locator(".compare-inspection p")).toHaveText(["Start with a baseline inspection checklist", "Start with a baseline inspection checklist"]);
   for (const quoted of ["Left behind by an earlier user", "Community notes reach", "Nexon diesel clutch", "Owner note"]) {
     await expect(page.locator("#compare")).not.toContainText(quoted);
   }

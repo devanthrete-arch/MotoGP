@@ -571,6 +571,11 @@ test("theme switch overrides the system setting and survives reload; buttons are
 });
 
 test("Pit Stop shows an honest empty state until the video source is configured", async ({ page }) => {
+  await page.route("**/api/pitstop/videos**", route => route.fulfill({
+    status: 503,
+    contentType: "application/json",
+    body: JSON.stringify({ error: "Video search is not configured yet." }),
+  }));
   await openApp(page, true, "/pit-stop");
   await expect(page.getByRole("heading", { name: "Pit Stop" })).toBeVisible();
   await expect(page.locator("#pit-stop .pitstop-state")).toContainText("Video search is not configured yet.");
