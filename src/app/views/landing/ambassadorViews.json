@@ -1,0 +1,51 @@
+{
+ "front": {
+  "w": 381,
+  "h": 306,
+  "shadowH": 312,
+  "sketchW": 392,
+  "sketchH": 323
+ },
+ "rear": {
+  "w": 359,
+  "h": 306,
+  "shadowH": 312,
+  "sketchW": 375,
+  "sketchH": 317
+ },
+ "top": {
+  "w": 619,
+  "h": 258,
+  "shadowH": 264,
+  "sketchW": 634,
+  "sketchH": 251
+ },
+ "side": {
+  "w": 718,
+  "h": 262,
+  "shadowH": 268,
+  "sketchW": 715,
+  "sketchH": 290
+ },
+ "sideR": {
+  "w": 713,
+  "h": 259,
+  "shadowH": 265,
+  "sketchW": 719,
+  "sketchH": 268
+ },
+ "front34": {
+  "w": 752,
+  "h": 339,
+  "shadowH": 345,
+  "sketchW": 758,
+  "sketchH": 347
+ },
+ "rear34": {
+  "w": 711,
+  "h": 330,
+  "shadowH": 336,
+  "sketchW": 700,
+  "sketchH": 337
+ }
+}

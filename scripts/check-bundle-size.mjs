@@ -17,7 +17,9 @@ import { gzipSync } from "node:zlib";
 // route stylesheet in dist, including the studio-lit garage scene. First-load JS stays at 140 kB;
 // total budgets leave under 1% headroom.
 // The Markdown reader and its three article bodies are lazy chunks; guide styles join global CSS.
-export const budgets = { initialJs: 140_000, totalJs: 465_000, css: 27_500 };
+// The studio landing page adds about 1 kB of CSS for its dark, scoped styles (its 3D studio is a lazy chunk, so
+// JavaScript stays within the old budgets): CSS to 29 kB.
+export const budgets = { initialJs: 140_000, totalJs: 465_000, css: 29_000 };
 
 /** Asset file names index.html loads up front: its scripts, module preloads and stylesheets. */
 export function initialAssets(indexHtml) {
