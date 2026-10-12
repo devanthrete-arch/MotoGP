@@ -122,8 +122,7 @@
 
   /* Numbers that are read as values sit in the mono face and line up. */
   .price-display strong,
-  .instrument-metrics strong,
-  .spec-grid span { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  .instrument-metrics strong { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
   h1,
   h2 { letter-spacing: -0.02em; }
 
