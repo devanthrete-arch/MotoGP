@@ -30,6 +30,16 @@ const categoryIcon = (title: string) => {
   return Gauge;
 };
 
+const rowValue = (sections: { rows: [string, string, string][] }[], label: string, side: 1 | 2) =>
+  sections.flatMap(section => section.rows).find(([metric]) => metric === label)?.[side] ?? "Not verified";
+
+const compareNumber = (first: number, second: number) => {
+  if (!first || !second) return "";
+  const delta = first - second;
+  if (!delta) return "Matched";
+  return `${delta > 0 ? "+" : ""}${formatMoney(delta)}`;
+};
+
 export function CompareView() {
   const formRef = useRef<HTMLFormElement>(null);
   const {
@@ -43,6 +53,23 @@ export function CompareView() {
   const orderedSections = [...displayedComparisonSections].sort(
     (a, b) => categoryOrder.indexOf(a.title) - categoryOrder.indexOf(b.title),
   );
+  const firstName = topTwo[0] ? `${topTwo[0].item.brand} ${topTwo[0].item.model}` : "Vehicle A";
+  const secondName = topTwo[1] ? `${topTwo[1].item.brand} ${topTwo[1].item.model}` : "Vehicle B";
+  const firstPrice = topTwo[0]?.item.budget ?? 0;
+  const secondPrice = topTwo[1]?.item.budget ?? 0;
+  const priceDelta = firstPrice && secondPrice ? firstPrice - secondPrice : 0;
+  const dimensionMetrics = ["Length", "Width", "Wheelbase", "Ground clearance"].map(label => ({
+    label,
+    first: rowValue(orderedSections, label, 1),
+    second: rowValue(orderedSections, label, 2),
+  }));
+  const telemetryRows = [
+    { label: "Engine", first: rowValue(orderedSections, "Engine", 1), second: rowValue(orderedSections, "Engine", 2), mode: "text" },
+    { label: "Peak power", first: rowValue(orderedSections, "Max power", 1), second: rowValue(orderedSections, "Max power", 2), mode: "power" },
+    { label: "Peak torque", first: rowValue(orderedSections, "Max torque", 1), second: rowValue(orderedSections, "Max torque", 2), mode: "power" },
+    { label: "Certified economy", first: rowValue(orderedSections, "Certified mileage", 1), second: rowValue(orderedSections, "Certified mileage", 2), mode: "eco" },
+    { label: "Fuel tank", first: rowValue(orderedSections, "Fuel tank capacity", 1), second: rowValue(orderedSections, "Fuel tank capacity", 2), mode: "text" },
+  ];
 
   const saveComparison = () => {
     persistShortlist(shortlist);
@@ -69,10 +96,16 @@ export function CompareView() {
 
   return (
     <section className="compare-page" id="compare" aria-labelledby="compare-title">
+      <div className="compare-protocol">
+        <span className="compare-protocol__dot" aria-hidden="true" />
+        <strong>Comparison matrix // protocol v2.4</strong>
+        <span>{topTwo.length === 2 ? "Dual view armed" : "Waiting for pair"}</span>
+      </div>
+
       <header className="compare-heading">
         <p className="compare-eyebrow"><Scale size={15} aria-hidden="true" /> Unbiased comparison</p>
         <h1 id="compare-title">Compare vehicles</h1>
-        <p>Side-by-side details from the catalogue and verified sources. Pick what fits your life.</p>
+        <p>Side-by-side details from the catalogue and verified sources, tuned into a compact telemetry view for faster decisions.</p>
       </header>
 
       <section className="compare-slots" aria-label="Vehicles in this comparison">
@@ -82,10 +115,14 @@ export function CompareView() {
           const detail = item ? modelDetailsFor(item.brand, item.model) : null;
           return (
             <article className={`compare-slot${item ? " is-filled" : " is-empty"}`} key={index}>
-              <div className="compare-slot__top"><span>Vehicle {index + 1}</span>
+              <div className="compare-slot__top"><span className={index === 0 ? "compare-slot__tag is-garage" : "compare-slot__tag"}>{index === 0 ? "Garage linked" : "Benchmark ref"}</span>
+                <small>Slot // 0{index + 1}</small>
                 {item ? <button className="compare-icon-button" type="button" aria-label={`Remove ${item.brand} ${item.model} from comparison`} onClick={() => removeShortlistItem(item.id)}><X size={17} /></button> : null}
               </div>
-              <div className="compare-slot__visual" aria-hidden="true"><CarFront size={34} strokeWidth={1.5} /></div>
+              <div className="compare-slot__visual" aria-hidden="true">
+                <CarFront size={42} strokeWidth={1.3} />
+                <span>{detail?.bodyType ?? "Selection bay"}</span>
+              </div>
               {item ? <>
                 <h2>{item.brand} {item.model}</h2>
                 <p className="compare-slot__variant">{item.variant || "Variant not selected"} · {detail?.bodyType || "Body type not verified"}</p>
@@ -98,6 +135,37 @@ export function CompareView() {
             </article>
           );
         })}
+      </section>
+
+      <section className="compare-wireframe" aria-labelledby="compare-wireframe-title">
+        <div className="compare-section-head">
+          <div>
+            <p className="compare-eyebrow">CAD telemetry wireframe</p>
+            <h2 id="compare-wireframe-title">Stance & dimensional envelope</h2>
+          </div>
+          <span>Scaled 1:30</span>
+        </div>
+        <div className="compare-blueprint">
+          <svg className="compare-blueprint__svg" viewBox="0 0 380 132" role="img" aria-label={`${firstName} and ${secondName} dimensional wireframe`}>
+            <line className="compare-blueprint__datum" x1="10" x2="370" y1="112" y2="112" />
+            <path className="compare-blueprint__first" d="M 60 102 L 76 102 Q 83 86 97 86 Q 112 86 119 102 L 218 102 Q 226 86 242 86 Q 258 86 266 102 L 294 97 L 278 73 L 211 52 L 142 52 L 96 72 L 56 77 Z" />
+            <path className="compare-blueprint__second" d="M 38 106 L 58 106 Q 67 87 84 87 Q 101 87 110 106 L 248 106 Q 257 87 275 87 Q 293 87 302 106 L 332 100 L 316 68 L 239 47 L 150 47 L 88 66 L 38 73 Z" />
+            <circle className="compare-blueprint__wheel-a" cx="98" cy="101" r="10" />
+            <circle className="compare-blueprint__wheel-a" cx="250" cy="101" r="10" />
+            <circle className="compare-blueprint__wheel-b" cx="84" cy="103" r="12" />
+            <circle className="compare-blueprint__wheel-b" cx="276" cy="103" r="12" />
+            <line className="compare-blueprint__clearance" x1="172" x2="172" y1="112" y2="90" />
+            <line className="compare-blueprint__clearance" x1="166" x2="178" y1="90" y2="90" />
+          </svg>
+          <div className="compare-blueprint__legend" aria-hidden="true"><span>{topTwo[0]?.item.model ?? "Slot 01"}</span><span>{topTwo[1]?.item.model ?? "Slot 02"}</span></div>
+        </div>
+        <div className="compare-dimensions">
+          {dimensionMetrics.map(metric => <div className="compare-dimension" key={metric.label}>
+            <span>{metric.label}</span>
+            <strong>{metric.first}</strong>
+            <small>{metric.second}</small>
+          </div>)}
+        </div>
       </section>
 
       <form className="compare-builder" ref={formRef} onSubmit={addShortlistItem} aria-labelledby="compare-builder-title">
@@ -182,6 +250,42 @@ export function CompareView() {
           })}</div>
         </div>
       </div> : <p className="compare-empty-hint">Add two vehicles to unlock the detailed side-by-side comparison.</p>}
+
+      <section className="compare-telemetry" aria-labelledby="compare-telemetry-title">
+        <div className="compare-section-head">
+          <div>
+            <p className="compare-eyebrow">Telemetry benchmark</p>
+            <h2 id="compare-telemetry-title">Performance & dynamics matrix</h2>
+          </div>
+          <span>{topTwo.length === 2 ? "Calibrated" : "Pair required"}</span>
+        </div>
+        <div className="compare-telemetry__rows">
+          {telemetryRows.map(row => <div className={`compare-telemetry__row is-${row.mode}`} key={row.label}>
+            <div className="compare-telemetry__label"><span>{row.label}</span>{row.label === "Peak power" && firstPrice && secondPrice ? <small>price delta {compareNumber(firstPrice, secondPrice)}</small> : null}</div>
+            <div><strong>{row.first}</strong><small>{firstName}</small></div>
+            <div><strong>{row.second}</strong><small>{secondName}</small></div>
+          </div>)}
+        </div>
+      </section>
+
+      <section className="compare-costs" aria-label="Ownership quick matrix">
+        <article>
+          <span className="compare-eyebrow">Fuel efficiency dynamics</span>
+          <h2>Real-world range proxy</h2>
+          <div className="compare-costs__grid">
+            <div><span>{firstName}</span><strong>{rowValue(orderedSections, "Certified mileage", 1)}</strong><small>{rowValue(orderedSections, "Fuel tank capacity", 1)}</small></div>
+            <div><span>{secondName}</span><strong>{rowValue(orderedSections, "Certified mileage", 2)}</strong><small>{rowValue(orderedSections, "Fuel tank capacity", 2)}</small></div>
+          </div>
+        </article>
+        <article>
+          <span className="compare-eyebrow">Local operational expenses</span>
+          <h2>Purchase gap & feasibility</h2>
+          <div className="compare-costs__grid">
+            <div><span>{firstName}</span><strong>{firstPrice ? formatMoney(firstPrice) : "Add vehicle"}</strong><small>{priceDelta < 0 ? "Lower outlay" : "Compare quote"}</small></div>
+            <div><span>{secondName}</span><strong>{secondPrice ? formatMoney(secondPrice) : "Add vehicle"}</strong><small>{priceDelta > 0 ? "Lower outlay" : "Compare quote"}</small></div>
+          </div>
+        </article>
+      </section>
 
       <div className="compare-categories" role="region" aria-label="Comparison categories">
         {orderedSections.map(section => {
