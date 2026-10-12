@@ -29,7 +29,8 @@ export async function openApp(page: Page, signedIn: boolean, path = "/", cloud =
     errorsByPage.set(page, errors);
     page.on("pageerror", error => { errors.push(error.message); console.error(error.message); });
   }
-  await page.addInitScript(() => { try { sessionStorage.setItem("otofolks.launch-intro.seen", "1"); } catch { /* test route remains usable */ } });
+  // The landing page's 3D studio is too heavy for a software-rendered test browser; ask for the flat one.
+  await page.addInitScript(() => { try { sessionStorage.setItem("otofolks.hero", "static"); } catch { /* test route remains usable */ } });
   await page.unroute("**/src/main.tsx*");
   await page.route("**/src/main.tsx*", route => route.fulfill({
     contentType: "application/javascript",
@@ -51,10 +52,11 @@ export async function openApp(page: Page, signedIn: boolean, path = "/", cloud =
       }));`,
   }));
   await page.goto(path);
+  // The app's own navigation, or, on the visitor's landing page (which has none of its own), the studio hero.
   await expect(page.getByRole("navigation", {
     name: (page.viewportSize()?.width ?? 1440) <= 860 ? "Primary" : "Primary navigation",
     exact: true,
-  })).toBeVisible();
+  }).or(page.locator(".lp-hero"))).toBeVisible();
 }
 
 export const signInRequests = (page: Page) =>

@@ -165,7 +165,8 @@ test("with Save-Data on, a visitor's view is fetched only when it is opened", as
   await expect(page.locator(".landing")).toBeVisible();
   await afterIdle(page);
   expect(fetched()).toEqual([]);
-  await page.getByRole("link", { name: "Find my next car" }).click();
+  // The landing page links nowhere in the app but Community, so the visitor opens the view as a link would: in place.
+  await page.evaluate(() => { history.pushState({}, "", "/find-car"); window.dispatchEvent(new PopStateEvent("popstate")); });
   await expect(page).toHaveURL(/\/find-car$/);
   await expect(page.getByRole("heading", { name: "Find a car that fits your life" })).toBeVisible();
   expect(fetched()).toEqual(["FindCarView"]);
@@ -304,14 +305,14 @@ test("a save to the account that is still running finishes after the member open
 });
 
 test("a visitor can follow any link; members-only pages show a sign-in prompt in place of the view", async ({ page }) => {
-  await openApp(page, false);
+  await openApp(page, false, "/compare");
   const navigation = page.getByRole("navigation", { name: "Primary navigation" });
 
   // The Sign in link opens sign-in on the spot and will bring the visitor back to where they are.
   await page.getByRole("link", { name: "Sign in", exact: true }).click();
-  expect(await signInRequests(page)).toEqual(["/ sign-in"]);
-  await expect(page).toHaveURL(/\/$/);
-  await expect(page.locator(".landing")).toBeVisible();
+  expect(await signInRequests(page)).toEqual(["/compare sign-in"]);
+  await expect(page).toHaveURL(/\/compare$/);
+  await expect(page.locator("#compare")).toBeVisible();
 
   // A link to a members-only page is followed. Nothing is asked until the visitor chooses to.
   await navigation.getByRole("link", { name: "Community", exact: true }).click();
@@ -320,11 +321,11 @@ test("a visitor can follow any link; members-only pages show a sign-in prompt in
   await expect(prompt.getByRole("heading", { name: "Owner notes are for signed-in members" })).toBeFocused();
   await expect(page).toHaveTitle("Community · Otofolks");
   await expect(page.locator("#feed")).toHaveCount(0);
-  expect(await signInRequests(page)).toEqual(["/ sign-in"]);
+  expect(await signInRequests(page)).toEqual(["/compare sign-in"]);
   // Signing in from the prompt comes back to this address, whichever way the visitor signs in.
   await prompt.getByRole("button", { name: "Sign in", exact: true }).click();
   await prompt.getByRole("button", { name: "Create account", exact: true }).click();
-  expect(await signInRequests(page)).toEqual(["/ sign-in", "/community sign-in", "/community sign-up"]);
+  expect(await signInRequests(page)).toEqual(["/compare sign-in", "/community sign-in", "/community sign-up"]);
   // From there the Sign in link returns to the prompt's own address too.
   await page.getByRole("link", { name: "Sign in", exact: true }).click();
   expect((await signInRequests(page)).at(-1)).toBe("/community sign-in");
@@ -406,9 +407,9 @@ test("while sign-in is still loading nobody is shown, or sent, the other audienc
 });
 
 test("pressing Sign in and walking away does not make the device look like a member's", async ({ page }) => {
-  await openApp(page, false);
+  await openApp(page, false, "/compare");
   await page.getByRole("link", { name: "Sign in", exact: true }).click();
-  expect(await signInRequests(page)).toEqual(["/ sign-in"]);
+  expect(await signInRequests(page)).toEqual(["/compare sign-in"]);
   // In this tab the load that follows a sign-in waits for the answer rather than flash the landing page.
   await openApp(page, false, "/", false, { isLoaded: false });
   await expect(page.locator(".view-loading")).toBeVisible();
