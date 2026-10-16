@@ -21,7 +21,7 @@ const mat = {
   glass: new THREE.MeshPhysicalMaterial({ name: "Glass", color: "#080c0e", metalness: 0.1, roughness: 0.1, clearcoat: 0.5 }),
   trim: new THREE.MeshStandardMaterial({ name: "Trim", color: "#131516", roughness: 0.62 }),
   gloss: new THREE.MeshPhysicalMaterial({ name: "GlossBlack", color: "#050607", metalness: 0.2, roughness: 0.18, clearcoat: 1 }),
-  chrome: new THREE.MeshStandardMaterial({ name: "Chrome", color: "#e4e7ea", metalness: 1, roughness: 0.12 }),
+  chrome: new THREE.MeshStandardMaterial({ name: "Chrome", color: "#eef0f2", metalness: 0.9, roughness: 0.2 }),
   silver: new THREE.MeshStandardMaterial({ name: "Silver", color: "#a9aeb3", metalness: 0.8, roughness: 0.35 }),
   tyre: new THREE.MeshStandardMaterial({ name: "Tyre", color: "#121314", roughness: 0.92 }),
   rim: new THREE.MeshStandardMaterial({ name: "Rim", color: "#c3c7cb", metalness: 0.95, roughness: 0.24 }),
@@ -335,10 +335,11 @@ function buildCar(spec) {
 
   if (spec.roofRails) {
     const r0 = spec.roofRails[0] * L, r1 = spec.roofRails[1] * L;
-    const ry = roofLine(u((r0 + r1) / 2)) + 0.05;
     for (const side of [1, -1]) {
       const z = side * (gHalfAt(0) * (1 - gTaper) - 0.02);
-      box(car, [r1 - r0, 0.035, 0.04], [(r0 + r1) / 2, ry, z], spec.blackRails ? mat.gloss : mat.silver, 0.015);
+      const points = [];
+      for (let i = 0; i <= 16; i++) { const x = r0 + (r1 - r0) * (i / 16); points.push(new THREE.Vector3(x, roofLine(u(x)) + 0.045, z)); }
+      car.add(mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 32, 0.018, 8), spec.blackRails ? mat.gloss : mat.silver, "RoofRail"));
       for (const x of [r0 + 0.05, r1 - 0.05]) box(car, [0.08, 0.06, 0.04], [x, roofLine(u(x)) + 0.02, z], mat.trim, 0.01);
     }
   }
@@ -409,7 +410,7 @@ function buildCar(spec) {
   return car;
 }
 
-const slats = (onFront, count, { width, height, h, vertical, material = mat.chrome }) => {
+const slats = (onFront, count, { width, height, h, vertical, material = mat.silver }) => {
   for (let i = 0; i < count; i++) {
     const f = count === 1 ? 0 : i / (count - 1) - 0.5;
     if (vertical) onFront([0.04, height * 0.9, 0.016], h, f * width * 0.92, material, 0.006, 0.004);
@@ -425,7 +426,7 @@ const cars = [
     // Belt kicks up into the rear quarter; the roof falls gently to a raked tailgate with a spoiler.
     belt: [[-0.5, 1.04], [-0.47, 1.12], [-0.4, 1.14], [-0.32, 1.12], [0.1, 1.07], [0.25, 1.04], [0.42, 1.0], [0.47, 0.97], [0.5, 0.9]],
     roof: [[-0.485, 1.12], [-0.465, 1.42], [-0.43, 1.55], [-0.25, 1.6], [0.0, 1.61], [0.08, 1.6], [0.28, 1.04]],
-    gFront: 0.28, gRear: -0.485, gHalf: 0.79, gTaper: 0.13, glassN: 4.2, roofPanel: [0.075, -0.44], bPillar: -0.08,
+    gFront: 0.28, gRear: -0.485, gHalf: 0.84, gTaper: 0.13, glassN: 4.2, roofPanel: [0.075, -0.44], bPillar: -0.08,
     rearPillarRadius: 0.08, rearPillarPaint: true,
     blackPillars: true, blackMirrors: true, cladding: true, roofRails: [-0.42, 0.04], blackRails: true, handles: [0.0, -0.22],
     plateFront: 0.22, plateRear: 0.18,
@@ -515,23 +516,29 @@ const cars = [
     swatches: [["Wild Cherry Red", "#8c1020"], ["Candy White", "#f3f3f1"], ["Rising Blue", "#2c4f8f"], ["Curcuma Yellow", "#d9a514"], ["Reflex Silver", "#b5b9bc"], ["Carbon Steel Grey", "#4d5155"]],
   },
   {
-    id: "honda-amaze", noseRake: 0.12, tailRake: 0.1, name: "Honda Amaze", maker: "Honda · compact sedan",
-    L: 3.995, W: 1.733, wb: 2.47, fo: 0.8, R: 0.305, tyreWidth: 0.185, gc: 0.172, spokes: 10, rimLook: "dual",
-    frontBumperBottom: 0.25, rearBumperBottom: 0.38, noseStart: 0.34, nose: 0.58, tail: 0.42,
-    belt: [[-0.5, 0.88], [-0.45, 0.97], [-0.37, 0.98], [-0.24, 0.97], [0.0, 0.94], [0.22, 0.91], [0.41, 0.86], [0.46, 0.82], [0.5, 0.75]],
-    roof: [[-0.335, 0.97], [-0.22, 1.35], [-0.12, 1.455], [0.05, 1.49], [0.1, 1.48], [0.26, 0.9]],
-    gFront: 0.26, gRear: -0.335, gHalf: 0.76, gTaper: 0.3, roofPanel: [0.09, -0.15], bPillar: -0.04, cPillar: null,
-    blackPillars: false, handles: [0.06, -0.15], chromeHandles: true, chromeBelt: true,
-    plateFront: 0.07, plateRear: 0.18,
+    id: "honda-amaze", noseRake: 0.07, tailRake: 0.1, name: "Honda Amaze", maker: "Honda · compact sedan",
+    L: 3.995, W: 1.733, wb: 2.47, fo: 0.8, R: 0.305, tyreWidth: 0.185, gc: 0.172, spokes: 12, rimLook: "dual",
+    frontBumperBottom: 0.25, rearBumperBottom: 0.38, noseStart: 0.34, nose: 0.5, tail: 0.42, shoulderDrop: 0.1,
+    // A tall, fairly upright nose; the roof arcs over to a raked rear glass and a short boot.
+    belt: [[-0.5, 0.92], [-0.45, 0.99], [-0.37, 1.0], [-0.24, 0.98], [0.0, 0.95], [0.22, 0.92], [0.38, 0.88], [0.46, 0.84], [0.5, 0.78]],
+    roof: [[-0.335, 0.98], [-0.24, 1.3], [-0.13, 1.45], [0.0, 1.5], [0.09, 1.48], [0.15, 1.42], [0.28, 0.92]],
+    gFront: 0.28, gRear: -0.335, gHalf: 0.76, gTaper: 0.3, roofPanel: [0.1, -0.14], bPillar: -0.04,
+    rearPillarRadius: 0.06, rearPillarPaint: true,
+    blackPillars: true, handles: [0.06, -0.15], chromeHandles: true,
+    plateFront: 0.12, plateRear: 0.18,
     face({ onFront, onRear, frontPair, rearPair }) {
-      // Wide hexagonal grille under a thick chrome bar that runs into the headlamps.
-      onFront([0.05, 0.2, 0.68], 0.2, 0, mat.gloss, 0.05);
-      onFront([0.055, 0.04, 0.96], 0.33, 0, mat.chrome, 0.015);
-      frontPair([0.08, 0.1, 0.28], 0.33, 0.52, mat.lens, 0.04);
-      frontPair([0.085, 0.012, 0.24], 0.37, 0.52, mat.drl, 0.005);
-      slats(onFront, 4, { width: 0.6, height: 0.16, h: 0.2, vertical: false, material: mat.trim });
-      onFront([0.05, 0.08, 0.9], 0.02, 0, mat.trim, 0.03);
-      frontPair([0.05, 0.05, 0.12], 0.05, 0.6, mat.drl, 0.02);
+      // Big octagonal grille in a diamond mesh, under a thick chrome bar that runs into the lamps.
+      onFront([0.05, 0.25, 0.64], 0.24, 0, mat.gloss, 0.07);
+      slats(onFront, 6, { width: 0.6, height: 0.22, h: 0.24, vertical: false, material: mat.trim });
+      slats(onFront, 11, { width: 0.6, height: 0.22, h: 0.24, vertical: true, material: mat.trim });
+      onFront([0.04, 0.03, 1.0], 0.385, 0, mat.chrome, 0.012);
+      // Slim headlamps beside the bar, LED strip along their top edge.
+      frontPair([0.06, 0.055, 0.26], 0.37, 0.53, mat.lens, 0.025);
+      frontPair([0.04, 0.01, 0.3], 0.425, 0.53, mat.drl, 0.004);
+      // Black corner intakes with fog lamps, and a black lip.
+      frontPair([0.05, 0.15, 0.1], 0.12, 0.6, mat.gloss, 0.03);
+      frontPair([0.04, 0.03, 0.06], 0.11, 0.6, mat.drl, 0.012);
+      onFront([0.05, 0.05, 0.8], 0.02, 0, mat.trim, 0.02);
       // C-shaped tail lamps and a chrome strip across the boot.
       rearPair([0.08, 0.13, 0.3], 0.44, 0.53, mat.tail, 0.04);
       rearPair([0.085, 0.04, 0.16], 0.44, 0.5, mat.lens, 0.015);
@@ -541,23 +548,29 @@ const cars = [
     swatches: [["Radiant Red", "#9a1420"], ["Platinum White Pearl", "#eeeeea"], ["Obsidian Blue Pearl", "#1d2a44"], ["Meteoroid Grey", "#55585b"], ["Lunar Silver", "#b4b7ba"], ["Golden Brown", "#6e5a43"]],
   },
   {
-    id: "honda-elevate", noseRake: 0.06, tailRake: 0.04, name: "Honda Elevate", maker: "Honda · SUV",
-    L: 4.312, W: 1.79, wb: 2.65, fo: 0.87, R: 0.345, tyreWidth: 0.215, gc: 0.22, spokes: 5, rimLook: "dual",
-    frontBumperBottom: 0.44, rearBumperBottom: 0.5, nose: 0.36, tail: 0.3,
+    id: "honda-elevate", noseRake: 0.05, tailRake: 0.04, name: "Honda Elevate", maker: "Honda · SUV",
+    L: 4.312, W: 1.79, wb: 2.65, fo: 0.87, R: 0.345, tyreWidth: 0.215, gc: 0.22, spokes: 16, rimLook: "dual",
+    frontBumperBottom: 0.32, rearBumperBottom: 0.5, nose: 0.36, tail: 0.3,
+    // Flat, high bonnet and an upright face; black roof over black pillars.
     belt: [[-0.5, 1.06], [-0.47, 1.14], [-0.4, 1.15], [0.1, 1.11], [0.25, 1.09], [0.42, 1.05], [0.47, 1.02], [0.5, 0.96]],
-    roof: [[-0.486, 1.08], [-0.465, 1.52], [-0.43, 1.6], [0.0, 1.62], [0.08, 1.61], [0.27, 1.03]],
-    gFront: 0.27, gRear: -0.486, gHalf: 0.8, gTaper: 0.13, glassN: 4.2, roofPanel: [0.075, -0.45], bPillar: -0.08, cPillar: -0.33, cPillarWidth: 0.12,
-    blackPillars: true, blackMirrors: false, cladding: true, roofRails: [-0.42, 0.05], handles: [0.0, -0.22], chromeHandles: true,
-    plateFront: 0.1, plateRear: 0.2,
+    roof: [[-0.486, 1.1], [-0.465, 1.5], [-0.43, 1.59], [0.0, 1.62], [0.08, 1.61], [0.27, 1.03]],
+    gFront: 0.27, gRear: -0.486, gHalf: 0.84, gTaper: 0.13, glassN: 4.2, roofPanel: [0.075, -0.45], bPillar: -0.08,
+    rearPillarRadius: 0.07, rearPillarPaint: true, blackRoof: true,
+    blackPillars: true, blackMirrors: true, cladding: true, roofRails: [-0.42, 0.05], handles: [0.0, -0.22], chromeHandles: true,
+    plateFront: 0.16, plateRear: 0.2,
     face({ onFront, onRear, frontPair, rearPair }) {
-      // Big upright grille with chrome bars, slim headlamps above it.
-      onFront([0.05, 0.27, 0.86], 0.28, 0, mat.gloss, 0.04);
-      slats(onFront, 4, { width: 0.84, height: 0.24, h: 0.28, vertical: false });
-      onFront([0.055, 0.035, 1.04], 0.46, 0, mat.chrome, 0.012);
-      frontPair([0.08, 0.07, 0.26], 0.46, 0.6, mat.lens, 0.03);
-      frontPair([0.085, 0.012, 0.24], 0.49, 0.6, mat.drl, 0.005);
-      onFront([0.05, 0.08, 1.12], 0.06, 0, mat.trim, 0.03);
-      onFront([0.055, 0.04, 0.6], 0.02, 0, mat.silver, 0.015);
+      // Huge upright grille with dashed horizontal bars, a thick chrome bar across the top.
+      onFront([0.05, 0.34, 0.9], 0.36, 0, mat.gloss, 0.07);
+      slats(onFront, 8, { width: 0.86, height: 0.31, h: 0.36, vertical: false, material: mat.trim });
+      onFront([0.04, 0.03, 1.12], 0.56, 0, mat.chrome, 0.012);
+      // Slim lamps tucked under the chrome bar, wrapping round the corners.
+      frontPair([0.06, 0.05, 0.26], 0.49, 0.62, mat.lens, 0.025);
+      frontPair([0.04, 0.01, 0.3], 0.545, 0.6, mat.drl, 0.004);
+      // Black triangular corner intakes with fog lamps, wide lower grille, silver skid plate.
+      frontPair([0.05, 0.17, 0.14], 0.24, 0.64, mat.gloss, 0.03);
+      frontPair([0.04, 0.04, 0.05], 0.22, 0.64, mat.drl, 0.018);
+      onFront([0.05, 0.07, 0.92], 0.06, 0, mat.gloss, 0.03);
+      onFront([0.045, 0.035, 1.0], 0.0, 0, mat.silver, 0.012, 0.01);
       // Light bar across the tailgate.
       onRear([0.05, 0.035, 1.2], 0.5, 0, mat.tail, 0.012);
       rearPair([0.07, 0.11, 0.24], 0.48, 0.6, mat.tail, 0.035);
@@ -569,22 +582,27 @@ const cars = [
   {
     id: "mahindra-xuv700", noseRake: 0.08, tailRake: 0.05, name: "Mahindra XUV700", maker: "Mahindra · SUV",
     L: 4.695, W: 1.89, wb: 2.75, fo: 0.95, R: 0.37, tyreWidth: 0.235, gc: 0.2, spokes: 10, rimLook: "dual",
-    frontBumperBottom: 0.46, rearBumperBottom: 0.52, nose: 0.36, tail: 0.32,
+    frontBumperBottom: 0.34, rearBumperBottom: 0.52, nose: 0.36, tail: 0.32,
+    // Long and tall; the roof falls slightly to the tailgate over a black, "floating" rear pillar.
     belt: [[-0.5, 1.1], [-0.47, 1.18], [-0.4, 1.19], [0.1, 1.15], [0.25, 1.13], [0.42, 1.08], [0.47, 1.05], [0.5, 0.99]],
-    roof: [[-0.486, 1.13], [-0.465, 1.62], [-0.43, 1.7], [0.0, 1.72], [0.08, 1.71], [0.26, 1.07]],
-    gFront: 0.26, gRear: -0.486, gHalf: 0.85, gTaper: 0.13, glassN: 4.2, roofPanel: [0.075, -0.45], bPillar: -0.06, cPillar: -0.33, cPillarWidth: 0.12,
-    blackPillars: true, blackMirrors: true, cladding: true, roofRails: [-0.42, 0.05], handles: [0.02, -0.2], chromeHandles: true,
-    plateFront: 0.1, plateRear: 0.22,
+    roof: [[-0.486, 1.16], [-0.465, 1.56], [-0.43, 1.66], [-0.2, 1.71], [0.0, 1.72], [0.08, 1.71], [0.26, 1.07]],
+    gFront: 0.26, gRear: -0.486, gHalf: 0.89, gTaper: 0.13, glassN: 4.2, roofPanel: [0.075, -0.45], bPillar: -0.06,
+    rearPillarRadius: 0.07,
+    blackPillars: true, blackMirrors: true, cladding: true, roofRails: [-0.42, 0.05], handles: [0.02, -0.2], chromeHandles: true, chromeBelt: true,
+    plateFront: 0.16, plateRear: 0.22,
     face({ onFront, onRear, frontPair, rearPair }) {
-      // Large grille with vertical chrome slats.
-      onFront([0.05, 0.28, 0.84], 0.3, 0, mat.gloss, 0.05);
-      slats(onFront, 11, { width: 0.8, height: 0.24, h: 0.3, vertical: true });
-      frontPair([0.08, 0.09, 0.26], 0.44, 0.64, mat.lens, 0.035);
-      // The C-shaped daytime lights that drop down the bumper corners.
-      frontPair([0.085, 0.3, 0.016], 0.25, 0.78, mat.drl, 0.006);
-      frontPair([0.085, 0.016, 0.1], 0.1, 0.74, mat.drl, 0.006);
-      onFront([0.05, 0.1, 1.1], 0.06, 0, mat.trim, 0.03);
-      onFront([0.055, 0.04, 0.66], 0.0, 0, mat.silver, 0.015);
+      // Large grille full of vertical chrome slats.
+      onFront([0.05, 0.3, 0.86], 0.36, 0, mat.gloss, 0.05);
+      slats(onFront, 13, { width: 0.82, height: 0.27, h: 0.36, vertical: true });
+      // Angular lamps at the grille's top corners; the "dagger" lights drop from them down the bumper.
+      frontPair([0.06, 0.06, 0.26], 0.47, 0.6, mat.lens, 0.02);
+      frontPair([0.04, 0.01, 0.26], 0.46, 0.62, mat.drl, 0.004);
+      frontPair([0.04, 0.32, 0.016], 0.28, 0.72, mat.drl, 0.006);
+      frontPair([0.04, 0.016, 0.08], 0.12, 0.69, mat.drl, 0.006);
+      // Wide lower bumper: black intake, fog lamps, silver skid plate.
+      onFront([0.05, 0.1, 1.0], 0.08, 0, mat.gloss, 0.03);
+      frontPair([0.04, 0.03, 0.06], 0.1, 0.6, mat.drl, 0.012);
+      onFront([0.045, 0.03, 0.8], 0.0, 0, mat.silver, 0.012, 0.01);
       rearPair([0.08, 0.16, 0.24], 0.5, 0.66, mat.tail, 0.04);
       onRear([0.05, 0.02, 1.0], 0.55, 0, mat.chrome, 0.008);
       onRear([0.05, 0.13, 1.3], 0.02, 0, mat.trim, 0.03);
