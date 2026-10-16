@@ -1,0 +1,282 @@
+{
+  "cars": [
+    {
+      "id": "kia-sonet",
+      "name": "Kia Sonet",
+      "maker": "Kia · compact SUV",
+      "src": "/showroom/kia-sonet.glb",
+      "poster": "/showroom/kia-sonet.jpg",
+      "paintMaterials": [
+        "Paint"
+      ],
+      "lengthMetres": 3.995,
+      "credit": {
+        "author": "Otofolks",
+        "licence": "Modelled from scratch · stylised likeness, not a manufacturer model",
+        "url": ""
+      },
+      "swatches": [
+        {
+          "name": "Intense Red",
+          "hex": "#a3121c"
+        },
+        {
+          "name": "Glacier White Pearl",
+          "hex": "#eceeee"
+        },
+        {
+          "name": "Imperial Blue",
+          "hex": "#1d2f5c"
+        },
+        {
+          "name": "Aurora Black Pearl",
+          "hex": "#121416"
+        },
+        {
+          "name": "Gravity Grey",
+          "hex": "#4b5054"
+        },
+        {
+          "name": "Pewter Olive",
+          "hex": "#5f6a52"
+        }
+      ]
+    },
+    {
+      "id": "maruti-baleno",
+      "name": "Maruti Suzuki Baleno",
+      "maker": "Maruti Suzuki · hatchback",
+      "src": "/showroom/maruti-baleno.glb",
+      "poster": "/showroom/maruti-baleno.jpg",
+      "paintMaterials": [
+        "Paint"
+      ],
+      "lengthMetres": 3.99,
+      "credit": {
+        "author": "Otofolks",
+        "licence": "Modelled from scratch · stylised likeness, not a manufacturer model",
+        "url": ""
+      },
+      "swatches": [
+        {
+          "name": "Opulent Red",
+          "hex": "#8f141c"
+        },
+        {
+          "name": "Arctic White",
+          "hex": "#f0f1ef"
+        },
+        {
+          "name": "Nexa Blue",
+          "hex": "#1b3f7a"
+        },
+        {
+          "name": "Grandeur Grey",
+          "hex": "#55595d"
+        },
+        {
+          "name": "Splendid Silver",
+          "hex": "#b7bbbe"
+        },
+        {
+          "name": "Luxe Beige",
+          "hex": "#a8957a"
+        }
+      ]
+    },
+    {
+      "id": "vw-virtus",
+      "name": "Volkswagen Virtus",
+      "maker": "Volkswagen · sedan",
+      "src": "/showroom/vw-virtus.glb",
+      "poster": "/showroom/vw-virtus.jpg",
+      "paintMaterials": [
+        "Paint"
+      ],
+      "lengthMetres": 4.561,
+      "credit": {
+        "author": "Otofolks",
+        "licence": "Modelled from scratch · stylised likeness, not a manufacturer model",
+        "url": ""
+      },
+      "swatches": [
+        {
+          "name": "Wild Cherry Red",
+          "hex": "#8c1020"
+        },
+        {
+          "name": "Candy White",
+          "hex": "#f3f3f1"
+        },
+        {
+          "name": "Rising Blue",
+          "hex": "#2c4f8f"
+        },
+        {
+          "name": "Curcuma Yellow",
+          "hex": "#d9a514"
+        },
+        {
+          "name": "Reflex Silver",
+          "hex": "#b5b9bc"
+        },
+        {
+          "name": "Carbon Steel Grey",
+          "hex": "#4d5155"
+        }
+      ]
+    },
+    {
+      "id": "honda-amaze",
+      "name": "Honda Amaze",
+      "maker": "Honda · compact sedan",
+      "src": "/showroom/honda-amaze.glb",
+      "poster": "/showroom/honda-amaze.jpg",
+      "paintMaterials": [
+        "Paint"
+      ],
+      "lengthMetres": 3.995,
+      "credit": {
+        "author": "Otofolks",
+        "licence": "Modelled from scratch · stylised likeness, not a manufacturer model",
+        "url": ""
+      },
+      "swatches": [
+        {
+          "name": "Radiant Red",
+          "hex": "#9a1420"
+        },
+        {
+          "name": "Platinum White Pearl",
+          "hex": "#eeeeea"
+        },
+        {
+          "name": "Obsidian Blue Pearl",
+          "hex": "#1d2a44"
+        },
+        {
+          "name": "Meteoroid Grey",
+          "hex": "#55585b"
+        },
+        {
+          "name": "Lunar Silver",
+          "hex": "#b4b7ba"
+        },
+        {
+          "name": "Golden Brown",
+          "hex": "#6e5a43"
+        }
+      ]
+    },
+    {
+      "id": "honda-elevate",
+      "name": "Honda Elevate",
+      "maker": "Honda · SUV",
+      "src": "/showroom/honda-elevate.glb",
+      "poster": "/showroom/honda-elevate.jpg",
+      "paintMaterials": [
+        "Paint"
+      ],
+      "lengthMetres": 4.312,
+      "credit": {
+        "author": "Otofolks",
+        "licence": "Modelled from scratch · stylised likeness, not a manufacturer model",
+        "url": ""
+      },
+      "swatches": [
+        {
+          "name": "Phoenix Orange Pearl",
+          "hex": "#c4561d"
+        },
+        {
+          "name": "Platinum White Pearl",
+          "hex": "#eeeeea"
+        },
+        {
+          "name": "Obsidian Blue Pearl",
+          "hex": "#1d2a44"
+        },
+        {
+          "name": "Golden Brown",
+          "hex": "#6e5a43"
+        },
+        {
+          "name": "Meteoroid Grey",
+          "hex": "#55585b"
+        },
+        {
+          "name": "Crystal Black Pearl",
+          "hex": "#111214"
+        }
+      ]
+    },
+    {
+      "id": "mahindra-xuv700",
+      "name": "Mahindra XUV700",
+      "maker": "Mahindra · SUV",
+      "src": "/showroom/mahindra-xuv700.glb",
+      "poster": "/showroom/mahindra-xuv700.jpg",
+      "paintMaterials": [
+        "Paint"
+      ],
+      "lengthMetres": 4.695,
+      "credit": {
+        "author": "Otofolks",
+        "licence": "Modelled from scratch · stylised likeness, not a manufacturer model",
+        "url": ""
+      },
+      "swatches": [
+        {
+          "name": "Red Rage",
+          "hex": "#9b1119"
+        },
+        {
+          "name": "Everest White",
+          "hex": "#f0f0ee"
+        },
+        {
+          "name": "Midnight Black",
+          "hex": "#0f1012"
+        },
+        {
+          "name": "Electric Blue",
+          "hex": "#1f4f9e"
+        },
+        {
+          "name": "Dazzling Silver",
+          "hex": "#b3b7ba"
+        },
+        {
+          "name": "Deep Forest",
+          "hex": "#22342b"
+        }
+      ]
+    }
+  ],
+  "swatches": [
+    {
+      "name": "Intense Red",
+      "hex": "#a3121c"
+    },
+    {
+      "name": "Glacier White Pearl",
+      "hex": "#eceeee"
+    },
+    {
+      "name": "Imperial Blue",
+      "hex": "#1d2f5c"
+    },
+    {
+      "name": "Aurora Black Pearl",
+      "hex": "#121416"
+    },
+    {
+      "name": "Gravity Grey",
+      "hex": "#4b5054"
+    },
+    {
+      "name": "Pewter Olive",
+      "hex": "#5f6a52"
+    }
+  ]
+}

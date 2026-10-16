@@ -18,7 +18,7 @@ export const seedPostIds = new Set(seedPosts.map(post => post.id));
 
 export const postSource = (id: string) => isSharedPost(id) ? "Shared" : seedPostIds.has(id) ? "Example" : "On this device";
 
-export type AppView = "top" | "feed" | "pit-stop" | "compare" | "account" | "garage" | "write" | "owner-onboarding" | "guides" | "find-car";
+export type AppView = "top" | "feed" | "pit-stop" | "compare" | "account" | "garage" | "write" | "owner-onboarding" | "guides" | "find-car" | "showroom";
 
 // Where each view lives. Links, redirects and the route table all read this one map.
 export const viewPaths: Record<AppView, string> = {
@@ -32,6 +32,7 @@ export const viewPaths: Record<AppView, string> = {
   "owner-onboarding": "/owner/onboarding",
   guides: "/guides",
   "find-car": "/find-car",
+  showroom: "/showroom",
 };
 
 // Views that need an account. Every other view is open to visitors. The route guard, the
@@ -51,6 +52,7 @@ export const viewTitles: Record<AppView, string> = {
   "owner-onboarding": "Add your vehicle · Otofolks",
   guides: "Care guides · Otofolks",
   "find-car": "Find your next car · Otofolks",
+  showroom: "Virtual showroom · Otofolks",
 };
 
 // Asks the router's own matcher, so the navigation cannot mark one view while another is shown:

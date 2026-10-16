@@ -27,6 +27,8 @@ const views = {
   OwnerOnboarding: fetchedView(() => import("./views/OwnerOnboardingView"), (module) => module.OwnerOnboardingView),
   Guides: fetchedView(() => import("./views/GuidesView"), (module) => module.GuidesView),
   FindCar: fetchedView(() => import("./views/FindCarView"), (module) => module.FindCarView),
+  // Not fetched ahead: its 3D stage is the largest download in the app, so it waits to be opened.
+  Showroom: fetchedView(() => import("./views/ShowroomView"), (module) => module.ShowroomView),
 };
 // The file behind each view that is fetched ahead. Home is asked for separately, below.
 const viewFiles: Partial<Record<AppView, (typeof views)[keyof typeof views]>> = {
@@ -136,6 +138,7 @@ function AppFrame(props: AppProps & { auth: AppAuthState }) {
               <Route path={viewPaths.compare} element={route("compare", <views.Compare />)} />
               <Route path={`${viewPaths.guides}/:slug?`} element={page("guides", <views.Guides />)} />
               <Route path={viewPaths["find-car"]} element={page("find-car", <views.FindCar />)} />
+              <Route path={viewPaths.showroom} element={page("showroom", <views.Showroom />)} />
               <Route path="*" element={<Navigate to={viewPaths.top} replace />} />
             </Routes>
           </Suspense>

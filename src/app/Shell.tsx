@@ -87,6 +87,7 @@ export function AppFooter() {
     <footer className="app-footer">
       <span>Otofolks</span>
       <Link to={viewPaths.guides}>Care guides</Link>
+      <Link to={viewPaths.showroom}>Virtual showroom</Link>
     </footer>
   );
 }
