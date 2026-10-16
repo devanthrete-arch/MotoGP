@@ -59,16 +59,16 @@
       },
       "swatches": [
         {
+          "name": "Nexa Blue",
+          "hex": "#1f3f8c"
+        },
+        {
           "name": "Opulent Red",
           "hex": "#8f141c"
         },
         {
           "name": "Arctic White",
           "hex": "#f0f1ef"
-        },
-        {
-          "name": "Nexa Blue",
-          "hex": "#1b3f7a"
         },
         {
           "name": "Grandeur Grey",
