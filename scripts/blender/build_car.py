@@ -165,7 +165,9 @@ def make_materials(spec):
         "Disc": principled("Disc", (0.35, 0.36, 0.37), metallic=0.9, roughness=0.45),
         "Headlamp": principled("Headlamp", (0.12, 0.13, 0.15), metallic=0.8, roughness=0.08, coat=1.0),
         "DRL": principled("DRL", (1, 1, 1), emission=(0.92, 0.95, 1.0), strength=6.0),
-        "Taillamp": principled("Taillamp", (0.35, 0.02, 0.03), roughness=0.15, coat=1.0, emission=(1.0, 0.06, 0.08), strength=1.6),
+        # A dark red lens, and the brighter LED signature inside it.
+        "Taillamp": principled("Taillamp", (0.22, 0.01, 0.015), roughness=0.1, coat=1.0, emission=(1.0, 0.05, 0.06), strength=0.6),
+        "TaillampLED": principled("TaillampLED", (1.0, 0.1, 0.1), emission=(1.0, 0.08, 0.08), strength=5.0),
         "Plate": principled("Plate", (0.85, 0.85, 0.82), roughness=0.6),
         "Interior": principled("Interior", (0.05, 0.05, 0.055), roughness=0.8),
     }
@@ -308,7 +310,8 @@ def build_body(spec, mats, level):
             bm.faces.new(tri).material_index = names.index("Paint" if 2 <= j else "Trim")
     # Crisp shoulder and belt lines, and a defined edge where the bonnet and tailgate meet the ends.
     for i in range(len(rings) - 1):
-        for j, value in ((4, 0.55), (5, 0.85)):
+        # Lower door crease, shoulder line, belt edge.
+        for j, value in ((3, 0.3), (4, 0.55), (5, 0.85)):
             edge = bm.edges.get((rings[i][j], rings[i + 1][j]))
             if edge:
                 edge[crease] = value
@@ -477,7 +480,7 @@ def faces(spec, surface, mats, level):
     traced("FogLamp", surface, circle, mats["DRL"], length=L, offset=0.006, cuts=2)
     traced("PlateFront", surface, fr["plate"], mats["Plate"], mirror=False, length=L, offset=0.008, cuts=4)
     traced("TailLamp", surface, rr["lamp"], mats["Taillamp"], view="rear", length=L)
-    traced("TailLampInner", surface, rr["lamp_inner"], mats["DRL"], view="rear", length=L, offset=0.006, cuts=3)
+    traced("TailLampInner", surface, rr["lamp_inner"], mats["TaillampLED"], view="rear", length=L, offset=0.006, cuts=3)
     for i, bar in enumerate(rr["chrome"]):
         traced(f"TailChrome{i}", surface, bar, mats["Chrome"], view="rear", mirror=False, length=L, offset=0.005, cuts=4)
     traced("PlateRear", surface, rr["plate"], mats["Plate"], view="rear", mirror=False, length=L, offset=0.006, cuts=4)
@@ -538,16 +541,16 @@ def wheel(spec, mats, level):
     parts.append(lathe("RimLip", [(rr + 0.006, h - 0.012), (rr - 0.004, h - 0.006), (rr - 0.02, h - 0.012)], mats["Rim"], seg))
     parts.append(lathe("Disc", [(0.04, 0.0), (rr * 0.78, 0.0), (rr * 0.78, 0.025), (0.04, 0.025)], mats["Disc"], 40))
     parts.append(lathe("Hub", [(0.0, h - 0.008), (0.05, h - 0.012), (0.06, h - 0.03)], mats["Rim"], 24))
-    # Five twin spokes, machined faces over dark pockets.
+    # A dark face behind the spokes, so the pockets between them read black, as on two-tone alloys.
+    parts.append(lathe("RimFace", [(0.055, h - 0.04), (rr - 0.004, h - 0.04)], mats["RimDark"], seg))
+    # Five twin spokes with machined faces, running from the hub out to the rim.
     for k in range(spec["spokes"]):
         a = k / spec["spokes"] * math.tau
-        for da in (-0.13, 0.13):
+        for da in (-0.11, 0.11):
             ang = a + da
-            mid = rr * 0.55
-            loc = (mid * math.cos(ang), h - 0.022, mid * math.sin(ang))
-            parts.append(box("Spoke", (rr * 0.86, 0.016, 0.036), loc, mats["Rim"], rotation=(0, -ang, 0), bevel=0.005))
-            loc2 = (mid * math.cos(ang), h - 0.03, mid * math.sin(ang))
-            parts.append(box("SpokeBack", (rr * 0.86, 0.02, 0.046), loc2, mats["RimDark"], rotation=(0, -ang, 0), bevel=0))
+            mid = rr * 0.52
+            loc = (mid * math.cos(ang), h - 0.024, mid * math.sin(ang))
+            parts.append(box("Spoke", (rr * 0.92, 0.022, 0.026), loc, mats["Rim"], rotation=(0, -ang, 0), bevel=0.004))
     # Join into one object.
     for p in parts:
         p.select_set(True)
@@ -639,16 +642,18 @@ def details(spec, mats, info, surface):
     for y0, ang in ((0.05, 0.12), (-0.55, 0.1)):
         box("Wiper", (0.012, 0.6, 0.01), (x - 0.03, y0 + 0.25, belt(u) + 0.035), mats["Trim"], rotation=(0, -0.55, ang), bevel=0.002)
     # Roof spoiler over the hatch glass, and a shark-fin aerial.
-    u = spec["roof_rear"] - 0.01
+    # The spoiler matches the roof's width where it ends, and sits on its trailing edge.
+    u = spec["roof_rear"]
     roof = info["roof"]
-    bpy.ops.mesh.primitive_cube_add(size=1, location=(u * L - 0.04, 0, roof(u) + 0.01))
+    roof_half = (info["half_width"](u) - spec["glass_inset"]) * (1 - spec["tumblehome"]) * 0.88
+    bpy.ops.mesh.primitive_cube_add(size=1, location=(u * L - 0.035, 0, roof(u) - 0.006))
     sp = bpy.context.active_object
     sp.name = "Spoiler"
-    sp.scale = (0.2, (W / 2 - spec["glass_inset"]) * (1 - spec["tumblehome"]) * 2 + 0.06, 0.035)
-    sp.rotation_euler = (0, 0.18, 0)
+    sp.scale = (0.14, roof_half * 2, 0.03)
+    sp.rotation_euler = (0, 0.06, 0)
     sp.data.materials.append(mats["Paint"])
     mod = sp.modifiers.new("Bevel", "BEVEL")
-    mod.width = 0.012
+    mod.width = 0.009
     mod.segments = 3
     bpy.ops.mesh.primitive_cone_add(vertices=12, radius1=0.04, radius2=0.004, depth=0.07, location=(-0.3 * L, 0, roof(-0.3) + 0.03))
     fin = bpy.context.active_object
