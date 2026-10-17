@@ -60,8 +60,8 @@ SPECS = {
                     [(0.67, 0.652), (0.76, 0.664), (0.76, 0.675), (0.67, 0.663)]],
             "grille": [(0.0, 0.615), (0.36, 0.615), (0.39, 0.585), (0.35, 0.475), (0.26, 0.45), (0.0, 0.445)],
             # Upper chrome bar rises into the lamps' inner ends; a second bar lower down.
-            "chrome": [[(0.0, 0.603), (0.36, 0.605), (0.45, 0.63), (0.44, 0.643), (0.35, 0.618), (0.0, 0.617)],
-                       [(0.0, 0.553), (0.36, 0.553), (0.365, 0.563), (0.0, 0.563)]],
+            "chrome": [[(0.0, 0.598), (0.36, 0.6), (0.455, 0.628), (0.445, 0.648), (0.35, 0.624), (0.0, 0.622)],
+                       [(0.0, 0.548), (0.36, 0.548), (0.37, 0.566), (0.0, 0.566)]],
             "intake": [(0.0, 0.38), (0.47, 0.38), (0.53, 0.34), (0.49, 0.27), (0.0, 0.27)],
             "fog_pod": [(0.55, 0.39), (0.68, 0.41), (0.69, 0.31), (0.57, 0.29)],
             "fog_chrome": [(0.54, 0.4), (0.69, 0.42), (0.7, 0.408), (0.555, 0.39)],
@@ -338,7 +338,7 @@ def build_body(spec, mats, level):
     # Boolean cutters: wheel arches and door shut lines.
     cutters = []
     R = spec["tyre_radius"]
-    arch_r = R + 0.05
+    arch_r = R + 0.04
     axle_f = L / 2 - spec["front_overhang"]
     axle_r = axle_f - spec["wheelbase"]
     for ax in (axle_f, axle_r):
@@ -563,7 +563,8 @@ def wheel(spec, mats, level):
 def place_wheels(spec, mats, info, level):
     template = wheel(spec, mats, level)
     W, R, tw = spec["width"], spec["tyre_radius"], spec["tyre_width"]
-    track = W / 2 - tw / 2 - 0.03
+    # Tyres sit almost flush with the body sides, as on the real car.
+    track = W / 2 - tw / 2 - 0.015
     wheels = []
     for ax in (info["axle_f"], info["axle_r"]):
         for side in (1, -1):
@@ -603,13 +604,26 @@ def details(spec, mats, info, surface):
     for side in (1, -1):
         hit = surface.hit((x, side * (W / 2 + 0.5), belt(u) + 0.02), (0, -side, 0))
         y = (hit[0].y if hit else side * (W / 2 - 0.1))
-        bpy.ops.mesh.primitive_uv_sphere_add(segments=24, ring_count=12, radius=1, location=(x - 0.02, y + side * 0.13, z))
-        m = bpy.context.active_object
-        m.name = "Mirror"
-        m.scale = (0.075, 0.11, 0.058)
-        m.data.materials.append(mats["Paint"])
+        # Housing: an ellipsoid with its back cut open; the glass sits just inside the opening, so
+        # the two surfaces never coincide (which flickers).
+        size = Vector((0.075, 0.11, 0.058))
+        centre = Vector((x - 0.02, y + side * 0.13, z))
+        bm = bmesh.new()
+        bmesh.ops.create_uvsphere(bm, u_segments=28, v_segments=14, radius=1.0)
+        bmesh.ops.delete(bm, geom=[v for v in bm.verts if v.co.x < -0.6], context="VERTS")
+        for v in bm.verts:
+            v.co = centre + Vector((v.co.x * size.x, v.co.y * size.y, v.co.z * size.z))
+        housing = mesh_object("Mirror", bm, mats["Paint"])
+        for poly in housing.data.polygons:
+            poly.use_smooth = True
+        bm = bmesh.new()
+        rim = [bm.verts.new(centre + Vector((-0.6 * size.x + 0.004, 0.76 * size.y * math.cos(a), 0.76 * size.z * math.sin(a))))
+               for a in [k * math.tau / 28 for k in range(28)]]
+        face = bm.faces.new(rim)
+        if face.normal.x > 0:
+            face.normal_flip()
+        mesh_object("MirrorGlass", bm, mats["Chrome"])
         box("MirrorArm", (0.06, 0.12, 0.03), (x, y + side * 0.06, z - 0.03), mats["Trim"], bevel=0.008)
-        box("MirrorGlass", (0.005, 0.18, 0.09), (x - 0.095, y + side * 0.13, z), mats["Chrome"], bevel=0.01)
     # Chrome door handles.
     for u in spec["handles"]:
         x = info["rake"](u * L, 0.8)
