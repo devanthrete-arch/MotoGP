@@ -22,6 +22,23 @@ The last step re-photographs every car for the still picture shown when a browse
 To compare changes, `PLAYWRIGHT_CHANNEL=chrome node scripts/showroom-review.mjs http://localhost:8080 review.jpg`
 renders every car from the front three-quarter, the side and the rear three-quarter into one sheet.
 
+## Building a car in Blender
+
+`scripts/blender/build_car.py` builds a car in Blender (5.2) from a profile spec in the same
+script, to the model spec below: one subdivided body with flush glass and pillars, creased
+shoulder and belt lines, boolean wheel arches and door shut lines, lamps and grille traced onto the
+surface, lathe-turned tyres and alloys, mirrors, handles, wipers, spoiler and a simple interior.
+The Baleno is built this way:
+
+```
+blender --background --factory-startup --python scripts/blender/build_car.py -- maruti-baleno baleno.glb --level 2 --blend baleno.blend
+blender --background --factory-startup --python scripts/blender/build_car.py -- maruti-baleno baleno-low.glb --level 1
+node scripts/showroom-import.mjs maruti-baleno baleno.glb --low baleno-low.glb
+```
+
+`--level` is the body's subdivision: 2 for the full model, 1 for the phone model. The `.blend`
+is the editable source for anyone who wants to refine the car by hand.
+
 ## Replacing a car with a hand-made model
 
 No Indian manufacturer we checked (Tata, Mahindra, Maruti Suzuki, Hyundai) publishes a licence or

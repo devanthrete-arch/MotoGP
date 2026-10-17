@@ -46,15 +46,15 @@
       "id": "maruti-baleno",
       "name": "Maruti Suzuki Baleno",
       "maker": "Maruti Suzuki · hatchback",
-      "src": "/showroom/maruti-baleno.glb",
+      "src": "/showroom/maruti-baleno-model.glb",
       "poster": "/showroom/maruti-baleno.jpg",
       "paintMaterials": [
         "Paint"
       ],
       "lengthMetres": 3.99,
       "credit": {
-        "author": "Otofolks",
-        "licence": "Modelled from scratch · stylised likeness, not a manufacturer model",
+        "author": "Otofolks (Blender)",
+        "licence": "Modelled for Otofolks · stylised likeness, not a manufacturer model",
         "url": ""
       },
       "swatches": [
@@ -82,7 +82,9 @@
           "name": "Luxe Beige",
           "hex": "#a8957a"
         }
-      ]
+      ],
+      "srcLow": "/showroom/maruti-baleno-model-low.glb",
+      "imported": true
     },
     {
       "id": "vw-virtus",
