@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { ArrowRight, Bike, BookOpen, Box, CarFront, CirclePlus, Fuel, MessageCircle, Scale, ShieldCheck, Wrench } from "lucide-react";
+import { ArrowRight, Bike, BookOpen, CarFront, CirclePlus, Fuel, MessageCircle, Scale, ShieldCheck, Wrench } from "lucide-react";
 import { Link } from "react-router";
 import { isSharedPost } from "../../communityCloud";
 import guideCatalog from "../../../content/guides/catalog.json";
@@ -20,7 +20,6 @@ export function HomeView() {
     { href: `${viewPaths.garage}#garage-costs`, label: "Fuel & expenses", detail: "Know what your vehicle costs", icon: Fuel },
     { href: viewPaths["find-car"], label: "Find a vehicle", detail: "Explore options for your needs", icon: CarFront },
     { href: viewPaths.compare, label: "Compare vehicles", detail: "See the details side by side", icon: Scale },
-    { href: viewPaths.showroom, label: "Virtual showroom", detail: "Walk around cars in 3D", icon: Box },
   ];
 
   return (
