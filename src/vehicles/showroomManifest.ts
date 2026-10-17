@@ -10,6 +10,12 @@ export type ShowroomCar = {
   maker: string;
   /** A GLB or glTF file on this site. Draco and meshopt compression are both understood. */
   src: string;
+  /** A lighter version for phones and slow devices; empty when there is none and `src` is used. */
+  srcLow: string;
+  /** Turn about the vertical axis, in degrees, for a model that does not face +X. */
+  yawDegrees: number;
+  /** Its textures are KTX2, so the KTX2 loader is fetched before the model. */
+  ktx2: boolean;
   /** A still picture of the car, shown when the browser cannot draw 3D. */
   poster: string;
   /** Names of the materials that make up the body paint; the colour swatches recolour these. */
@@ -54,11 +60,16 @@ export function parseShowroomManifest(raw: unknown): ShowroomManifest {
     const credit = (car.credit && typeof car.credit === "object" ? car.credit : {}) as Record<string, unknown>;
     const url = text(credit.url);
     const length = Number(car.lengthMetres);
+    const yaw = Number(car.yawDegrees);
     return [{
       id,
       name: text(car.name) || id,
       maker: text(car.maker),
       src,
+      srcLow: sitePath(car.srcLow),
+      // Any turn is kept, written as -180 to 180.
+      yawDegrees: Number.isFinite(yaw) ? ((((yaw + 180) % 360) + 360) % 360) - 180 : 0,
+      ktx2: car.ktx2 === true,
       poster: sitePath(car.poster),
       paintMaterials: (Array.isArray(car.paintMaterials) ? car.paintMaterials : []).map(text).filter(Boolean),
       lengthMetres: Number.isFinite(length) && length > 1 && length < 20 ? length : 4.2,

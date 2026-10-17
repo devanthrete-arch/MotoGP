@@ -1,18 +1,33 @@
 // The virtual showroom's 3D stage: a car on a turntable under studio softboxes, over a polished
 // floor. Kept in its own file so three.js and drei are only downloaded when the showroom opens.
-import { Component, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Component, Suspense, use, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   AdaptiveDpr, ContactShadows, Environment, Lightformer, MeshReflectorMaterial, OrbitControls, PerformanceMonitor,
   useGLTF, useProgress,
 } from "@react-three/drei";
-import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
+import type { KTX2Loader as StdlibKTX2Loader, OrbitControls as OrbitControlsImpl } from "three-stdlib";
+import type { KTX2Loader } from "three/addons/loaders/KTX2Loader.js";
 import * as THREE from "three";
 import type { ShowroomCar } from "./showroomManifest";
 
 // The Draco decoder is served from this site (public/draco/), not from a CDN.
 const dracoPath = "/draco/";
+// The KTX2 loader (about 24 kB) and the Basis transcoder it bundles beside itself are fetched only
+// for a car whose textures need them.
+let ktx2Module: Promise<typeof import("three/addons/loaders/KTX2Loader.js")> | undefined;
+const loadKtx2 = () => (ktx2Module ??= import("three/addons/loaders/KTX2Loader.js"));
+const ktx2Loaders = new WeakMap<THREE.WebGLRenderer, KTX2Loader>();
+// One KTX2 loader per renderer: it picks the texture format this GPU supports.
+const ktx2LoaderFor = (gl: THREE.WebGLRenderer, Loader: typeof KTX2Loader) => {
+  let loader = ktx2Loaders.get(gl);
+  if (!loader) {
+    loader = new Loader().detectSupport(gl);
+    ktx2Loaders.set(gl, loader);
+  }
+  return loader;
+};
 const backdrop = "#101214";
 
 export type ShowroomSceneProps = {
@@ -35,8 +50,13 @@ class ModelBoundary extends Component<{ children: ReactNode; onError: () => void
   render() { return this.state.failed ? null : this.props.children; }
 }
 
-function Car({ car, paint, onShown }: { car: ShowroomCar; paint: string; onShown: () => void }) {
-  const { scene } = useGLTF(car.src, dracoPath);
+function Car({ car, paint, lowDetail, onShown }: { car: ShowroomCar; paint: string; lowDetail: boolean; onShown: () => void }) {
+  const gl = useThree((state) => state.gl);
+  const ktx2 = car.ktx2 ? use(loadKtx2()) : null;
+  const { scene } = useGLTF(lowDetail && car.srcLow ? car.srcLow : car.src, dracoPath, true, (loader) => {
+    // three's own KTX2 loader does the same job as the stdlib one drei's GLTF loader is typed for.
+    if (ktx2) loader.setKTX2Loader(ktx2LoaderFor(gl, ktx2.KTX2Loader) as unknown as StdlibKTX2Loader);
+  });
   const invalidate = useThree((state) => state.invalidate);
   const firstPaint = useRef(paint);
   // A copy per showroom visit: useGLTF caches the file, and recolouring must not leak into the cache.
@@ -57,7 +77,9 @@ function Car({ car, paint, onShown }: { car: ShowroomCar; paint: string; onShown
       };
       mesh.material = Array.isArray(mesh.material) ? mesh.material.map(swap) : swap(mesh.material);
     });
-    // Every model stands at true length, centred on the turntable, wheels on the floor.
+    // Turned to face +X first, then every model stands at true length, centred on the turntable,
+    // wheels on the floor.
+    model.rotation.y = THREE.MathUtils.degToRad(car.yawDegrees);
     const box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
     model.scale.setScalar(car.lengthMetres / Math.max(size.x, size.z, 0.001));
@@ -69,7 +91,6 @@ function Car({ car, paint, onShown }: { car: ShowroomCar; paint: string; onShown
 
   useEffect(() => () => paints.forEach((material) => material.dispose()), [paints]);
   // Light and car stand still while the camera circles, so the shadow map is drawn once per car.
-  const gl = useThree((state) => state.gl);
   useEffect(() => { gl.shadowMap.needsUpdate = true; invalidate(); }, [gl, model, invalidate]);
 
   const target = useMemo(() => new THREE.Color(paint), [paint]);
@@ -162,6 +183,8 @@ export default function ShowroomScene(props: ShowroomSceneProps) {
   const [dpr, setDpr] = useState(Math.min(window.devicePixelRatio || 1, maxDpr));
   // Dropped for good once the device shows it cannot keep up.
   const [reflective, setReflective] = useState(true);
+  // Phones start on a car's light model (when it has one); any device that falls back joins them.
+  const [lowDetail, setLowDetail] = useState(compact);
   // The first frame with the car can wait on shader compiling; say so rather than show an empty stage.
   const [shownCar, setShownCar] = useState("");
 
@@ -183,7 +206,7 @@ export default function ShowroomScene(props: ShowroomSceneProps) {
         bounds={(refresh) => (refresh > 90 ? [50, 90] : [40, 58])}
         onChange={({ factor }) => setDpr(Math.round((0.75 + (maxDpr - 0.75) * factor) * 4) / 4)}
         onDecline={() => setReflective(false)}
-        onFallback={() => { setReflective(false); setDpr(1); }}
+        onFallback={() => { setReflective(false); setDpr(1); setLowDetail(true); }}
         flipflops={3}
       />
       <AdaptiveDpr pixelated />
@@ -201,7 +224,7 @@ export default function ShowroomScene(props: ShowroomSceneProps) {
       <Floor reflective={reflective} compact={compact} />
       <ModelBoundary key={car.id} onError={() => onModelError(car.id)}>
         <Suspense fallback={null}>
-          <Car car={car} paint={paint} onShown={() => setShownCar(car.id)} />
+          <Car car={car} paint={paint} lowDetail={lowDetail} onShown={() => setShownCar(car.id)} />
           {/* The car stands still and the camera circles it, so the shadow is drawn once. */}
           <ContactShadows position={[0, 0.003, 0]} scale={11} blur={2.2} far={3} opacity={0.75} resolution={compact ? 512 : 1024} frames={1} />
         </Suspense>

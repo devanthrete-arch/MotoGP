@@ -22,7 +22,9 @@ import { gzipSync } from "node:zlib";
 // The virtual showroom's 3D stage (drei's controls, reflector, shadows and loaders, about 53 kB) and its
 // page (about 3 kB JS, 1.6 kB CSS) load only when /showroom is opened, and are never fetched ahead:
 // total JavaScript to 530 kB, CSS to 31 kB. First-load JavaScript is unchanged.
-export const budgets = { initialJs: 140_000, totalJs: 530_000, css: 31_000 };
+// KTX2 textures for hand-made showroom models add three's KTX2 loader (about 24 kB) and its Basis
+// transcoder (about 16 kB). Both are fetched only for a car marked "ktx2": total JavaScript to 570 kB.
+export const budgets = { initialJs: 140_000, totalJs: 570_000, css: 31_000 };
 
 /** Asset file names index.html loads up front: its scripts, module preloads and stylesheets. */
 export function initialAssets(indexHtml) {

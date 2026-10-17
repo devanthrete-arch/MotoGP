@@ -6,7 +6,7 @@
 //   npx @gltf-transform/cli draco public/showroom/<id>.glb public/showroom/<id>.glb
 // The body paint material is named "Paint" so the showroom's swatches can recolour it.
 // Axes: x runs rear (-) to front (+), y is up, z is across the car. Units are metres.
-import { writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import * as THREE from "three";
 import { GLTFExporter } from "three/addons/exporters/GLTFExporter.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
@@ -613,8 +613,17 @@ const cars = [
 ];
 
 const exporter = new GLTFExporter();
+const manifestPath = "public/showroom/manifest.json";
+// Cars brought in with scripts/showroom-import.mjs keep their entry; this script never rebuilds them.
+const previous = existsSync(manifestPath) ? JSON.parse(readFileSync(manifestPath, "utf8")).cars : [];
+const imported = new Map(previous.filter((car) => car.imported).map((car) => [car.id, car]));
 const manifest = { cars: [], swatches: [] };
 for (const spec of cars) {
+  if (imported.has(spec.id)) {
+    manifest.cars.push(imported.get(spec.id));
+    console.log(`${spec.id}: imported model kept`);
+    continue;
+  }
   const scene = buildCar(spec);
   scene.name = spec.id;
   const glb = await exporter.parseAsync(scene, { binary: true });
@@ -627,5 +636,7 @@ for (const spec of cars) {
     swatches: spec.swatches.map(([name, hex]) => ({ name, hex })),
   });
 }
+// Imported cars that are not one of the generated six stay at the end.
+for (const car of imported.values()) if (!cars.some((spec) => spec.id === car.id)) manifest.cars.push(car);
 manifest.swatches = manifest.cars[0].swatches;
-writeFileSync("public/showroom/manifest.json", `${JSON.stringify(manifest, null, 2)}\n`);
+writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
