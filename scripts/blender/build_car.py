@@ -43,24 +43,30 @@ SPECS = {
         "b_pillar": -0.11, "c_pillar": -0.3, "quarter_end": -0.41,
         "glass_inset": 0.06, "tumblehome": 0.17,       # how far the glass sits in, and leans in
         "nose_start": 0.32, "nose_taper": 0.62, "tail_start": 0.4, "tail_taper": 0.38,
-        "nose_rake": 0.18, "tail_rake": 0.06, "shoulder_drop": 0.1,
+        "nose_rake": 0.1, "tail_rake": 0.06, "shoulder_drop": 0.1,
+        "nose_sweep": 0.13, "tail_sweep": 0.05,        # corners swept back: a V-shaped nose in plan
         "door_lines": [0.17, -0.105, -0.32],           # front of front door, B-pillar, back of rear door
         "handles": [-0.06, -0.28],                     # near the back of each door
         "paint": (0.12, 0.24, 0.55),                   # Nexa Blue
         "front": {
-            # Swept back and up along the bonnet's edge.
-            "lamp": [(0.35, 0.665), (0.46, 0.705), (0.6, 0.73), (0.72, 0.735), (0.8, 0.715), (0.8, 0.665),
-                     (0.66, 0.635), (0.5, 0.628), (0.38, 0.64)],
-            "drl": [[(0.44, 0.636), (0.52, 0.634), (0.52, 0.645), (0.44, 0.647)],
-                    [(0.55, 0.636), (0.63, 0.638), (0.63, 0.649), (0.55, 0.647)],
-                    [(0.66, 0.642), (0.74, 0.652), (0.74, 0.663), (0.66, 0.653)]],
-            "grille": [(0.0, 0.605), (0.33, 0.605), (0.375, 0.575), (0.34, 0.47), (0.24, 0.445), (0.0, 0.44)],
-            "chrome": [[(0.0, 0.592), (0.42, 0.592), (0.43, 0.605), (0.0, 0.605)],
-                       [(0.0, 0.548), (0.35, 0.548), (0.35, 0.558), (0.0, 0.558)]],
-            "intake": [(0.0, 0.37), (0.46, 0.37), (0.52, 0.33), (0.47, 0.27), (0.0, 0.27)],
-            "fog_pod": [(0.54, 0.38), (0.66, 0.4), (0.67, 0.31), (0.56, 0.29)],
-            "fog": (0.605, 0.345, 0.028),
-            "plate": [(0.0, 0.34), (0.26, 0.34), (0.26, 0.45), (0.0, 0.45)],
+            # Large swept lamps tucked under the bonnet's edge, wrapping round the swept-back corners.
+            "lamp": [(0.34, 0.66), (0.45, 0.705), (0.58, 0.735), (0.7, 0.75), (0.8, 0.74), (0.83, 0.68),
+                     (0.73, 0.64), (0.57, 0.625), (0.42, 0.628)],
+            # Chrome projector units inside the lamp: (y, z, radius).
+            "projectors": [(0.5, 0.682, 0.028), (0.63, 0.698, 0.026)],
+            # The three-element light strip along the lamp's lower edge, rising outward.
+            "drl": [[(0.43, 0.642), (0.52, 0.641), (0.52, 0.652), (0.43, 0.653)],
+                    [(0.55, 0.643), (0.64, 0.647), (0.64, 0.658), (0.55, 0.654)],
+                    [(0.67, 0.652), (0.76, 0.664), (0.76, 0.675), (0.67, 0.663)]],
+            "grille": [(0.0, 0.615), (0.36, 0.615), (0.39, 0.585), (0.35, 0.475), (0.26, 0.45), (0.0, 0.445)],
+            # Upper chrome bar rises into the lamps' inner ends; a second bar lower down.
+            "chrome": [[(0.0, 0.603), (0.36, 0.605), (0.45, 0.63), (0.44, 0.643), (0.35, 0.618), (0.0, 0.617)],
+                       [(0.0, 0.553), (0.36, 0.553), (0.365, 0.563), (0.0, 0.563)]],
+            "intake": [(0.0, 0.38), (0.47, 0.38), (0.53, 0.34), (0.49, 0.27), (0.0, 0.27)],
+            "fog_pod": [(0.55, 0.39), (0.68, 0.41), (0.69, 0.31), (0.57, 0.29)],
+            "fog_chrome": [(0.54, 0.4), (0.69, 0.42), (0.7, 0.408), (0.555, 0.39)],
+            "fog": (0.62, 0.35, 0.028),
+            "plate": [(0.0, 0.33), (0.26, 0.33), (0.26, 0.435), (0.0, 0.435)],
         },
         "rear": {
             "lamp": [(0.46, 0.94), (0.62, 0.96), (0.76, 0.955), (0.8, 0.92), (0.79, 0.85), (0.64, 0.84), (0.5, 0.87)],
@@ -197,7 +203,10 @@ def build_body(spec, mats, level):
         return W / 2
 
     # Sections along the car: dense where the shape changes fast.
-    us = sorted(set([round(-0.5 + i / 64, 5) for i in range(65)]))
+    us = sorted(set([round(-0.5 + i / 64, 5) for i in range(65)]
+                    # Extra sections at the nose and tail, where the shape turns fastest.
+                    + [round(0.42 + i * 0.08 / 10, 5) for i in range(11)]
+                    + [round(-0.5 + i * 0.06 / 6, 5) for i in range(7)]))
 
     def ring(u):
         w = half_width(u)
@@ -228,21 +237,25 @@ def build_body(spec, mats, level):
     beltr = belt(-0.5)
     fb, rb = bottom(0.5), bottom(-0.5)
 
-    def rake(x, z):
+    def rake(x, z, y=0.0):
+        """Leans the nose and tail back from the bumper, and sweeps their corners back (a V in plan)."""
         u = x / L
         tf = max(0.0, min(1.0, (z - fb) / (beltf - fb)))
         tr = max(0.0, min(1.0, (z - rb) / (beltr - rb)))
         wf = smoothstep((u - 0.36) / 0.14)
         wr = smoothstep((-0.4 - u) / 0.1)
+        across = min(1.0, abs(y) / (W / 2)) ** 2
         return (x - spec["nose_rake"] * tf ** 1.2 * wf - 0.05 * (1 - min(1, tf * 3)) ** 2 * wf
-                + spec["tail_rake"] * tr ** 1.2 * wr + 0.04 * (1 - min(1, tr * 3)) ** 2 * wr)
+                - spec.get("nose_sweep", 0.0) * across * smoothstep((u - 0.33) / 0.17)
+                + spec["tail_rake"] * tr ** 1.2 * wr + 0.04 * (1 - min(1, tr * 3)) ** 2 * wr
+                + spec.get("tail_sweep", 0.0) * across * smoothstep((-0.42 - u) / 0.08))
 
     bm = bmesh.new()
     crease = bm.edges.layers.float.new("crease_edge")
     rings = []
     for u in us:
         x = u * L
-        rings.append([bm.verts.new((rake(x, z), y, z)) for (y, z) in ring(u)])
+        rings.append([bm.verts.new((rake(x, z, y), y, z)) for (y, z) in ring(u)])
     n = len(rings[0])
 
     def region(u):
@@ -282,10 +295,11 @@ def build_body(spec, mats, level):
         for j in range(n - 1):
             face = bm.faces.new((rings[i][j], rings[i + 1][j], rings[i + 1][j + 1], rings[i][j + 1]))
             face.material_index = names.index(face_material(j, u))
-    # Ends: a ring pulled inward, then a fan to the middle, so the subdivided nose and tail stay round.
+    # Ends: a ring pulled in a little, then a fan to the middle. Kept close to the outline, so the
+    # fascia and tail panel stay fairly flat with a tight edge rather than ballooning out.
     for ring_verts, sign in ((rings[-1], 1), (rings[0], -1)):
         cy = sum(v.co.z for v in ring_verts) / n
-        inner = [bm.verts.new((v.co.x + sign * 0.012, v.co.y * 0.55, cy + (v.co.z - cy) * 0.7)) for v in ring_verts]
+        inner = [bm.verts.new((v.co.x + sign * 0.006, v.co.y * 0.86, cy + (v.co.z - cy) * 0.9)) for v in ring_verts]
         centre = bm.verts.new((ring_verts[0].co.x + sign * 0.016, 0.0, cy))
         for j in range(n - 1):
             quad = (ring_verts[j], ring_verts[j + 1], inner[j + 1], inner[j]) if sign > 0 else (ring_verts[j], inner[j], inner[j + 1], ring_verts[j + 1])
@@ -302,7 +316,7 @@ def build_body(spec, mats, level):
         for j in range(3, n - 1):
             edge = bm.edges.get((ring_verts[j], ring_verts[j + 1]))
             if edge:
-                edge[crease] = 0.5
+                edge[crease] = 0.8
     # Faces point outward; make sure.
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
     # Material slots go on before the faces: clearing slots afterwards would reset every face to slot 0.
@@ -425,19 +439,20 @@ def traced(name, surface, outline, material, *, view="front", length=4.0, offset
     return obj
 
 
-def faces(spec, surface, mats):
+def faces(spec, surface, mats, level):
     L = spec["length"]
     fr, rr = spec["front"], spec["rear"]
     traced("Grille", surface, fr["grille"], mats["GlossBlack"], mirror=False, length=L)
     for i, bar in enumerate(fr["chrome"]):
         traced(f"GrilleChrome{i}", surface, bar, mats["Chrome"], mirror=False, length=L, offset=0.006, cuts=4)
-    # A mesh pattern inside the grille: short dark bars in staggered rows.
+    # A mesh pattern inside the grille: short dark bars in staggered rows. Too fine to see on a
+    # phone, so the light model leaves it out.
     ys = [p[0] for p in fr["grille"]]
     zs = [p[1] for p in fr["grille"]]
     z0, z1, ymax = min(zs) + 0.02, max(zs) - 0.02, max(ys) - 0.05
     row = 0
     z = z0
-    while z < z1:
+    while level >= 2 and z < z1:
         y = -ymax + (0.03 if row % 2 else 0)
         while y < ymax - 0.05:
             if not (0.535 < z < 0.565):
@@ -446,10 +461,17 @@ def faces(spec, surface, mats):
         z += 0.022
         row += 1
     traced("Headlamp", surface, fr["lamp"], mats["Headlamp"], length=L)
+    for i, (py, pz, pr) in enumerate(fr.get("projectors", [])):
+        ring = [(py + pr * math.cos(a), pz + pr * math.sin(a)) for a in [k * math.tau / 20 for k in range(20)]]
+        traced(f"Projector{i}", surface, ring, mats["Chrome"], length=L, offset=0.006, cuts=2)
+        lens = [(py + pr * 0.55 * math.cos(a), pz + pr * 0.55 * math.sin(a)) for a in [k * math.tau / 16 for k in range(16)]]
+        traced(f"ProjectorLens{i}", surface, lens, mats["Headlamp"], length=L, offset=0.008, cuts=1)
     for i, strip in enumerate(fr["drl"]):
         traced(f"DRL{i}", surface, strip, mats["DRL"], length=L, offset=0.006, cuts=2)
     traced("Intake", surface, fr["intake"], mats["GlossBlack"], mirror=False, length=L)
     traced("FogPod", surface, fr["fog_pod"], mats["Trim"], length=L, offset=0.004)
+    if "fog_chrome" in fr:
+        traced("FogChrome", surface, fr["fog_chrome"], mats["Chrome"], length=L, offset=0.006, cuts=3)
     fy, fz, fr_ = fr["fog"]
     circle = [(fy + fr_ * math.cos(a), fz + fr_ * math.sin(a)) for a in [i * math.tau / 16 for i in range(16)]]
     traced("FogLamp", surface, circle, mats["DRL"], length=L, offset=0.006, cuts=2)
@@ -498,7 +520,7 @@ def box(name, size, location, material, rotation=(0, 0, 0), bevel=0.004):
 
 def wheel(spec, mats, level):
     R, tw, rr = spec["tyre_radius"], spec["tyre_width"], spec["rim_radius"]
-    seg = 64 if level >= 2 else 40
+    seg = 64 if level >= 2 else 32
     h = tw / 2
     bpy.ops.object.select_all(action="DESELECT")
     parts = []
@@ -649,7 +671,7 @@ def main():
     mats = make_materials(spec)
     body, info = build_body(spec, mats, level)
     surface = Surface(body)
-    faces(spec, surface, mats)
+    faces(spec, surface, mats, level)
     place_wheels(spec, mats, info, level)
     details(spec, mats, info, surface)
 
