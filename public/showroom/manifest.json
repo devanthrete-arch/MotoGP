@@ -4,15 +4,15 @@
       "id": "kia-sonet",
       "name": "Kia Sonet",
       "maker": "Kia · compact SUV",
-      "src": "/showroom/kia-sonet.glb",
+      "src": "/showroom/kia-sonet-model.glb",
       "poster": "/showroom/kia-sonet.jpg",
       "paintMaterials": [
         "Paint"
       ],
       "lengthMetres": 3.995,
       "credit": {
-        "author": "Otofolks",
-        "licence": "Modelled from scratch · stylised likeness, not a manufacturer model",
+        "author": "Otofolks (Blender)",
+        "licence": "Modelled for Otofolks · stylised likeness, not a manufacturer model",
         "url": ""
       },
       "swatches": [
@@ -40,7 +40,9 @@
           "name": "Pewter Olive",
           "hex": "#5f6a52"
         }
-      ]
+      ],
+      "srcLow": "/showroom/kia-sonet-model-low.glb",
+      "imported": true
     },
     {
       "id": "maruti-baleno",
@@ -90,15 +92,15 @@
       "id": "vw-virtus",
       "name": "Volkswagen Virtus",
       "maker": "Volkswagen · sedan",
-      "src": "/showroom/vw-virtus.glb",
+      "src": "/showroom/vw-virtus-model.glb",
       "poster": "/showroom/vw-virtus.jpg",
       "paintMaterials": [
         "Paint"
       ],
       "lengthMetres": 4.561,
       "credit": {
-        "author": "Otofolks",
-        "licence": "Modelled from scratch · stylised likeness, not a manufacturer model",
+        "author": "Otofolks (Blender)",
+        "licence": "Modelled for Otofolks · stylised likeness, not a manufacturer model",
         "url": ""
       },
       "swatches": [
@@ -126,21 +128,23 @@
           "name": "Carbon Steel Grey",
           "hex": "#4d5155"
         }
-      ]
+      ],
+      "srcLow": "/showroom/vw-virtus-model-low.glb",
+      "imported": true
     },
     {
       "id": "honda-amaze",
       "name": "Honda Amaze",
       "maker": "Honda · compact sedan",
-      "src": "/showroom/honda-amaze.glb",
+      "src": "/showroom/honda-amaze-model.glb",
       "poster": "/showroom/honda-amaze.jpg",
       "paintMaterials": [
         "Paint"
       ],
       "lengthMetres": 3.995,
       "credit": {
-        "author": "Otofolks",
-        "licence": "Modelled from scratch · stylised likeness, not a manufacturer model",
+        "author": "Otofolks (Blender)",
+        "licence": "Modelled for Otofolks · stylised likeness, not a manufacturer model",
         "url": ""
       },
       "swatches": [
@@ -168,21 +172,23 @@
           "name": "Golden Brown",
           "hex": "#6e5a43"
         }
-      ]
+      ],
+      "srcLow": "/showroom/honda-amaze-model-low.glb",
+      "imported": true
     },
     {
       "id": "honda-elevate",
       "name": "Honda Elevate",
       "maker": "Honda · SUV",
-      "src": "/showroom/honda-elevate.glb",
+      "src": "/showroom/honda-elevate-model.glb",
       "poster": "/showroom/honda-elevate.jpg",
       "paintMaterials": [
         "Paint"
       ],
       "lengthMetres": 4.312,
       "credit": {
-        "author": "Otofolks",
-        "licence": "Modelled from scratch · stylised likeness, not a manufacturer model",
+        "author": "Otofolks (Blender)",
+        "licence": "Modelled for Otofolks · stylised likeness, not a manufacturer model",
         "url": ""
       },
       "swatches": [
@@ -210,21 +216,23 @@
           "name": "Crystal Black Pearl",
           "hex": "#111214"
         }
-      ]
+      ],
+      "srcLow": "/showroom/honda-elevate-model-low.glb",
+      "imported": true
     },
     {
       "id": "mahindra-xuv700",
       "name": "Mahindra XUV700",
       "maker": "Mahindra · SUV",
-      "src": "/showroom/mahindra-xuv700.glb",
+      "src": "/showroom/mahindra-xuv700-model.glb",
       "poster": "/showroom/mahindra-xuv700.jpg",
       "paintMaterials": [
         "Paint"
       ],
       "lengthMetres": 4.695,
       "credit": {
-        "author": "Otofolks",
-        "licence": "Modelled from scratch · stylised likeness, not a manufacturer model",
+        "author": "Otofolks (Blender)",
+        "licence": "Modelled for Otofolks · stylised likeness, not a manufacturer model",
         "url": ""
       },
       "swatches": [
@@ -252,7 +260,9 @@
           "name": "Deep Forest",
           "hex": "#22342b"
         }
-      ]
+      ],
+      "srcLow": "/showroom/mahindra-xuv700-model-low.glb",
+      "imported": true
     }
   ],
   "swatches": [

@@ -5,39 +5,36 @@ The showroom at `/showroom` shows the cars listed in `public/showroom/manifest.j
 ## The cars it ships with
 
 Kia Sonet, Maruti Suzuki Baleno, Volkswagen Virtus, Honda Amaze, Honda Elevate and Mahindra XUV700
-are modelled from scratch by `scripts/showroom-cars.mjs`: bodies lofted at each car's published
-length, width, height and wheelbase, with their own grille, lamps, wheels and trim. They are
-stylised likenesses, not manufacturer models, and carry no badges or logos.
-
-To change one, edit its entry in that script, then:
-
-```
-node scripts/showroom-cars.mjs
-npx @gltf-transform/cli draco public/showroom/<id>.glb public/showroom/<id>.glb
-npm run dev
-PLAYWRIGHT_CHANNEL=chrome node scripts/showroom-posters.mjs http://localhost:8080
-```
-
-The last step re-photographs every car for the still picture shown when a browser cannot draw 3D.
-To compare changes, `PLAYWRIGHT_CHANNEL=chrome node scripts/showroom-review.mjs http://localhost:8080 review.jpg`
-renders every car from the front three-quarter, the side and the rear three-quarter into one sheet.
+are built in Blender by `scripts/blender/build_car.py`, from reference photos and each car's
+published length, width, height and wheelbase. They are stylised likenesses, not manufacturer
+models, and carry no badges or logos.
 
 ## Building a car in Blender
 
-`scripts/blender/build_car.py` builds a car in Blender (5.2) from a profile spec in the same
-script, to the model spec below: one subdivided body with flush glass and pillars, creased
-shoulder and belt lines, boolean wheel arches and door shut lines, lamps and grille traced onto the
-surface, lathe-turned tyres and alloys, mirrors, handles, wipers, spoiler and a simple interior.
-The Baleno is built this way:
+`build_car.py` builds a car in Blender (5.2) from a profile spec in the same script, to the model
+spec below: one subdivided body with flush glass and pillars (sedan, hatch or SUV glasshouse,
+optionally a tapering rear-quarter window), creased lower-door, shoulder and belt lines, boolean
+wheel arches and door shut lines, grille, lamps, intakes, skid plates and plates traced onto the
+surface, lathe-turned tyres and two-tone alloys, mirrors, handles, wipers, spoiler, aerial, a simple
+interior, and on the SUVs arch and sill cladding, roof rails and (Elevate) a black roof.
 
 ```
 blender --background --factory-startup --python scripts/blender/build_car.py -- maruti-baleno baleno.glb --level 2 --blend baleno.blend
 blender --background --factory-startup --python scripts/blender/build_car.py -- maruti-baleno baleno-low.glb --level 1
 node scripts/showroom-import.mjs maruti-baleno baleno.glb --low baleno-low.glb
+npm run dev
+PLAYWRIGHT_CHANNEL=chrome node scripts/showroom-posters.mjs http://localhost:8080
 ```
 
-`--level` is the body's subdivision: 2 for the full model, 1 for the phone model. The `.blend`
-is the editable source for anyone who wants to refine the car by hand.
+`--level` is the body's subdivision: 2 for the full model, 1 for the phone model (which also traces
+its details more coarsely to stay inside 40k triangles). The `.blend` is the editable source for
+anyone who wants to refine a car by hand. The poster step re-photographs every car for the still
+picture shown when a browser cannot draw 3D; to compare changes,
+`PLAYWRIGHT_CHANNEL=chrome node scripts/showroom-review.mjs http://localhost:8080 review.jpg` renders
+every car from the front three-quarter, the side and the rear three-quarter into one sheet.
+
+`scripts/showroom-cars.mjs` is the earlier, simpler generator. It now only builds a car that has no
+imported model; all six are imported, so it changes nothing unless one is removed.
 
 ## Replacing a car with a hand-made model
 
