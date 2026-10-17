@@ -19,7 +19,12 @@ import { gzipSync } from "node:zlib";
 // The Markdown reader and its three article bodies are lazy chunks; guide styles join global CSS.
 // The studio landing page adds about 1 kB of CSS for its dark, scoped styles (its 3D studio is a lazy chunk, so
 // JavaScript stays within the old budgets): CSS to 29 kB.
-export const budgets = { initialJs: 140_000, totalJs: 465_000, css: 29_000 };
+// The virtual showroom's 3D stage (drei's controls, reflector, shadows and loaders, about 53 kB) and its
+// page (about 3 kB JS, 1.6 kB CSS) load only when /showroom is opened, and are never fetched ahead:
+// total JavaScript to 530 kB, CSS to 31 kB. First-load JavaScript is unchanged.
+// KTX2 textures for hand-made showroom models add three's KTX2 loader (about 24 kB) and its Basis
+// transcoder (about 16 kB). Both are fetched only for a car marked "ktx2": total JavaScript to 570 kB.
+export const budgets = { initialJs: 140_000, totalJs: 570_000, css: 31_000 };
 
 /** Asset file names index.html loads up front: its scripts, module preloads and stylesheets. */
 export function initialAssets(indexHtml) {

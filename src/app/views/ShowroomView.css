@@ -1,0 +1,153 @@
+@layer views {
+  .showroom {
+    inline-size: min(100%, 1180px);
+    margin-inline: auto;
+    padding: clamp(20px, 4vw, 44px) clamp(16px, 4vw, 36px) 64px;
+    color: var(--color-text);
+    display: grid;
+    gap: 18px;
+    min-inline-size: 0;
+  }
+  .showroom__head { display: grid; gap: 8px; }
+  .showroom__head :is(h1, p) { margin: 0; }
+  .showroom__head .eyebrow { display: flex; align-items: center; gap: 7px; color: var(--color-accent-text); }
+  .showroom__head h1 { font: 600 clamp(26px, 4vw, 34px)/1.15 var(--font-sans); }
+  .showroom__head > p:last-child { color: var(--color-text-secondary); }
+
+  /* The stage stays dark in both themes: it is a lit studio. */
+  .showroom__stage {
+    position: relative;
+    block-size: clamp(340px, 62svh, 680px);
+    border-radius: var(--radius-sheet);
+    overflow: hidden;
+    background: radial-gradient(ellipse at 50% 35%, #23272b, #101214 70%);
+    box-shadow: var(--glass-shadow);
+    isolation: isolate;
+  }
+  .showroom__viewport, .showroom-canvas { position: absolute; inset: 0; }
+  /* The canvas takes drags and pinches; the page scrolls from everywhere else. */
+  .showroom-canvas { touch-action: none; }
+
+  .showroom__message {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 24px;
+    text-align: center;
+    color: #e9ecef;
+    font-size: 15px;
+    z-index: 1;
+    pointer-events: none;
+  }
+  .showroom__viewport > .showroom__message { background: rgba(16, 18, 20, 0.72); }
+
+  .showroom-progress {
+    position: absolute;
+    inset-inline: 50% auto;
+    inset-block-end: 22px;
+    translate: -50% 0;
+    display: grid;
+    gap: 8px;
+    inline-size: min(280px, calc(100% - 48px));
+    padding: 12px 16px;
+    border-radius: var(--radius-pill);
+    background: rgba(16, 18, 20, 0.78);
+    color: #e9ecef;
+    font: 500 13px/1.2 var(--font-sans);
+    text-align: center;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .showroom-progress__track { display: block; block-size: 4px; border-radius: var(--radius-pill); background: rgba(255, 255, 255, 0.16); overflow: hidden; }
+  .showroom-progress__track > span { display: block; block-size: 100%; background: var(--color-accent); transition: inline-size var(--duration-base) var(--ease-out); }
+
+  .showroom__stage-controls {
+    position: absolute;
+    inset-block-start: 14px;
+    inset-inline-end: 14px;
+    display: flex;
+    gap: 8px;
+    z-index: 3;
+  }
+  .showroom__stage-controls .ui-icon-button {
+    background: rgba(16, 18, 20, 0.66);
+    color: #f2f5f2;
+    border-color: rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(10px);
+  }
+
+  .showroom__fallback { position: absolute; inset: 0; margin: 0; display: grid; place-items: center; align-content: center; gap: 12px; padding: 16px; color: #c8d0ca; }
+  .showroom__fallback img { max-inline-size: 100%; max-block-size: calc(100% - 48px); object-fit: contain; }
+  .showroom__fallback figcaption { font-size: 14px; text-align: center; }
+
+  .showroom__panel { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 900px) {
+    .showroom__panel { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); align-items: start; }
+    .showroom__credit { grid-column: 1 / -1; }
+  }
+  .showroom__group { margin: 0; padding: 0; border: 0; min-inline-size: 0; display: grid; gap: 10px; }
+  .showroom__group legend { padding: 0; margin-block-end: 10px; font: 600 13px/1 var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--color-text-muted); }
+  .showroom__group legend span { margin-inline-start: 8px; font-family: var(--font-sans); letter-spacing: 0; text-transform: none; color: var(--color-text); }
+
+  .showroom__cars { display: flex; flex-wrap: wrap; gap: 8px; }
+  /* Phones: one swipeable row of cars instead of a stack of wrapped pills. */
+  @media (max-width: 760px) {
+    .showroom { gap: 14px; padding-block-start: 16px; }
+    .showroom__stage { block-size: clamp(300px, 54svh, 560px); border-radius: var(--radius-card); }
+    .showroom__cars {
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      overscroll-behavior-x: contain;
+      scroll-snap-type: x proximity;
+      scrollbar-width: none;
+      padding-block: 2px;
+      margin-inline: -4px;
+      padding-inline: 4px;
+    }
+    .showroom__cars::-webkit-scrollbar { display: none; }
+    .showroom__car { flex: 0 0 auto; scroll-snap-align: start; white-space: nowrap; }
+    .showroom__swatch { inline-size: 44px; block-size: 44px; }
+  }
+  .showroom__car {
+    display: grid;
+    min-block-size: 44px;
+    padding: 8px 18px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--color-border-strong);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font: 600 14px/1.2 var(--font-sans);
+    text-align: start;
+    cursor: pointer;
+    transition: border-color var(--duration-fast), background-color var(--duration-fast);
+  }
+  .showroom__car small { font-weight: 400; font-size: 12px; color: var(--color-text-muted); }
+  .showroom__car:hover { border-color: var(--color-primary); }
+  .showroom__car.is-active { border-color: var(--color-primary); background: var(--color-primary-soft); box-shadow: inset 0 0 0 1px var(--color-primary); }
+
+  .showroom__swatches { display: flex; flex-wrap: wrap; gap: 10px; }
+  .showroom__swatch {
+    inline-size: 40px;
+    block-size: 40px;
+    padding: 0;
+    border-radius: 50%;
+    border: 2px solid var(--color-surface);
+    background: var(--swatch);
+    box-shadow: 0 0 0 1px var(--color-border-strong), inset 0 -6px 10px rgba(0, 0, 0, 0.22), inset 0 4px 8px rgba(255, 255, 255, 0.28);
+    cursor: pointer;
+    transition: transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast);
+  }
+  .showroom__swatch:hover { transform: scale(1.06); }
+  .showroom__swatch.is-active { box-shadow: 0 0 0 2px var(--color-primary), inset 0 -6px 10px rgba(0, 0, 0, 0.22), inset 0 4px 8px rgba(255, 255, 255, 0.28); }
+  .showroom :is(.showroom__car, .showroom__swatch):focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+
+  .showroom__credit { margin: 0; font-size: 13px; color: var(--color-text-muted); }
+  .showroom__credit a { color: var(--color-primary-text); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .showroom__swatch, .showroom__car, .showroom-progress__track > span { transition: none; }
+  }
+}
